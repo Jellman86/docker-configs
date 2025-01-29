@@ -1,0 +1,28 @@
+---
+services:
+  privatebin:
+    image: "privatebin/nginx-fpm-alpine:stable"
+    container_name: privatebin
+    read_only: true
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    restart: always
+    ports:
+      - 8080:8080
+    volumes:
+      - privatebin_cfg:/srv/data
+      - /dev/shm:/var/lib/nginx/tmp 
+#-----------------------------------------------
+volumes:
+    privatebin_cfg:
+
+networks:
+  web_services_default:
+    external: false
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.22.0.0/16
+         gateway: 172.22.0.1

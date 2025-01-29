@@ -1,0 +1,237 @@
+---
+services:
+  gluetun:
+    image: qmcgaw/gluetun
+    restart: unless-stopped
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      vpn_stack_default:
+        ipv4_address: 172.18.0.2
+    ports:
+      - 5041:5041 # qbittorrent
+      - 5041:5041/udp # qbittorrent
+      - 8085:8085 # qbittorrent webui
+      - 9696:9696 # prowlarr
+      - 7878:7878 # radarr
+      - 8989:8989 # sonarr
+      - 8191:8191 # Flarrsolvr
+      - 8686:8686 # Lidarr
+      - 5030:5030 # slskd
+      - 5031:5031 # slskd
+      - 5032:5032 # slskd
+    volumes:
+      - ${DOCKERCONFIGPATH}/gluetun:/gluetun
+    environment:
+      - VPN_SERVICE_PROVIDER=${VPNHOST}
+      #- VPN_TYPE=wireguard
+      - VPN_TYPE=openvpn
+      # OpenVPN:
+      - OPENVPN_USER=${OPENVPNUSER}
+      - OPENVPN_PASSWORD=${OPENVPNPASSWORD}
+      # Wireguard:
+      #- WIREGUARD_PRIVATE_KEY=${WGPRIVKEY}
+      # - WIREGUARD_ADDRESSES=10.64.222.21/32
+      # Timezone for accurate log times
+      - TZ=Europe/London
+      - SERVER_COUNTRIES=united kingdom
+      # Server list updater
+      # See https://github.com/qdm12/gluetun-wiki/blob/main/setup/servers.md#update-the-vpn-servers-list
+      - UPDATER_PERIOD=24h
+      - DOT=on
+      - DOT_CACHING=on
+      #- BLOCK_MALICIOUS=on
+      #- BLOCK_SURVEILLANCE=on
+      #- BLOCK_ADS=on
+      - DOT_PROVIDERS=cloudflare
+#-----------------------------------------------
+  nginx-pm:
+    container_name: nginx-rp-arr
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    networks:
+      vpn_stack_default:
+        ipv4_address: 172.18.0.3
+    ports:
+      - 80:80 # nginx-pm
+      - 81:81 # nginx-pm
+      - 443:443 # nginx-pm
+    environment:
+      - TZ=Europe/London
+    volumes:
+      - ${DOCKERCONFIGPATH}/nginx-rp-arr/config:/data
+      - ${DOCKERCONFIGPATH}/nginx-rp-arr/le:/etc/letsencrypt
+#-----------------------------------------------
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      - WEBUI_PORT=8085
+    volumes:
+      - ${DOCKERCONFIGPATH}/qbittorrent/config:/config
+      - ${DOCKERCONFIGPATH}/qbittorrent/logs:/logs
+      - ${DOCKERCONFIGPATH}/qbittorrent/themes:/themes
+      - ${DOWNLOADSPATH}:/downloads
+      - ${MEDIAPATH}:/media
+    network_mode: "service:gluetun"
+    restart: unless-stopped
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://example.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
+    labels:
+      deunhealth.restart.on.unhealthy: true
+#-----------------------------------------------
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    network_mode: "service:gluetun"
+    volumes:
+      - ${DOCKERCONFIGPATH}/prowlarr/config:/config
+      - ${MEDIAPATH}:/media
+    restart: unless-stopped
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://example.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
+    labels:
+      deunhealth.restart.on.unhealthy: true
+#-----------------------------------------------
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    network_mode: "service:gluetun"
+    volumes:
+      - ${DOCKERCONFIGPATH}/radarr/config:/config
+      - ${DOWNLOADSPATH}:/downloads
+      - ${MEDIAPATH}/video/film:/film
+    restart: unless-stopped
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://example.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
+    labels:
+      deunhealth.restart.on.unhealthy: true
+#-----------------------------------------------
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    network_mode: "service:gluetun"
+    volumes:
+      - ${DOCKERCONFIGPATH}/sonarr/config:/config
+      - ${DOWNLOADSPATH}:/downloads
+      - ${MEDIAPATH}/video/tv:/tv
+    restart: unless-stopped
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://example.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
+    labels:
+      deunhealth.restart.on.unhealthy: true
+#-----------------------------------------------
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    network_mode: "service:gluetun"
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=Europe/London
+    restart: unless-stopped
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://example.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
+    labels:
+      deunhealth.restart.on.unhealthy: true
+#-----------------------------------------------
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    network_mode: "service:gluetun"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    volumes:
+      - ${DOCKERCONFIGPATH}/Lidarr/config:/config
+      - ${MEDIAPATH}/audio/music:/music
+      - ${DOWNLOADSPATH}:/downloads
+    restart: unless-stopped
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://example.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
+    labels:
+      deunhealth.restart.on.unhealthy: true
+#-----------------------------------------------
+  slskd:
+    image: slskd/slskd
+    container_name: slskd
+    network_mode: "service:gluetun"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+      - SLSKD_REMOTE_CONFIGURATION=true
+      - SLSKD_FILE_PERMISSION_MODE=777
+      - SLSKD_SLSK_USERNAME=${SLSKUSR}
+      - SLSKD_SLSK_PASSWORD=${SLSKPASS}
+      - SLSKD_DOWNLOADS_DIR=/downloads/slskd/complete
+      - SLSKD_INCOMPLETE_DIR=/downloads/slskd/working
+      - SLSKD_SHARED_DIR=/music
+      - SLSKD_USERNAME=${SLSKUIUSER}
+      - SLSKD_PASSWORD=${SLSKUIPASS}
+      - SLSKD_SLSK_LISTEN_PORT=5032
+    volumes:
+      - ${DOCKERCONFIGPATH}/slskd/config:/app
+      - ${MEDIAPATH}/audio/music:/music
+      - ${DOWNLOADSPATH}:/downloads
+    restart: unless-stopped
+#-----------------------------------------------
+  deunhealth:
+    build: .
+    image: qmcgaw/deunhealth
+    container_name: deunhealth
+    network_mode: "none"
+    environment:
+      - LOG_LEVEL=info
+      - HEALTH_SERVER_ADDRESS=127.0.0.1:9999
+      - TZ=America/Montreal
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+#-----------------------------------------------
+networks:
+  vpn_stack_default:
+    external: true
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.18.0.0/16
+         gateway: 172.18.0.1

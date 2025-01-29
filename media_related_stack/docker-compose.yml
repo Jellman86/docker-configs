@@ -1,0 +1,18 @@
+---
+services:
+    unmanic:
+      container_name: unmanic
+      image: josh5/unmanic:latest
+      ports:
+        - 8888:8888
+      environment:
+        - PUID=1000
+        - PGID=1000
+        - TZ=Europe/London
+        - NVIDIA_VISIBLE_DEVICES=all
+      volumes:
+        - ${DOCKERCONFIGPATH}/unmanic/config:/config
+        - ${MEDIAPATH}:/library
+        - /dev/shm:/tmp/unmanic
+      restart: unless-stopped
+      runtime: nvidia
