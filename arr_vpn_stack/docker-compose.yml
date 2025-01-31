@@ -48,23 +48,6 @@ services:
       #- BLOCK_ADS=on
       - DOT_PROVIDERS=cloudflare
 #-----------------------------------------------
-  nginx-pm:
-    container_name: nginx-rp-arr
-    image: 'jc21/nginx-proxy-manager:latest'
-    restart: unless-stopped
-    networks:
-      vpn_stack_default:
-        ipv4_address: 172.18.0.3
-    ports:
-      - 80:80 # nginx-pm
-      - 81:81 # nginx-pm
-      - 443:443 # nginx-pm
-    environment:
-      - TZ=Europe/London
-    volumes:
-      - ${DOCKERCONFIGPATH}/nginx-rp-arr/config:/data
-      - ${DOCKERCONFIGPATH}/nginx-rp-arr/le:/etc/letsencrypt
-#-----------------------------------------------
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent

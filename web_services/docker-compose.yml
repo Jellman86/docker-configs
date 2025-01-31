@@ -1,5 +1,22 @@
 ---
 services:
+  nginx-pm:
+    container_name: nginx-rp
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: always
+    ports:
+      - 80:80 # nginx-pm
+      - 81:81 # nginx-pm
+      - 443:443 # nginx-pm
+    networks:
+      web_services_default:
+        ipv4_address: 172.22.0.2
+    environment:
+      - TZ=Europe/London
+    volumes:
+      - ${DOCKERCONFIGPATH}/nginx-rp-arr/config:/data
+      - ${DOCKERCONFIGPATH}/nginx-rp-arr/le:/etc/letsencrypt
+#-----------------------------------------------
   privatebin:
     image: "privatebin/nginx-fpm-alpine:stable"
     container_name: privatebin
@@ -10,14 +27,17 @@ services:
       - TZ=Europe/London
     restart: always
     ports:
-      - 8080:8080
+      - 8082:8080
+    networks:
+      web_services_default:
+        ipv4_address: 172.22.0.3
     volumes:
       - privatebin_cfg:/srv/data
       - /dev/shm:/var/lib/nginx/tmp 
 #-----------------------------------------------
 volumes:
     privatebin_cfg:
-
+#-----------------------------------------------
 networks:
   web_services_default:
     external: false
