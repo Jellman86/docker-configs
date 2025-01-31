@@ -27,7 +27,7 @@ services:
       - TZ=Europe/London
     restart: always
     ports:
-      - 8082:8080
+      - 8080:8080
     networks:
       web_services_default:
         ipv4_address: 172.22.0.3

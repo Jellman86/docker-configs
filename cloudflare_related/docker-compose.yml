@@ -3,7 +3,7 @@ services:
   cloudflared: 
     image: cloudflare/cloudflared 
     container_name: cloudflare-tunnel 
-    restart: unless-stopped 
+    restart: always 
     command: tunnel run 
     environment: 
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
