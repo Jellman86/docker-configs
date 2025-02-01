@@ -4,8 +4,6 @@ services:
     image: ollama/ollama:latest
     container_name: ollama
     restart: unless-stopped
-    command: >
-      sh -c "ollama pull deepseek-r1:8b && ollama run deepseek-r1:8b"
     ports:
       - "11434:11434"
     environment:
