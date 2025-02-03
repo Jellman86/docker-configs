@@ -9,22 +9,6 @@ services:
     networks:
       general_default:
         ipv4_address: 172.26.0.3
-#---------------------------------------------------
-  dozzle:
-    image: amir20/dozzle:latest
-    container_name: dozzle
-    restart: unless-stopped
-    ports:
-      - 8083:8080
-    environment:
-      DOZZLE_LEVEL: info
-      DOZZLE_TAILSIZE: 300
-      DOZZLE_FILTER: "status=running"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      general_default:
-        ipv4_address: 172.26.0.2
 #-----------------------------------------------
 networks:
   general_default:
