@@ -10,9 +10,28 @@ services:
         - PGID=1000
         - TZ=Europe/London
         - NVIDIA_VISIBLE_DEVICES=all
+        - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
       volumes:
         - ${DOCKERCONFIGPATH}/unmanic/config:/config
         - ${MEDIAPATH}:/library
         - /dev/shm:/tmp/unmanic
       restart: unless-stopped
       runtime: nvidia
+#----------------------------------------------------------
+    plex:
+      container_name: plex
+      image: plexinc/pms-docker
+      restart: unless-stopped
+      runtime: nvidia
+      environment:
+        - PUID=1000
+        - PGID=1000
+        - TZ=Europe/London
+        - PLEX_CLAIM=${PMSCLAIM}
+        - NVIDIA_VISIBLE_DEVICES=all
+        - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+      network_mode: host
+      volumes:
+        - ${DOCKERCONFIGPATH}/pms/config:/config
+        - /dev/shm:/transcode
+        - ${MEDIAPATH}:/media
