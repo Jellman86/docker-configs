@@ -2,13 +2,27 @@
 services:
   watchtower:
     container_name: watchtower
-    restart: unless-stopped
+    restart: always
     image: containrrr/watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       general_default:
         ipv4_address: 172.26.0.3
+#-----------------------------------------------
+  portainer:
+    container_name: portainer
+    restart: always
+    image: portainer/portainer-ce:2.21.5
+    ports:
+      - 8000:8000
+      - 9443:9443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKERCONFIGPATH}/portainer/data:/data
+    networks:
+      general_default:
+        ipv4_address: 172.26.0.2
 #-----------------------------------------------
 networks:
   general_default:

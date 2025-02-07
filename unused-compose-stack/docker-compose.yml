@@ -16,3 +16,21 @@ services:
     networks:
       general_default:
         ipv4_address: 172.26.0.2
+#----------------------------------------------------------
+    plex:
+      container_name: plex
+      image: plexinc/pms-docker
+      restart: unless-stopped
+      runtime: nvidia
+      environment:
+        - PUID=1000
+        - PGID=1000
+        - TZ=Europe/London
+        - PLEX_CLAIM=${PMSCLAIM}
+        - NVIDIA_VISIBLE_DEVICES=all
+        - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+      network_mode: host
+      volumes:
+        - ${DOCKERCONFIGPATH}/pms/config:/config
+        - /dev/shm:/transcode
+        - ${MEDIAPATH}:/media
