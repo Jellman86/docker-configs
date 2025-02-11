@@ -44,8 +44,12 @@ services:
       networks:
         mac-vlan-211-0-26_interface:
           ipv4_address: 192.168.211.71
+        vpn_stack_brg:
+          ipv4_address: 172.17.0.5
 #-----------------------------------------------
 networks:
     mac-vlan-211-0-26_interface:
+      external: true
+    vpn_stack_brg:
       external: true
 
