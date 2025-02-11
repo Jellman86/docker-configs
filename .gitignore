@@ -3,5 +3,3 @@
 .DS_Store
 *.DS_Store
 traefik.yaml
-stack.env
-*stack.env
