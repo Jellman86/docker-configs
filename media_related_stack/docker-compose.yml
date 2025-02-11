@@ -1,5 +1,28 @@
 ---
 services:
+#-----------------------------------------------
+    plex:
+      image: lscr.io/linuxserver/plex:latest
+      container_name: plex
+      restart: unless-stopped
+      environment:
+        - PUID=568
+        - PGID=568
+        - TZ=Europe/London
+        - PLEX_CLAIM=${PLEX_CLAIM}
+      volumes:
+        - ${CONFIG_PATH}/pms:/config
+        - ${MEDIA_PATH}:/library
+        - /dev/shm:/transcode
+      devices:
+        - /dev/dri/renderD128:/dev/dri/renderD128
+        - /dev/dri/card0:/dev/dri/card0
+      group_add:
+        - "109" #for iGPU access
+      networks:
+        mac-vlan-211-0-26_interface:
+          ipv4_address: 192.168.211.72
+#-----------------------------------------------
     unmanic:
       container_name: unmanic
       image: josh5/unmanic:latest
@@ -10,7 +33,19 @@ services:
         - PGID=568
         - TZ=Europe/London
       volumes:
-        - ${config-path}/unmanic/config:/config
-        - ${media-path}:/library
+        - ${CONFIG_PATH}/unmanic:/config
+        - ${MEDIA_PATH}:/library
         - /dev/shm:/tmp/unmanic
+      devices:
+        - /dev/dri/renderD128:/dev/dri/renderD128
+        - /dev/dri/card0:/dev/dri/card0
+      group_add:
+        - "109" #for iGPU access
+      networks:
+        mac-vlan-211-0-26_interface:
+          ipv4_address: 192.168.211.71
+#-----------------------------------------------
+networks:
+    mac-vlan-211-0-26_interface:
+      external: true
 

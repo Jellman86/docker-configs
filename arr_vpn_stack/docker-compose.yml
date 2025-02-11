@@ -9,12 +9,12 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     networks:
-      vpn_stack_default:
-        ipv4_address: 172.18.0.2
+      vpn_stack_brg:
+        ipv4_address: 172.17.0.2
     ports:
       - 5041:5041 # qbittorrent
       - 5041:5041/udp # qbittorrent
-      - 8085:8085 # qbittorrent webui
+      - 8081:8081 # qbittorrent webui
       - 9696:9696 # prowlarr
       - 7878:7878 # radarr
       - 8989:8989 # sonarr
@@ -27,40 +27,55 @@ services:
       - ${DOCKERCONFIGPATH}/gluetun:/gluetun
     environment:
       - VPN_SERVICE_PROVIDER=${VPNHOST}
-      #- VPN_TYPE=wireguard
-      - VPN_TYPE=openvpn
       # OpenVPN:
+      - VPN_TYPE=openvpn
       - OPENVPN_USER=${OPENVPNUSER}
       - OPENVPN_PASSWORD=${OPENVPNPASSWORD}
       # Wireguard:
+      #- VPN_TYPE=wireguard
       #- WIREGUARD_PRIVATE_KEY=${WGPRIVKEY}
       # - WIREGUARD_ADDRESSES=10.64.222.21/32
-      # Timezone for accurate log times
       - TZ=Europe/London
       - SERVER_COUNTRIES=united kingdom
-      # Server list updater
-      # See https://github.com/qdm12/gluetun-wiki/blob/main/setup/servers.md#update-the-vpn-servers-list
       - UPDATER_PERIOD=24h
       - DOT=on
       - DOT_CACHING=on
-      #- BLOCK_MALICIOUS=on
-      #- BLOCK_SURVEILLANCE=on
-      #- BLOCK_ADS=on
+      - BLOCK_MALICIOUS=on
+      - BLOCK_SURVEILLANCE=on
+      - BLOCK_ADS=on
       - DOT_PROVIDERS=cloudflare
+#-----------------------------------------------
+  overseerr:
+    image: sctx/overseerr:latest
+    container_name: overseerr
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+      - PORT=5055 #optional
+    networks:
+      vpn_stack_brg:
+        ipv4_address: 172.17.0.3
+    ports:
+      - 5055:5055
+    volumes:
+      - ${DOCKERCONFIGPATH}/overseerr:/app/config
+    restart: unless-stopped
 #-----------------------------------------------
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=568
+      - PGID=568
       - TZ=Europe/London
-      - WEBUI_PORT=8085
+      - WEBUI_PORT=8081
+      - DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest
     volumes:
       - ${DOCKERCONFIGPATH}/qbittorrent/config:/config
       - ${DOCKERCONFIGPATH}/qbittorrent/logs:/logs
-      - ${DOCKERCONFIGPATH}/qbittorrent/themes:/themes
-      - ${DOWNLOADSPATH}:/downloads
+
+      - ${DOWNLOADSPATH}/downloads/torrents:/downloads
       - ${MEDIAPATH}:/media
     network_mode: "service:gluetun"
     restart: unless-stopped
@@ -76,8 +91,8 @@ services:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=568
+      - PGID=568
       - TZ=Europe/London
     network_mode: "service:gluetun"
     volumes:
@@ -96,8 +111,8 @@ services:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=568
+      - PGID=568
       - TZ=Europe/London
     network_mode: "service:gluetun"
     volumes:
@@ -117,8 +132,8 @@ services:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=568
+      - PGID=568
       - TZ=Europe/London
     network_mode: "service:gluetun"
     volumes:
@@ -157,8 +172,8 @@ services:
     container_name: lidarr
     network_mode: "service:gluetun"
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=568
+      - PGID=568
       - TZ=Europe/London
     volumes:
       - ${DOCKERCONFIGPATH}/Lidarr/config:/config
@@ -178,8 +193,8 @@ services:
     container_name: slskd
     network_mode: "service:gluetun"
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=568
+      - PGID=568
       - TZ=Europe/London
       - SLSKD_REMOTE_CONFIGURATION=true
       - SLSKD_FILE_PERMISSION_MODE=777
@@ -188,8 +203,8 @@ services:
       - SLSKD_DOWNLOADS_DIR=/downloads/slskd/complete
       - SLSKD_INCOMPLETE_DIR=/downloads/slskd/working
       - SLSKD_SHARED_DIR=/music
-      - SLSKD_USERNAME=${SLSKUIUSER}
-      - SLSKD_PASSWORD=${SLSKUIPASS}
+      - SLSKD_USERNAME=${SLSKUSR}
+      - SLSKD_PASSWORD=${SLSKPASS}
       - SLSKD_SLSK_LISTEN_PORT=5032
     volumes:
       - ${DOCKERCONFIGPATH}/slskd/config:/app
@@ -198,7 +213,6 @@ services:
     restart: unless-stopped
 #-----------------------------------------------
   deunhealth:
-    build: .
     image: qmcgaw/deunhealth
     container_name: deunhealth
     network_mode: "none"
@@ -211,10 +225,5 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 #-----------------------------------------------
 networks:
-  vpn_stack_default:
+  vpn_stack_brg:
     external: true
-    driver: bridge
-    ipam:
-     config:
-       - subnet: 172.18.0.0/16
-         gateway: 172.18.0.1

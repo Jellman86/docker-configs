@@ -9,28 +9,32 @@ services:
       - 81:81 # nginx-pm
       - 443:443 # nginx-pm
     networks:
-      web_services_default:
-        ipv4_address: 172.22.0.2
+      mac-vlan-211-0-26_interface:
+        ipv4_address: 192.168.211.65
+      vpn_stack_brg:
+        ipv4_address: 172.17.0.4
     environment:
+      - PUID=3000
+      - PGID=3000
       - TZ=Europe/London
     volumes:
-      - ${DOCKERCONFIGPATH}/nginx-rp-arr/config:/data
-      - ${DOCKERCONFIGPATH}/nginx-rp-arr/le:/etc/letsencrypt
+      - ${CONFIG_PATH}/nginx-rp/config:/data
+      - ${CONFIG_PATH}/nginx-rp/le:/etc/letsencrypt
 #-----------------------------------------------
   privatebin:
     image: "privatebin/nginx-fpm-alpine:stable"
     container_name: privatebin
     read_only: true
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=568
+      - PGID=568
       - TZ=Europe/London
     restart: always
     ports:
       - 8087:8080
     networks:
-      web_services_default:
-        ipv4_address: 172.22.0.3
+      mac-vlan-211-0-26_interface:
+        ipv4_address: 192.168.211.68
     volumes:
       - privatebin_cfg:/srv/data
       - /dev/shm:/var/lib/nginx/tmp 
@@ -39,10 +43,7 @@ volumes:
     privatebin_cfg:
 #-----------------------------------------------
 networks:
-  web_services_default:
-    external: false
-    driver: bridge
-    ipam:
-     config:
-       - subnet: 172.22.0.0/16
-         gateway: 172.22.0.1
+    mac-vlan-211-0-26_interface:
+      external: true
+    vpn_stack_brg:
+      external: true
