@@ -7,14 +7,14 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      general_default:
-        ipv4_address: 172.26.0.3
+      general_brg:
+        ipv4_address: 172.19.0.2
+      vpn_stack_brg:
+        ipv4_address: 172.17.0.7
+
 #-----------------------------------------------
 networks:
-  general_default:
-    external: false
-    driver: bridge
-    ipam:
-     config:
-       - subnet: 172.26.0.0/16
-         gateway: 172.26.0.1
+  general_brg:
+    external: true
+  vpn_stack_brg:
+    external: true

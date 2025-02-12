@@ -4,7 +4,7 @@ services:
     plex:
       image: lscr.io/linuxserver/plex:latest
       container_name: plex
-      restart: unless-stopped
+      restart: always
       environment:
         - PUID=568
         - PGID=568
@@ -23,9 +23,25 @@ services:
         mac-vlan-211-0-26_interface:
           ipv4_address: 192.168.211.72
 #-----------------------------------------------
+    tautulli:
+      image: lscr.io/linuxserver/tautulli:latest
+      container_name: tautulli
+      environment:
+        - PUID=568
+        - PGID=568
+        - TZ=Europe/London
+      volumes:
+        - ${CONFIG_PATH}/tautulli/config:/config
+        - ${CONFIG_PATH}/pms/config/Library/Application Support/Plex Media Server/Logs:/pms-logs
+      restart: always
+      networks:
+        mac-vlan-211-0-26_interface:
+          ipv4_address: 192.168.211.73 
+#-----------------------------------------------
     unmanic:
       container_name: unmanic
       image: josh5/unmanic:latest
+      restart: always
       ports:
         - 8888:8888
       environment:
