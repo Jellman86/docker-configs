@@ -1,5 +1,6 @@
 ---
 services:
+#-----------------------------------------------
   watchtower:
     container_name: watchtower
     restart: always
@@ -11,10 +12,27 @@ services:
         ipv4_address: 172.19.0.2
       vpn_stack_brg:
         ipv4_address: 172.17.0.7
-
+#-----------------------------------------------
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    #ports:
+      #- 8098:8080
+    environment:
+      DOZZLE_LEVEL: info
+      DOZZLE_TAILSIZE: 300
+      DOZZLE_FILTER: "status=running"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+        mac-vlan-211-0-26_interface:
+          ipv4_address: 192.168.211.74
 #-----------------------------------------------
 networks:
   general_brg:
     external: true
   vpn_stack_brg:
+    external: true
+  mac-vlan-211-0-26_interface:
     external: true
