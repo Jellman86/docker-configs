@@ -50,39 +50,6 @@ services:
       mac-vlan-211-0-26_interface:
         ipv4_address: 192.168.211.68
 #-----------------------------------------------
-  satisfactory:
-    container_name: 'satisfactory'
-    hostname: 'satisfactory'
-    image: 'wolveix/satisfactory-server:latest'
-    #ports: !non needed in macvlan!
-      #- '7777:7777/udp'
-      #- '7777:7777/tcp'
-    volumes:
-      - ${CONFIG_PATH}/satisfactory-server/config:/config
-      - ${CONFIG_PATH}/nginx-rp/le/archive/npm-1:/config/gamefiles/FactoryGame/Certificates:ro
-      #- /mnt/Storage-SSD/apps/nginx-rp/le/archive/npm-1/fullchain1.pem:/config/gamefiles/FactoryGame/Certificates/cert_chain.pem:ro
-      #- /mnt/Storage-SSD/apps/nginx-rp/le/archive/npm-1/privkey1.pem:/config/gamefiles/FactoryGame/Certificates/private_key.pem:ro
-      #- ${CONFIG_PATH}/nginx-rp/le/archive/npm-1/fullchain1.pem:/config/gamefiles/FactoryGame/Certificates/cert_chain.pem:ro
-      #- ${CONFIG_PATH}/nginx-rp/le/archive/npm-1/privkey1.pem:/config/gamefiles/FactoryGame/Certificates/private_key.pem:ro
-    environment:
-      - PUID=568
-      - PGID=568
-      - TZ=Europe/London
-      - ROOTLESS=false
-      - STEAMBETA=false
-      - MAXPLAYERS=4
-    restart: unless-stopped
-    stop_grace_period: 2m
-    networks:
-      mac-vlan-211-0-26_interface:
-        ipv4_address: 192.168.211.69
-    deploy:
-      resources:
-        limits:
-          memory: 16G
-        reservations:
-          memory: 4G
-#-----------------------------------------------
 networks:
     mac-vlan-211-0-26_interface:
       external: true
