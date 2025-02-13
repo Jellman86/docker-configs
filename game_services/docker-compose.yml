@@ -1,6 +1,6 @@
----
 services:
 #-----------------------------------------------
+  valheim:
     container_name: valheim
     image: ghcr.io/lloesche/valheim-server
     cap_add:
@@ -50,9 +50,9 @@ services:
       mac-vlan-211-0-26_interface:
         ipv4_address: 192.168.211.68
 #-----------------------------------------------
-  satisfactory-server:
-    container_name: 'satisfactory-server'
-    hostname: 'satisfactory-server'
+  satisfactory:
+    container_name: 'satisfactory'
+    hostname: 'satisfactory'
     image: 'wolveix/satisfactory-server:latest'
     #ports: !non needed in macvlan!
       #- '7777:7777/udp'
