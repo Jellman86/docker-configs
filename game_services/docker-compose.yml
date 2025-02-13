@@ -59,8 +59,8 @@ services:
       #- '7777:7777/tcp'
     volumes:
       - ${CONFIG_PATH}/satisfactory-server/config:/config
-      - ${CONFIG_PATH}/certbot/cf1/letsenc/live/satisfactory.pownet.uk/fullchain.pem:/config/gamefiles/FactoryGame/Certificates/cert_chain.pem
-      - ${CONFIG_PATH}/certbot/cf1/letsenc/live/satisfactory.pownet.uk/privkey.pem:/config/gamefiles/FactoryGame/Certificates/private_key.pem
+      - ${CONFIG_PATH}/nginx-rp/le/live/npm-1/fullchain.pem:/config/gamefiles/FactoryGame/Certificates/cert_chain.pem
+      - ${CONFIG_PATH}/nginx-rp/le/live/npm-1/privkey.pem:/config/gamefiles/FactoryGame/Certificates/private_key.pem
     environment:
       - PUID=568
       - PGID=568
