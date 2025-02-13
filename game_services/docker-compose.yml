@@ -59,8 +59,9 @@ services:
       #- '7777:7777/tcp'
     volumes:
       - ${CONFIG_PATH}/satisfactory-server/config:/config
-      - /mnt/Storage-SSD/apps/nginx-rp/le/archive/npm-1/fullchain1.pem:/config/gamefiles/FactoryGame/Certificates/cert_chain.pem:ro
-      - /mnt/Storage-SSD/apps/nginx-rp/le/archive/npm-1/privkey1.pem:/config/gamefiles/FactoryGame/Certificates/private_key.pem:ro
+      - ${CONFIG_PATH}/nginx-rp/le/archive/npm-1:/config/gamefiles/FactoryGame/Certificates:ro
+      #- /mnt/Storage-SSD/apps/nginx-rp/le/archive/npm-1/fullchain1.pem:/config/gamefiles/FactoryGame/Certificates/cert_chain.pem:ro
+      #- /mnt/Storage-SSD/apps/nginx-rp/le/archive/npm-1/privkey1.pem:/config/gamefiles/FactoryGame/Certificates/private_key.pem:ro
       #- ${CONFIG_PATH}/nginx-rp/le/archive/npm-1/fullchain1.pem:/config/gamefiles/FactoryGame/Certificates/cert_chain.pem:ro
       #- ${CONFIG_PATH}/nginx-rp/le/archive/npm-1/privkey1.pem:/config/gamefiles/FactoryGame/Certificates/private_key.pem:ro
     environment:
