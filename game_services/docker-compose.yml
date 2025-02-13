@@ -20,7 +20,7 @@ services:
       - SERVER_PASS=${VALHEIMSRPASS}
       - SERVER_PUBLIC=false
       - SERVER_ARGS=-crossplay
-    restart: always
+    restart: unless-stopped
     stop_grace_period: 2m
     networks:
       mac-vlan-211-0-26_interface:
@@ -44,7 +44,7 @@ services:
         - ${CONFIG_PATH}/crafty-4/servers:/crafty/servers
         - ${CONFIG_PATH}/crafty-4/config:/crafty/app/config
         - ${CONFIG_PATH}/crafty-4/import:/crafty/import
-    restart: always
+    restart: unless-stopped
     stop_grace_period: 2m
     networks:
       mac-vlan-211-0-26_interface:
@@ -68,7 +68,7 @@ services:
       - ROOTLESS=false
       - STEAMBETA=false
       - MAXPLAYERS=4
-    restart: always
+    restart: unless-stopped
     stop_grace_period: 2m
     networks:
       mac-vlan-211-0-26_interface:
