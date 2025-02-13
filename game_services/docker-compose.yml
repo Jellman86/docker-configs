@@ -1,0 +1,85 @@
+---
+services:
+#-----------------------------------------------
+    container_name: valheim
+    image: ghcr.io/lloesche/valheim-server
+    cap_add:
+      - sys_nice
+    volumes:
+      - ${CONFIG_PATH}/valheim/config:/config
+      - ${CONFIG_PATH}/valheim/data:/opt/valheim
+    #ports: !non needed in macvlan!
+      #- 2456-2458:2456-2458/udp
+      #- 9001:9001/tcp
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+      - SERVER_NAME=${VALHEIMSRNAME}
+      - WORLD_NAME=${VALHEIMWORLDNAME}
+      - SERVER_PASS=${VALHEIMSRPASS}
+      - SERVER_PUBLIC=false
+      - SERVER_ARGS=-crossplay
+    restart: always
+    stop_grace_period: 2m
+    networks:
+      mac-vlan-211-0-26_interface:
+        ipv4_address: 192.168.211.67
+#-----------------------------------------------
+  crafty:
+    container_name: crafty_container
+    image: registry.gitlab.com/crafty-controller/crafty-4:latest
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+    #ports: !non needed in macvlan!
+        #- "8443:8443" # HTTPS
+        #- "8123:8123" # DYNMAP
+        #- "19132:19132/udp" # BEDROCK
+        #- "25500-25600:25500-25600" # MC SERV PORT RANGE
+    volumes:
+        - ${CONFIG_PATH}/crafty-4/backups:/crafty/backups
+        - ${CONFIG_PATH}/crafty-4/logs:/crafty/logs
+        - ${CONFIG_PATH}/crafty-4/servers:/crafty/servers
+        - ${CONFIG_PATH}/crafty-4/config:/crafty/app/config
+        - ${CONFIG_PATH}/crafty-4/import:/crafty/import
+    restart: always
+    stop_grace_period: 2m
+    networks:
+      mac-vlan-211-0-26_interface:
+        ipv4_address: 192.168.211.68
+#-----------------------------------------------
+  satisfactory-server:
+    container_name: 'satisfactory-server'
+    hostname: 'satisfactory-server'
+    image: 'wolveix/satisfactory-server:latest'
+    #ports: !non needed in macvlan!
+      #- '7777:7777/udp'
+      #- '7777:7777/tcp'
+    volumes:
+      - ${CONFIG_PATH}/satisfactory-server/config:/config
+      - ${CONFIG_PATH}/certbot/cf1/letsenc/live/satisfactory.pownet.uk/fullchain.pem:/config/gamefiles/FactoryGame/Certificates/cert_chain.pem
+      - ${CONFIG_PATH}/certbot/cf1/letsenc/live/satisfactory.pownet.uk/privkey.pem:/config/gamefiles/FactoryGame/Certificates/private_key.pem
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+      - ROOTLESS=false
+      - STEAMBETA=false
+      - MAXPLAYERS=4
+    restart: always
+    stop_grace_period: 2m
+    networks:
+      mac-vlan-211-0-26_interface:
+        ipv4_address: 192.168.211.69
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 4G
+#-----------------------------------------------
+networks:
+    mac-vlan-211-0-26_interface:
+      external: true

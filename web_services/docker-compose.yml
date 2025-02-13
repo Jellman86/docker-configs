@@ -5,9 +5,9 @@ services:
     image: 'jc21/nginx-proxy-manager:latest'
     restart: always
     ports:
-      - 80:80 # nginx-pm
-      - 81:81 # nginx-pm
-      - 443:443 # nginx-pm
+      - 80:80
+      - 81:81
+      - 443:443
     networks:
       mac-vlan-211-0-26_interface:
         ipv4_address: 192.168.211.65
@@ -42,7 +42,7 @@ services:
     network_mode: host
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_EXTRA_ARGS=--advertise-exit-node --advertise-routes=${advertise-routes}
+      - TS_EXTRA_ARGS=--advertise-exit-node --advertise-routes=${ROUTES}
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
       - PUID=568
