@@ -66,17 +66,16 @@ services:
     musicbrainz:
       container_name: musicbrainz
       environment:
-        - PUID=3000
-        - PGID=3000
+        - PUID=568
+        - PGID=568
         - TZ=Europe/London
-        - UMASK=777
+        - UMASK=000
         - KEEP_APP_RUNNING=1
       #ports:
         #- 7120:5800
       volumes:
         - ${CONFIG_PATH}/musicbrainz/config:/config
-        - ${MEDIA_PATH}/audio/music:/finished-music
-        - ${DOWNLOAD_PATH}/slskd/complete:/temp-music
+        - ${MEDIA_PATH}/audio/music:/finished-music:rw:rw
       image: mikenye/picard
       networks:
         mac-vlan-211-0-26_interface:
