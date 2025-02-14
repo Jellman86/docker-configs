@@ -63,6 +63,23 @@ services:
         vpn_stack_brg:
           ipv4_address: 172.17.0.5
 #-----------------------------------------------
+    musicbrainz:
+      container_name: musicbrainz
+      environment:
+        - PUID=568
+        - PGID=568
+        - TZ=Europe/London
+      ports:
+        - 7120:5800
+      volumes:
+        - ${CONFIG_PATH}/musicbrainz/config:/config
+        - ${MEDIA_PATH}/audio/music:/finished-music
+        - ${DOWNLOAD_PATH}/slskd/complete:/temp-music
+      image: mikenye/picard
+      networks:
+        mac-vlan-211-0-26_interface:
+          ipv4_address: 192.168.211.74
+#-----------------------------------------------
 networks:
     mac-vlan-211-0-26_interface:
       external: true
