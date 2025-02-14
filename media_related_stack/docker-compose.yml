@@ -70,7 +70,7 @@ services:
         - PGID=568
         - TZ=Europe/London
       ports:
-        - 7120:5800
+        #- 7120:5800
       volumes:
         - ${CONFIG_PATH}/musicbrainz/config:/config
         - ${MEDIA_PATH}/audio/music:/finished-music
