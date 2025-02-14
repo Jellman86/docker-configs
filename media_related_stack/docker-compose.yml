@@ -69,7 +69,7 @@ services:
         - PUID=568
         - PGID=568
         - TZ=Europe/London
-      ports:
+      #ports:
         #- 7120:5800
       volumes:
         - ${CONFIG_PATH}/musicbrainz/config:/config
