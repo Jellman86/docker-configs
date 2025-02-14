@@ -73,7 +73,7 @@ services:
         #- 7120:5800
       volumes:
         - ${CONFIG_PATH}/musicbrainz/config:/config
-        - ${MEDIA_PATH}/audio/music:/finished-music:rw
+        - ${MEDIA_PATH}/audio/music:/storage:rw
         - ${DOWNLOAD_PATH}/slskd/complete:/temp-music:rw
       image: mikenye/picard
       networks:
