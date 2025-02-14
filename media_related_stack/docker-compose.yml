@@ -78,7 +78,7 @@ services:
       image: mikenye/picard
       networks:
         mac-vlan-211-0-26_interface:
-          ipv4_address: 192.168.211.74
+          ipv4_address: 192.168.211.75
 #-----------------------------------------------
 networks:
     mac-vlan-211-0-26_interface:
