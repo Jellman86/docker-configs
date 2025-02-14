@@ -66,8 +66,6 @@ services:
     musicbrainz:
       container_name: musicbrainz
       environment:
-        - PUID=568
-        - PGID=568
         - TZ=Europe/London
         - UMASK=000
         - KEEP_APP_RUNNING=1
