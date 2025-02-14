@@ -69,6 +69,8 @@ services:
         - PUID=568
         - PGID=568
         - TZ=Europe/London
+        - UMASK=777
+        - KEEP_APP_RUNNING=1
       #ports:
         #- 7120:5800
       volumes:
