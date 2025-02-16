@@ -34,6 +34,9 @@ services:
     container_name: homebridge
     restart: always
     environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
       - HOMEBRIDGE_CONFIG_UI_PORT=8581
     volumes:
       - ${CONFIG_PATH}/homebridge:/homebridge
