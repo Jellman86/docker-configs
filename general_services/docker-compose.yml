@@ -29,6 +29,18 @@ services:
         mac-vlan-211-0-26_interface:
           ipv4_address: 192.168.211.74
 #-----------------------------------------------
+  homebridge:
+    image: homebridge/homebridge:ubuntu
+    container_name: homebridge
+    restart: always
+    environment:
+      - HOMEBRIDGE_CONFIG_UI_PORT=8581
+    volumes:
+      - ${CONFIG_PATH}/homebridge:/homebridge
+    networks:
+        mac-vlan-211-0-26_interface:
+          ipv4_address: 192.168.211.76
+#-----------------------------------------------
 networks:
   general_brg:
     external: true
