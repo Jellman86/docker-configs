@@ -35,8 +35,8 @@ services:
       - NET_ADMIN
       - NET_RAW
     environment:
-      - PUID=3000
-      - PGID=3000
+      - PUID=568
+      - PGID=568
       - TZ=Europe/London
       - HOMEBRIDGE_CONFIG_UI_PORT=8581
     volumes:
