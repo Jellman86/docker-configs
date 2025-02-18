@@ -14,8 +14,8 @@ services:
       vpn_stack_brg:
         ipv4_address: 172.17.0.4
     environment:
-      - PUID=3000
-      - PGID=3000
+      - PUID=568
+      - PGID=568
       - TZ=Europe/London
     volumes:
       - ${CONFIG_PATH}/nginx-rp/config:/data
