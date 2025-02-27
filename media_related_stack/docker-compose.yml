@@ -51,8 +51,10 @@ services:
       volumes:
         - ${CONFIG_PATH}/unmanic:/config
         - ${MEDIA_PATH}:/library
-        #- /dev/shm:/tmp/unmanic
-        - ${CONFIG_PATH}/unmanic-tmp:/tmp/unmanic
+        - /dev/shm:/tmp/unmanic
+        # Swap this out when there isnt enough ram
+        # to transcode to --- lesad, poor boy.
+        #- ${CONFIG_PATH}/unmanic-tmp:/tmp/unmanic
       devices:
         - /dev/dri/renderD128:/dev/dri/renderD128
         - /dev/dri/card0:/dev/dri/card0
