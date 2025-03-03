@@ -12,6 +12,8 @@ services:
         ipv4_address: 172.19.0.2
       vpn_stack_brg:
         ipv4_address: 172.17.0.7
+      service_vlan_212_129_to_190:
+        ipv4_address: 192.168.212.135
 #-----------------------------------------------
   dozzle:
     image: amir20/dozzle:latest
@@ -24,8 +26,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-        mac-vlan-211-0-26_interface:
-          ipv4_address: 192.168.211.74
+        service_vlan_212_129_to_190:
+          ipv4_address: 192.168.212.134
 #-----------------------------------------------
   homebridge:
     image: homebridge/homebridge:ubuntu
@@ -42,13 +44,15 @@ services:
     volumes:
       - ${CONFIG_PATH}/homebridge:/homebridge
     networks:
-        mac-vlan-211-0-26_interface:
-          ipv4_address: 192.168.211.76
+        service_vlan_212_129_to_190:
+          ipv4_address: 192.168.212.133
 #-----------------------------------------------
 networks:
-  general_brg:
-    external: true
-  vpn_stack_brg:
-    external: true
-  mac-vlan-211-0-26_interface:
-    external: true
+    dmz_vlan_214_129_to_190:
+      external: true
+    service_vlan_212_129_to_190:
+      external: true
+    general_brg:
+      external: true
+    vpn_stack_brg:
+      external: true
