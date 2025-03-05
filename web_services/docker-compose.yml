@@ -29,10 +29,6 @@ services:
     image: "privatebin/nginx-fpm-alpine:stable"
     container_name: privatebin
     read_only: true
-    environment:
-      - PUID=568
-      - PGID=568
-      - TZ=Europe/London
     ports:
       - 8129:8080
     restart: always
