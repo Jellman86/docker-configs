@@ -30,11 +30,9 @@ services:
     container_name: privatebin
     read_only: true
     ports:
-      - 8080:8080
+      - 8129:8080
     restart: always
-    networks:
-      dmz_mac_vlan:
-        ipv4_address: 192.168.215.130
+    network_mode: host
     volumes:
       - privatebin_cfg:/srv/data
       - /dev/shm:/var/lib/nginx/tmp
