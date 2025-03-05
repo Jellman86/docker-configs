@@ -20,8 +20,8 @@ services:
       group_add:
         - "109" #for iGPU access
       networks:
-        service_vlan_212_129_to_190:
-          ipv4_address: 192.168.212.130
+        service_mac_vlan:
+          ipv4_address: 192.168.213.133
 #-----------------------------------------------
     tautulli:
       image: lscr.io/linuxserver/tautulli:latest
@@ -35,8 +35,8 @@ services:
         - ${CONFIG_PATH}/pms/config/Library/Application Support/Plex Media Server/Logs:/pms-logs
       restart: always
       networks:
-        service_vlan_212_129_to_190:
-          ipv4_address: 192.168.212.131
+        service_mac_vlan:
+          ipv4_address: 192.168.213.132
 #-----------------------------------------------
     unmanic:
       container_name: unmanic
@@ -61,15 +61,15 @@ services:
       group_add:
         - "109" #for iGPU access
       networks:
-        service_vlan_212_129_to_190:
-          ipv4_address: 192.168.212.132
+        service_mac_vlan:
+          ipv4_address: 192.168.213.131
         vpn_stack_brg:
           ipv4_address: 172.17.0.5
 #-----------------------------------------------
 networks:
-    dmz_vlan_214_129_to_190:
+    dmz_mac_vlan:
       external: true
-    service_vlan_212_129_to_190:
+    service_mac_vlan:
       external: true
     general_brg:
       external: true

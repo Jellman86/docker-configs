@@ -23,8 +23,8 @@ services:
     restart: unless-stopped
     stop_grace_period: 2m
     networks:
-      dmz_vlan_214_129_to_190:
-        ipv4_address: 192.168.214.132
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.132
 #-----------------------------------------------
   crafty:
     container_name: crafty_container
@@ -47,13 +47,13 @@ services:
     restart: unless-stopped
     stop_grace_period: 2m
     networks:
-      dmz_vlan_214_129_to_190:
-        ipv4_address: 192.168.214.131
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.131
 #-----------------------------------------------
 networks:
-    dmz_vlan_214_129_to_190:
+    dmz_mac_vlan:
       external: true
-    service_vlan_212_129_to_190:
+    service_mac_vlan:
       external: true
     general_brg:
       external: true
