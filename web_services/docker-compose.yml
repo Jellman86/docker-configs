@@ -30,7 +30,7 @@ services:
     container_name: privatebin
     read_only: true
     ports:
-      - 8129:8080
+      - 8080:8080
     restart: always
     networks:
       dmz_mac_vlan:
