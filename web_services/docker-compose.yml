@@ -30,7 +30,7 @@ services:
     container_name: privatebin
     read_only: true
     ports:
-      - 8129:8080
+      - 8128:8080
     restart: always
     network_mode: host
     volumes:
