@@ -12,8 +12,8 @@ services:
         ipv4_address: 172.19.0.2
       vpn_stack_brg:
         ipv4_address: 172.17.0.7
-        service_mac_vlan:
-          ipv4_address: 192.168.213.136
+      service_mac_vlan:
+        ipv4_address: 192.168.213.136
 #-----------------------------------------------
   dozzle:
     image: amir20/dozzle:latest
