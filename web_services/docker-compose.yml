@@ -30,10 +30,10 @@ services:
     container_name: privatebin
     read_only: true
     networks:
-      dmz_mac_vlan:
-        ipv4_address: 192.168.215.133
+      general_brg:
+        ipv4_address: 172.19.0.4
     ports:
-      - 8080:8080
+      - 8099:8080
     restart: always
     volumes:
       - privatebin_cfg:/srv/data
