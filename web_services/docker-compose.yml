@@ -44,7 +44,7 @@ services:
     network_mode: host
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_EXTRA_ARGS=--advertise-exit-node --advertise-routes=${ROUTES}
+      - TS_EXTRA_ARGS=--advertise-exit-node --advertise-routes=${ROUTES} --snat-subnet-routes=false
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
       - PUID=568
