@@ -29,34 +29,16 @@ services:
     image: "privatebin/nginx-fpm-alpine:stable"
     container_name: privatebin
     read_only: true
+    networks:
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.1
     ports:
-      - 8128:8080
+      - 8080:8080
     restart: always
     network_mode: host
     volumes:
       - privatebin_cfg:/srv/data
       - /dev/shm:/var/lib/nginx/tmp
-#-----------------------------------------------
-  tailscale:
-    image: tailscale/tailscale:latest
-    hostname: riker
-    container_name: tailscale
-    network_mode: host
-    environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_EXTRA_ARGS=--advertise-exit-node --advertise-routes=${ROUTES} --snat-subnet-routes=false
-      - TS_STATE_DIR=/var/lib/tailscale
-      - TS_USERSPACE=false
-      - PUID=568
-      - PGID=568
-      - TZ=Europe/London
-    volumes:
-      - ${CONFIG_PATH}/tailscale/state:/var/lib/tailscale
-      - /dev/net/tun:/dev/net/tun # Required for tailscale to work
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    restart: unless-stopped
 #-----------------------------------------------
 volumes:
     privatebin_cfg:
