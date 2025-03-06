@@ -35,7 +35,6 @@ services:
     ports:
       - 8080:8080
     restart: always
-    network_mode: host
     volumes:
       - privatebin_cfg:/srv/data
       - /dev/shm:/var/lib/nginx/tmp
