@@ -31,7 +31,7 @@ services:
     read_only: true
     networks:
       dmz_mac_vlan:
-        ipv4_address: 192.168.215.1
+        ipv4_address: 192.168.215.133
     ports:
       - 8080:8080
     restart: always
