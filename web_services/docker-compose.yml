@@ -56,7 +56,7 @@ services:
     container_name: tailscale
     networks:
       dmz_mac_vlan:
-        ipv4_address: 192.168.215.140
+        ipv4_address: 192.168.215.133
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
       - TS_EXTRA_ARGS=--advertise-exit-node --advertise-routes=${ROUTES}
