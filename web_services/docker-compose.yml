@@ -69,7 +69,7 @@ services:
       image: openspeedtest/latest
       networks:
         service_mac_vlan:
-          ipv4_address: 192.168.213.136
+          ipv4_address: 192.168.213.137
 #-----------------------------------------------
 volumes:
     privatebin_cfg:
