@@ -42,6 +42,10 @@ services:
   speedtest:
       restart: unless-stopped
       container_name: openspeedtest
+      environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
       ports:
           - '3000:3000'
           - '3001:3001'
