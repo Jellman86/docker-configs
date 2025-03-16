@@ -61,11 +61,11 @@ services:
       - PUID=568
       - PGID=568
       - TZ=Europe/London
-    ports:
-      - 5231:5231
+    #ports:
+      #- 5231:5231
     networks:
-      general_brg:
-        ipv4_address: 172.19.0.5
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.133
     volumes:
       - ${CONFIG_PATH}/slash:/var/opt/slash
     restart: unless-stopped
