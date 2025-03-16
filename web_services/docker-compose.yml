@@ -65,7 +65,7 @@ services:
       #- 5231:5231
     networks:
       dmz_mac_vlan:
-        ipv4_address: 192.168.215.129
+        ipv4_address: 192.168.215.133
     volumes:
       - ${CONFIG_PATH}/slash:/var/opt/slash
     restart: unless-stopped
