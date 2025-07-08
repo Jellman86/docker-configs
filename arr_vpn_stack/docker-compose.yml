@@ -36,7 +36,7 @@ services:
       #- WIREGUARD_PRIVATE_KEY=${WGPRIVKEY}
       # - WIREGUARD_ADDRESSES=10.64.222.21/32
       - TZ=Europe/London
-      - SERVER_COUNTRIES=united kingdom
+      - SERVER_COUNTRIES=spain
       - UPDATER_PERIOD=24h
       - DOT=on
       - DOT_CACHING=on
