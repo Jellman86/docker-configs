@@ -40,7 +40,7 @@ services:
       - UPDATER_PERIOD=24h
       - DOT=on
       - DOT_CACHING=on
-      - BLOCK_MALICIOUS=on
+      - BLOCK_MALICIOUS=off
       - BLOCK_SURVEILLANCE=on
       - BLOCK_ADS=on
       - DOT_PROVIDERS=cloudflare
