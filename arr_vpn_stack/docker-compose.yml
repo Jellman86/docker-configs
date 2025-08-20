@@ -38,13 +38,7 @@ services:
       - BLOCK_SURVEILLANCE=off
       - BLOCK_ADS=off
       - DOT_PROVIDERS=cloudflare
-      - HTTP_CONTROL_SERVER=on               # enable status API :8000
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/v1/openvpn/status | grep -q connected"]
-      interval: 10s
-      timeout: 5s
-      retries: 18
-      start_period: 15s
+    # (no healthcheck; original behavior)
 
 #-----------------------------------------------
   overseerr:
@@ -76,10 +70,7 @@ services:
     container_name: qbittorrent
     restart: unless-stopped
     network_mode: "service:gluetun"
-    depends_on:
-      - gluetun
-    # Wait for VPN to be connected before starting app
-    entrypoint: ["/bin/sh","-c","until wget -qO- http://127.0.0.1:8000/v1/openvpn/status | grep -q connected; do sleep 5; done; exec /init"]
+    entrypoint: ["/bin/sh","-c","sleep 60 && exec /init"]
     environment:
       - PUID=568
       - PGID=568
@@ -105,9 +96,7 @@ services:
     container_name: prowlarr
     restart: unless-stopped
     network_mode: "service:gluetun"
-    depends_on:
-      - gluetun
-    entrypoint: ["/bin/sh","-c","until wget -qO- http://127.0.0.1:8000/v1/openvpn/status | grep -q connected; do sleep 5; done; exec /init"]
+    entrypoint: ["/bin/sh","-c","sleep 60 && exec /init"]
     environment:
       - PUID=568
       - PGID=568
@@ -131,9 +120,7 @@ services:
     container_name: radarr
     restart: unless-stopped
     network_mode: "service:gluetun"
-    depends_on:
-      - gluetun
-    entrypoint: ["/bin/sh","-c","until wget -qO- http://127.0.0.1:8000/v1/openvpn/status | grep -q connected; do sleep 5; done; exec /init"]
+    entrypoint: ["/bin/sh","-c","sleep 60 && exec /init"]
     environment:
       - PUID=568
       - PGID=568
@@ -157,9 +144,7 @@ services:
     container_name: sonarr
     restart: unless-stopped
     network_mode: "service:gluetun"
-    depends_on:
-      - gluetun
-    entrypoint: ["/bin/sh","-c","until wget -qO- http://127.0.0.1:8000/v1/openvpn/status | grep -q connected; do sleep 5; done; exec /init"]
+    entrypoint: ["/bin/sh","-c","sleep 60 && exec /init"]
     environment:
       - PUID=568
       - PGID=568
@@ -183,11 +168,8 @@ services:
     container_name: flaresolverr
     restart: unless-stopped
     network_mode: "service:gluetun"
-    depends_on:
-      - gluetun
-    # flaresolverr is not an LSIO image; keep default entrypoint.
-    # If you want the same gating here, swap to:
-    # entrypoint: ["/bin/sh","-c","until wget -qO- http://127.0.0.1:8000/v1/openvpn/status | grep -q connected; do sleep 5; done; exec /usr/local/bin/docker-entrypoint.sh node /app/server.js"]
+    # Delay start by 60s, then launch the server
+    entrypoint: ["/bin/sh","-c","sleep 60 && exec node /app/server.js"]
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - LOG_HTML=${LOG_HTML:-false}
@@ -208,9 +190,7 @@ services:
     container_name: lidarr
     restart: unless-stopped
     network_mode: "service:gluetun"
-    depends_on:
-      - gluetun
-    entrypoint: ["/bin/sh","-c","until wget -qO- http://127.0.0.1:8000/v1/openvpn/status | grep -q connected; do sleep 5; done; exec /init"]
+    entrypoint: ["/bin/sh","-c","sleep 60 && exec /init"]
     environment:
       - PUID=568
       - PGID=568
@@ -234,8 +214,8 @@ services:
     container_name: slskd
     restart: unless-stopped
     network_mode: "service:gluetun"
-    depends_on:
-      - gluetun
+    # Delay start by 60s, then run slskd (binary is on PATH in the official image)
+    entrypoint: ["/bin/sh","-c","sleep 60 && exec slskd"]
     environment:
       - PUID=568
       - PGID=568
@@ -254,7 +234,7 @@ services:
       - ${DOCKERCONFIGPATH}/slskd/config:/app
       - ${DOWNLOADSPATH}/downloads/media/audio/music:/music
       - ${DOWNLOADSPATH}/downloads/downloads:/downloads
-    # (leave without gate unless you want me to craft its exact entrypoint)
+    # slskd has no HTTP health endpoint; skipping
 
 #-----------------------------------------------
   deunhealth:
