@@ -37,6 +37,8 @@ services:
       networks:
         service_mac_vlan:
           ipv4_address: 192.168.213.132
+        vpn_stack_brg:
+          ipv4_address: 172.17.0.6
 #-----------------------------------------------
     unmanic:
       container_name: unmanic
