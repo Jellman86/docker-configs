@@ -26,13 +26,9 @@ services:
       - ${DOCKERCONFIGPATH}/gluetun:/gluetun
     environment:
       - VPN_SERVICE_PROVIDER=${VPNHOST}
-      # OpenVPN:
       - VPN_TYPE=openvpn
       - OPENVPN_USER=${OPENVPNUSER}
       - OPENVPN_PASSWORD=${OPENVPNPASSWORD}
-      # If you switch to WireGuard later, also change the healthcheck path to /v1/wireguard/status
-      #- VPN_TYPE=wireguard
-      #- WIREGUARD_PRIVATE_KEY=${WGPRIVKEY}
       - TZ=Europe/London
       - SERVER_COUNTRIES=Spain,Switzerland,Netherlands,Panama
       - UPDATER_PERIOD=12h
@@ -42,15 +38,12 @@ services:
       - BLOCK_SURVEILLANCE=off
       - BLOCK_ADS=off
       - DOT_PROVIDERS=cloudflare
-      # Enable control API for healthcheck (listens on :8000 in-container)
-      - HTTP_CONTROL_SERVER=on
     healthcheck:
-      # Healthy only when the tunnel reports "connected"
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/v1/openvpn/status | grep -q connected"]
+      test: [ "CMD", "/gluetun/healthcheck" ]
       interval: 10s
       timeout: 5s
-      retries: 6         # ~60s max until healthy
-      start_period: 10s
+      retries: 12          # ~2 minutes max before marked unhealthy
+      start_period: 15s
 
 #-----------------------------------------------
   overseerr:
@@ -258,7 +251,7 @@ services:
       - ${DOCKERCONFIGPATH}/slskd/config:/app
       - ${DOWNLOADSPATH}/downloads/media/audio/music:/music
       - ${DOWNLOADSPATH}/downloads/downloads:/downloads
-    # (no HTTP health endpoint; skipping)
+    # no HTTP health endpoint; skipping
 
 #-----------------------------------------------
   deunhealth:
