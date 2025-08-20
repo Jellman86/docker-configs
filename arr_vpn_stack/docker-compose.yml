@@ -168,8 +168,10 @@ services:
     container_name: flaresolverr
     restart: unless-stopped
     network_mode: "service:gluetun"
-    # Delay start by 60s, then launch the server
-    entrypoint: ["/bin/sh","-c","sleep 60 && exec node /app/server.js"]
+    # DO NOT override entrypoint; the image needs its own init script.
+    # Implement delay via command that sleeps then execs the default command ($@).
+    # The default CMD is respected by using "sh -lc" with "$@" passthrough.
+    command: ["/bin/sh","-lc","sleep 60; exec \"$@\"","--"]  # "--" makes $@ = default CMD
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - LOG_HTML=${LOG_HTML:-false}
@@ -214,8 +216,9 @@ services:
     container_name: slskd
     restart: unless-stopped
     network_mode: "service:gluetun"
-    # Delay start by 60s, then run slskd (binary is on PATH in the official image)
-    entrypoint: ["/bin/sh","-c","sleep 60 && exec slskd"]
+    working_dir: /app             # important: where ./slskd lives
+    # Delay then exec the correct binary in the right dir
+    entrypoint: ["/bin/sh","-c","sleep 60 && exec ./slskd"]
     environment:
       - PUID=568
       - PGID=568
@@ -234,7 +237,7 @@ services:
       - ${DOCKERCONFIGPATH}/slskd/config:/app
       - ${DOWNLOADSPATH}/downloads/media/audio/music:/music
       - ${DOWNLOADSPATH}/downloads/downloads:/downloads
-    # slskd has no HTTP health endpoint; skipping
+    # (no HTTP health endpoint)
 
 #-----------------------------------------------
   deunhealth:
