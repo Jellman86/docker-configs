@@ -1,8 +1,9 @@
+---
 services:
   gluetun:
     image: qmcgaw/gluetun
-    container_name: gluetun
     restart: unless-stopped
+    container_name: gluetun
     cap_add:
       - NET_ADMIN
     devices:
@@ -11,24 +12,29 @@ services:
       vpn_stack_brg:
         ipv4_address: 172.17.0.2
     ports:
-      - 5041:5041            # qbittorrent
-      - 5041:5041/udp        # qbittorrent (UDP)
-      - 8081:8081            # qbittorrent webui
-      - 9696:9696            # prowlarr
-      - 7878:7878            # radarr
-      - 8989:8989            # sonarr
-      - 8191:8191            # flaresolverr
-      - 8686:8686            # lidarr
-      - 5030:5030            # slskd
-      - 5031:5031            # slskd
-      - 5032:5032            # slskd
+      - 5041:5041 # qbittorrent
+      - 5041:5041/udp # qbittorrent
+      - 8081:8081 # qbittorrent webui
+      - 9696:9696 # prowlarr
+      - 7878:7878 # radarr
+      - 8989:8989 # sonarr
+      - 8191:8191 # Flarrsolvr
+      - 8686:8686 # Lidarr
+      - 5030:5030 # slskd
+      - 5031:5031 # slskd
+      - 5032:5032 # slskd
     volumes:
       - ${DOCKERCONFIGPATH}/gluetun:/gluetun
     environment:
       - VPN_SERVICE_PROVIDER=${VPNHOST}
+      # OpenVPN:
       - VPN_TYPE=openvpn
       - OPENVPN_USER=${OPENVPNUSER}
       - OPENVPN_PASSWORD=${OPENVPNPASSWORD}
+      # Wireguard:
+      #- VPN_TYPE=wireguard
+      #- WIREGUARD_PRIVATE_KEY=${WGPRIVKEY}
+      # - WIREGUARD_ADDRESSES=10.64.222.21/32
       - TZ=Europe/London
       - SERVER_COUNTRIES=Spain,Switzerland,Netherlands,Panama
       - UPDATER_PERIOD=12h
@@ -38,23 +44,15 @@ services:
       - BLOCK_SURVEILLANCE=off
       - BLOCK_ADS=off
       - DOT_PROVIDERS=cloudflare
-    healthcheck:
-      test: [ "CMD", "/gluetun/healthcheck" ]
-      interval: 10s
-      timeout: 5s
-      retries: 12          # ~2 minutes max before marked unhealthy
-      start_period: 15s
-
 #-----------------------------------------------
   overseerr:
     image: sctx/overseerr:latest
     container_name: overseerr
-    restart: unless-stopped
     environment:
       - PUID=568
       - PGID=568
       - TZ=Europe/London
-      - PORT=5055
+      - PORT=5055 #optional
     networks:
       vpn_stack_brg:
         ipv4_address: 172.17.0.3
@@ -62,22 +60,11 @@ services:
       - 5055:5055
     volumes:
       - ${DOCKERCONFIGPATH}/overseerr:/app/config
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:5055/api/v1/status >/dev/null || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 90s
-
+    restart: unless-stopped
 #-----------------------------------------------
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
-    restart: unless-stopped
-    network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     environment:
       - PUID=568
       - PGID=568
@@ -88,125 +75,101 @@ services:
       - ${DOCKERCONFIGPATH}/qbittorrent/config:/config
       - ${DOCKERCONFIGPATH}/qbittorrent/logs:/logs
       - ${DOWNLOADSPATH}/downloads:/downloads
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8081/ >/dev/null || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 90s
+    network_mode: "service:gluetun"
+    restart: unless-stopped
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://example.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
     labels:
-      deunhealth.restart.on.unhealthy: "true"
-
+      deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
-    restart: unless-stopped
-    network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     environment:
       - PUID=568
       - PGID=568
       - TZ=Europe/London
+    network_mode: "service:gluetun"
     volumes:
       - ${DOCKERCONFIGPATH}/prowlarr/config:/config
       - ${DOWNLOADSPATH}/downloads/media:/media
       - ${DOWNLOADSPATH}/downloads:/downloads
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9696/ping >/dev/null || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 120s
+    restart: unless-stopped
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://example.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
     labels:
-      deunhealth.restart.on.unhealthy: "true"
-
+      deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
-    restart: unless-stopped
-    network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     environment:
       - PUID=568
       - PGID=568
       - TZ=Europe/London
+    network_mode: "service:gluetun"
     volumes:
       - ${DOCKERCONFIGPATH}/radarr/config:/config
       - ${DOWNLOADSPATH}/downloads:/downloads
       - ${DOWNLOADSPATH}/downloads/media/video/film:/film
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:7878/ping >/dev/null || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 120s
+    restart: unless-stopped
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://example.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
     labels:
-      deunhealth.restart.on.unhealthy: "true"
-
+      deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
-    restart: unless-stopped
-    network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     environment:
       - PUID=568
       - PGID=568
       - TZ=Europe/London
+    network_mode: "service:gluetun"
     volumes:
       - ${DOCKERCONFIGPATH}/sonarr/config:/config
       - ${DOWNLOADSPATH}/downloads:/downloads
       - ${DOWNLOADSPATH}/downloads/media/video/tv:/tv
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8989/ping >/dev/null || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 120s
+    restart: unless-stopped
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://example.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
     labels:
-      deunhealth.restart.on.unhealthy: "true"
-
+      deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
-    restart: unless-stopped
     network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - LOG_HTML=${LOG_HTML:-false}
       - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
       - TZ=Europe/London
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8191/health >/dev/null || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+    restart: unless-stopped
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://example.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
     labels:
-      deunhealth.restart.on.unhealthy: "true"
-
+      deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
   lidarr:
     image: lscr.io/linuxserver/lidarr:latest
     container_name: lidarr
-    restart: unless-stopped
     network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     environment:
       - PUID=568
       - PGID=568
@@ -215,24 +178,19 @@ services:
       - ${DOCKERCONFIGPATH}/Lidarr/config:/config
       - ${DOWNLOADSPATH}/downloads/media/audio/music:/music
       - ${DOWNLOADSPATH}/downloads:/downloads
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8686/ping >/dev/null || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 120s
+    restart: unless-stopped
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://example.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
     labels:
-      deunhealth.restart.on.unhealthy: "true"
-
+      deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
   slskd:
     image: slskd/slskd
     container_name: slskd
-    restart: unless-stopped
     network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     environment:
       - PUID=568
       - PGID=568
@@ -251,21 +209,19 @@ services:
       - ${DOCKERCONFIGPATH}/slskd/config:/app
       - ${DOWNLOADSPATH}/downloads/media/audio/music:/music
       - ${DOWNLOADSPATH}/downloads/downloads:/downloads
-    # no HTTP health endpoint; skipping
-
+    restart: unless-stopped
 #-----------------------------------------------
   deunhealth:
     image: qmcgaw/deunhealth
     container_name: deunhealth
     network_mode: "none"
-    restart: always
     environment:
       - LOG_LEVEL=info
       - HEALTH_SERVER_ADDRESS=127.0.0.1:9999
       - TZ=America/Montreal
+    restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-
 #-----------------------------------------------
 networks:
   vpn_stack_brg:
