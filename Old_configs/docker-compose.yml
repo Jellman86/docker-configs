@@ -1,0 +1,123 @@
+---
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - ${DOCKERCONFIGPATH}/ollama:/root/.ollama  # Store models persistently
+    networks:
+      - llm_stack
+#-----------------------------------------------
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+      - 8080:8080
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_API_BASE_URL=http://localhost:11434
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ${DOCKERCONFIGPATH}/openwebui/data:/app/backend/data  # Store WebUI data persistently
+    networks:
+      - llm_stack
+#-----------------------------------------------
+  homebridge:
+    image: homebridge/homebridge:ubuntu
+    container_name: homebridge
+    restart: always
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+      - HOMEBRIDGE_CONFIG_UI_PORT=8581
+    volumes:
+      - ${CONFIG_PATH}/homebridge:/homebridge
+    networks:
+        service_mac_vlan:
+          ipv4_address: 192.168.213.134
+#-----------------------------------------------
+  valheim:
+    container_name: valheim
+    image: ghcr.io/lloesche/valheim-server
+    cap_add:
+      - sys_nice
+    volumes:
+      - ${CONFIG_PATH}/valheim/config:/config
+      - ${CONFIG_PATH}/valheim/data:/opt/valheim
+    #ports: !non needed in macvlan!
+      #- 2456-2458:2456-2458/udp
+      #- 9001:9001/tcp
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+      - SERVER_NAME=${VALHEIMSRNAME}
+      - WORLD_NAME=${VALHEIMWORLDNAME}
+      - SERVER_PASS=${VALHEIMSRPASS}
+      - SERVER_PUBLIC=false
+      - SERVER_ARGS=-crossplay
+    restart: unless-stopped
+    stop_grace_period: 2m
+    networks:
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.132
+#-----------------------------------------------
+  traefik:
+    image: docker.io/library/traefik:latest
+    container_name: traefik
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
+    volumes:
+      - /run/docker.sock:/run/docker.sock:ro
+      - ./traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - ${DOCKERCONFIGPATH}/traefik/data/certs/cloudflare-acme.json:/var/traefik/certs/cloudflare-acme.json:rw
+      - ${DOCKERCONFIGPATH}/traefik/data/certs/:/var/traefik/certs/:rw
+      - ${DOCKERCONFIGPATH}/traefik/config/conf.d/:/etc/traefik/conf.d/:ro
+    environment:
+      - CF_DNS_API_TOKEN=${NEW_DOMAIN_DNS_EDIT_CF}
+    restart: unless-stopped
+    networks:
+      traefik_default:
+        ipv4_address: 172.25.0.2
+#-----------------------------------------------
+networks:
+  llm_stack:
+    driver: bridge
+  dmz_mac_vlan:
+    external: true
+  service_mac_vlan:
+    external: true
+  general_brg:
+    external: true
+  vpn_stack_brg:
+    external: true
+  traefik_default:
+    external: false
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.25.0.0/16
+         gateway: 172.25.0.1

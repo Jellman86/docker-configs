@@ -1,31 +1,5 @@
 services:
 #-----------------------------------------------
-  valheim:
-    container_name: valheim
-    image: ghcr.io/lloesche/valheim-server
-    cap_add:
-      - sys_nice
-    volumes:
-      - ${CONFIG_PATH}/valheim/config:/config
-      - ${CONFIG_PATH}/valheim/data:/opt/valheim
-    #ports: !non needed in macvlan!
-      #- 2456-2458:2456-2458/udp
-      #- 9001:9001/tcp
-    environment:
-      - PUID=568
-      - PGID=568
-      - TZ=Europe/London
-      - SERVER_NAME=${VALHEIMSRNAME}
-      - WORLD_NAME=${VALHEIMWORLDNAME}
-      - SERVER_PASS=${VALHEIMSRPASS}
-      - SERVER_PUBLIC=false
-      - SERVER_ARGS=-crossplay
-    restart: unless-stopped
-    stop_grace_period: 2m
-    networks:
-      dmz_mac_vlan:
-        ipv4_address: 192.168.215.132
-#-----------------------------------------------
   crafty:
     container_name: crafty_container
     image: registry.gitlab.com/crafty-controller/crafty-4:latest

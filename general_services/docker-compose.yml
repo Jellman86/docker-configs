@@ -29,24 +29,6 @@ services:
         service_mac_vlan:
           ipv4_address: 192.168.213.135
 #-----------------------------------------------
-  homebridge:
-    image: homebridge/homebridge:ubuntu
-    container_name: homebridge
-    restart: always
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    environment:
-      - PUID=568
-      - PGID=568
-      - TZ=Europe/London
-      - HOMEBRIDGE_CONFIG_UI_PORT=8581
-    volumes:
-      - ${CONFIG_PATH}/homebridge:/homebridge
-    networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.134
-#-----------------------------------------------
 networks:
     dmz_mac_vlan:
       external: true
