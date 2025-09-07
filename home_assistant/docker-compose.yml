@@ -54,33 +54,18 @@ services:
   zigbee2mqtt:
     image: koenkk/zigbee2mqtt:latest
     container_name: zigbee2mqtt
-    user: "568:568"
-    depends_on:
-      - mosquitto
     restart: unless-stopped
-    #ports:
-      #- "8080:8080"
-    environment:
-      - TZ=Europe/London
-      - ZIGBEE2MQTT_CONFIG_MQTT_SERVER=mqtt://mosquitto:1883
-      - ZIGBEE2MQTT_CONFIG_MQTT_USER=ha
-      - ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=myStrongPass
-      #- ZIGBEE2MQTT_CONFIG_SERIAL_PORT=/dev/serial/by-id/usb-YourRadioHere
-      # If Sonoff ZBDongle-E (Silabs) add:
-      # - ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER=ezsp
-      # If Sonoff ZBDongle-P (TI) use zstack (or omit):
-      # - ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER=zstack
-      - ZIGBEE2MQTT_CONFIG_FRONTEND_ENABLED=true
-      - ZIGBEE2MQTT_CONFIG_FRONTEND_PORT=8080
-      - ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_ENABLED=true
+    user: "568:568"
     volumes:
       - ${CONFIG_PATH}/zigbee2mqtt/data:/app/data
       - /run/udev:/run/udev:ro
     #devices:
       #- /dev/serial/by-id/usb-YourRadioHere:/dev/serial/by-id/usb-YourRadioHere
+    environment:
+      - TZ=Europe/London
     networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.140
+      service_mac_vlan:
+        ipv4_address: 192.168.213.140
 #-----------------------------------------------
   esphome:
     image: esphome/esphome:latest
