@@ -5,7 +5,9 @@ services:
     container_name: homeassistant
     restart: unless-stopped
     environment:
-      - TZ=Europe/London
+        - PUID=568
+        - PGID=568
+        - TZ=Europe/London
     volumes:
       - ${CONFIG_PATH}/homeassistant/config:/config
       - /etc/localtime:/etc/localtime:ro
@@ -14,20 +16,24 @@ services:
           ipv4_address: 192.168.213.142
 #-----------------------------------------------
   matter-server:
-      image: ghcr.io/home-assistant-libs/python-matter-server:stable
-      container_name: matter-server
-      restart: unless-stopped
-      # Host networking is strongly recommended
-      networks:
-          service_mac_vlan:
-            ipv4_address: 192.168.213.143
-      # If you cannot use host mode, expose 5580 and ensure IPv6 + mDNS are OK:
-      # ports:
-      #   - "5580:5580"
-      #   - "5540:5540"  # (commissioning API port; often not needed externally)
-      volumes:
-        - ${CONFIG_PATH}/matter-server/data:/data:rw
-        - /run/dbus:/run/dbus:ro  # optional (BLE commissioning on some setups)
+    image: ghcr.io/home-assistant-libs/python-matter-server:stable
+    container_name: matter-server
+    restart: unless-stopped
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+    # Host networking is strongly recommended
+    networks:
+        service_mac_vlan:
+          ipv4_address: 192.168.213.143
+    # If you cannot use host mode, expose 5580 and ensure IPv6 + mDNS are OK:
+    # ports:
+    #   - "5580:5580"
+    #   - "5540:5540"  # (commissioning API port; often not needed externally)
+    volumes:
+      - ${CONFIG_PATH}/matter-server/data:/data:rw
+      - /run/dbus:/run/dbus:ro  # optional (BLE commissioning on some setups)
 #-----------------------------------------------
   mosquitto:
     image: eclipse-mosquitto:2
@@ -37,7 +43,9 @@ services:
       #- "1883:1883"
       #- "9001:9001"
     environment:
-      - TZ=Europe/London
+        - PUID=568
+        - PGID=568
+        - TZ=Europe/London
     volumes:
       - ${CONFIG_PATH}/mosquitto/config:/mosquitto/config
       - ${CONFIG_PATH}/mosquitto/data:/mosquitto/data
@@ -55,6 +63,8 @@ services:
     #ports:
       #- "8080:8080"
     environment:
+      - PUID=568
+      - PGID=568
       - TZ=Europe/London
       - ZIGBEE2MQTT_CONFIG_MQTT_SERVER=mqtt://mosquitto:1883
       - ZIGBEE2MQTT_CONFIG_MQTT_USER=ha
@@ -77,6 +87,8 @@ services:
     #ports:
       #- "6052:6052"
     environment:
+      - PUID=568
+      - PGID=568
       - TZ=Europe/London
     volumes:
       - ${CONFIG_PATH}/apps/esphome/config:/config
@@ -90,6 +102,8 @@ services:
     container_name: nodered
     restart: unless-stopped
     environment:
+      - PUID=568
+      - PGID=568
       - TZ=Europe/London
     #ports:
       #- "1880:1880"
