@@ -54,6 +54,22 @@ services:
         service_mac_vlan:
           ipv4_address: 192.168.213.137
 #-----------------------------------------------
+  slash:
+    image: yourselfhosted/slash:latest
+    container_name: slash
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+    #ports:
+      #- 5231:5231
+    networks:
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.133
+    volumes:
+      - ${CONFIG_PATH}/slash:/var/opt/slash
+    restart: unless-stopped
+#-----------------------------------------------
   hbbs:
     container_name: hbbs
     image: rustdesk/rustdesk-server:latest
