@@ -66,7 +66,13 @@ services:
       - ZIGBEE2MQTT_CONFIG_MQTT_USER=ha
       - ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=myStrongPass
       #- ZIGBEE2MQTT_CONFIG_SERIAL_PORT=/dev/serial/by-id/usb-YourRadioHere
-      - ZIGBEE2MQTT_CONFIG_FRONTEND=true
+      # If Sonoff ZBDongle-E (Silabs) add:
+      # - ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER=ezsp
+      # If Sonoff ZBDongle-P (TI) use zstack (or omit):
+      # - ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER=zstack
+      - ZIGBEE2MQTT_CONFIG_FRONTEND_ENABLED=true
+      - ZIGBEE2MQTT_CONFIG_FRONTEND_PORT=8080
+      - ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_ENABLED=true
     volumes:
       - ${CONFIG_PATH}/zigbee2mqtt/data:/app/data
       - /run/udev:/run/udev:ro
