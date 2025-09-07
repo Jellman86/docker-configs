@@ -1,67 +1,88 @@
+version: "3.8"
+
 services:
-#-----------------------------------------------
+  # -----------------------------
+  # Home Assistant (no PUID/PGID; use user: if needed)
+  # -----------------------------
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
     container_name: homeassistant
     restart: unless-stopped
+    user: "568:568"
     environment:
-        - PUID=568
-        - PGID=568
-        - TZ=Europe/London
+      - TZ=Europe/London
     volumes:
       - ${CONFIG_PATH}/homeassistant/config:/config
       - /etc/localtime:/etc/localtime:ro
     networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.142
-#-----------------------------------------------
+      service_mac_vlan:
+        ipv4_address: 192.168.213.142
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -sf http://127.0.0.1:8123/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # -----------------------------
+  # Matter Server
+  # -----------------------------
   matter-server:
     image: ghcr.io/home-assistant-libs/python-matter-server:stable
     container_name: matter-server
+    restart: unless-stopped
+    user: "568:568"
+    environment:
+      - TZ=Europe/London         # PUID/PGID not used by this image
+    networks:
+      service_mac_vlan:
+        ipv4_address: 192.168.213.143
+    volumes:
+      - ${CONFIG_PATH}/matter-server/data:/data:rw
+      - /run/dbus:/run/dbus:ro   # optional (BLE commissioning)
+    # If you switch to host mode later, you can drop the dedicated IP.
+    healthcheck:
+      test: ["CMD", "bash", "-c", "nc -z localhost 5580"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # -----------------------------
+  # Mosquitto (LinuxServer)
+  # -----------------------------
+  mosquitto:
+    image: lscr.io/linuxserver/mosquitto:latest
+    container_name: mosquitto
     restart: unless-stopped
     environment:
       - PUID=568
       - PGID=568
       - TZ=Europe/London
-    # Host networking is strongly recommended
-    networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.143
-    # If you cannot use host mode, expose 5580 and ensure IPv6 + mDNS are OK:
-    # ports:
-    #   - "5580:5580"
-    #   - "5540:5540"  # (commissioning API port; often not needed externally)
     volumes:
-      - ${CONFIG_PATH}/matter-server/data:/data:rw
-      - /run/dbus:/run/dbus:ro  # optional (BLE commissioning on some setups)
-#-----------------------------------------------
-  mosquitto:
-    image: lscr.io/linuxserver/mosquitto:latest
-    container_name: mosquitto
-    restart: unless-stopped
-    #ports:
-      #- "1883:1883"
-      #- "9001:9001"
-    environment:
-        - PUID=568
-        - PGID=568
-        - TZ=Europe/London
-    volumes:
-      - ${CONFIG_PATH}/mosquitto/config:/mosquitto/config
-      - ${CONFIG_PATH}/mosquitto/data:/mosquitto/data
-      - ${CONFIG_PATH}/mosquitto/log:/mosquitto/log
+      - ${CONFIG_PATH}/mosquitto/config:/config
+      - ${CONFIG_PATH}/mosquitto/data:/data
+      - ${CONFIG_PATH}/mosquitto/log:/log
     networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.141
-#-----------------------------------------------
+      service_mac_vlan:
+        ipv4_address: 192.168.213.141
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "mosquitto_sub -h 127.0.0.1 -t '$$SYS/broker/version' -C 1 -W 3 >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # -----------------------------
+  # Zigbee2MQTT (LinuxServer)
+  # -----------------------------
   zigbee2mqtt:
     image: lscr.io/linuxserver/zigbee2mqtt:latest
     container_name: zigbee2mqtt
     depends_on:
-      - mosquitto
+      mosquitto:
+        condition: service_healthy
     restart: unless-stopped
-    #ports:
-      #- "8080:8080"
     environment:
       - PUID=568
       - PGID=568
@@ -71,52 +92,66 @@ services:
       - ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=myStrongPass
       - ZIGBEE2MQTT_CONFIG_SERIAL_PORT=/dev/serial/by-id/usb-YourRadioHere
       - ZIGBEE2MQTT_CONFIG_FRONTEND=true
+      # - ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER=ezsp   # if Sonoff ZBDongle-E (Silabs)
     volumes:
-      - ${CONFIG_PATH}/zigbee2mqtt/data:/app/data
+      - ${CONFIG_PATH}/zigbee2mqtt/config:/config
       - /run/udev:/run/udev:ro
     #devices:
       #- /dev/serial/by-id/usb-YourRadioHere:/dev/serial/by-id/usb-YourRadioHere
     networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.140
-#-----------------------------------------------
+      service_mac_vlan:
+        ipv4_address: 192.168.213.140
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "curl -sf http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # -----------------------------
+  # ESPHome (official image; no PUID/PGID)
+  # -----------------------------
   esphome:
     image: esphome/esphome:latest
     container_name: esphome
     restart: unless-stopped
-    #ports:
-      #- "6052:6052"
+    user: "568:568"
     environment:
-      - PUID=568
-      - PGID=568
       - TZ=Europe/London
     volumes:
-      - ${CONFIG_PATH}/apps/esphome/config:/config
+      - ${CONFIG_PATH}/esphome/config:/config
       - /etc/localtime:/etc/localtime:ro
     networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.139
-#-----------------------------------------------
+      service_mac_vlan:
+        ipv4_address: 192.168.213.139
+
+  # -----------------------------
+  # Node-RED (LinuxServer)
+  # -----------------------------
   nodered:
-    Image: lscr.io/linuxserver/node-red:latest
+    image: lscr.io/linuxserver/node-red:latest
     container_name: nodered
     restart: unless-stopped
     environment:
       - PUID=568
       - PGID=568
       - TZ=Europe/London
-    #ports:
-      #- "1880:1880"
     volumes:
       - ${CONFIG_PATH}/nodered/data:/data
     networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.138
-#-----------------------------------------------
+      service_mac_vlan:
+        ipv4_address: 192.168.213.138
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "nc -z 127.0.0.1 1880"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+# -----------------------------
 networks:
-    service_mac_vlan:
-      external: true
-    general_brg:
-      external: true
-    vpn_stack_brg:
-      external: true
+  service_mac_vlan:
+    external: true
+  general_brg:
+    external: true
+  vpn_stack_brg:
+    external: true
