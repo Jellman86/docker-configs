@@ -36,7 +36,7 @@ services:
       - /run/dbus:/run/dbus:ro  # optional (BLE commissioning on some setups)
 #-----------------------------------------------
   mosquitto:
-    image: eclipse-mosquitto:2
+    image: lscr.io/linuxserver/mosquitto:latest
     container_name: mosquitto
     restart: unless-stopped
     #ports:
@@ -55,7 +55,7 @@ services:
           ipv4_address: 192.168.213.141
 #-----------------------------------------------
   zigbee2mqtt:
-    image: koenkk/zigbee2mqtt:latest
+    iimage: lscr.io/linuxserver/zigbee2mqtt:latest
     container_name: zigbee2mqtt
     depends_on:
       - mosquitto
@@ -98,7 +98,7 @@ services:
           ipv4_address: 192.168.213.139
 #-----------------------------------------------
   nodered:
-    image: nodered/node-red:latest
+    Image: lscr.io/linuxserver/node-red:latest
     container_name: nodered
     restart: unless-stopped
     environment:
