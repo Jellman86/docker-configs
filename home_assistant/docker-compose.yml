@@ -1,0 +1,92 @@
+services:
+#-----------------------------------------------
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/London
+    volumes:
+      - ${CONFIG_PATH}/homeassistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+        service_mac_vlan:
+          ipv4_address: 192.168.213.141
+#-----------------------------------------------
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    restart: unless-stopped
+    #ports:
+      #- "1883:1883"
+      #- "9001:9001"
+    environment:
+      - TZ=Europe/London
+    volumes:
+      - ${CONFIG_PATH}/mosquitto/config:/mosquitto/config
+      - ${CONFIG_PATH}/mosquitto/data:/mosquitto/data
+      - ${CONFIG_PATH}/mosquitto/log:/mosquitto/log
+    networks:
+        service_mac_vlan:
+          ipv4_address: 192.168.213.141
+#-----------------------------------------------
+  zigbee2mqtt:
+    image: koenkk/zigbee2mqtt:latest
+    container_name: zigbee2mqtt
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+    #ports:
+      #- "8080:8080"
+    environment:
+      - TZ=Europe/London
+      - ZIGBEE2MQTT_CONFIG_MQTT_SERVER=mqtt://mosquitto:1883
+      - ZIGBEE2MQTT_CONFIG_MQTT_USER=ha
+      - ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=myStrongPass
+      - ZIGBEE2MQTT_CONFIG_SERIAL_PORT=/dev/serial/by-id/usb-YourRadioHere
+      - ZIGBEE2MQTT_CONFIG_FRONTEND=true
+    volumes:
+      - ${CONFIG_PATH}/zigbee2mqtt/data:/app/data
+      - /run/udev:/run/udev:ro
+    #devices:
+      #- /dev/serial/by-id/usb-YourRadioHere:/dev/serial/by-id/usb-YourRadioHere
+    networks:
+        service_mac_vlan:
+          ipv4_address: 192.168.213.140
+#-----------------------------------------------
+  esphome:
+    image: esphome/esphome:latest
+    container_name: esphome
+    restart: unless-stopped
+    #ports:
+      #- "6052:6052"
+    environment:
+      - TZ=Europe/London
+    volumes:
+      - ${CONFIG_PATH}/apps/esphome/config:/config
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+        service_mac_vlan:
+          ipv4_address: 192.168.213.139
+#-----------------------------------------------
+  nodered:
+    image: nodered/node-red:latest
+    container_name: nodered
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/London
+    #ports:
+      #- "1880:1880"
+    volumes:
+      - ${CONFIG_PATH}/nodered/data:/data
+    networks:
+        service_mac_vlan:
+          ipv4_address: 192.168.213.138
+#-----------------------------------------------
+networks:
+    service_mac_vlan:
+      external: true
+    general_brg:
+      external: true
+    vpn_stack_brg:
+      external: true
