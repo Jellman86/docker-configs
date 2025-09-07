@@ -88,7 +88,7 @@ services:
       - ZIGBEE2MQTT_CONFIG_MQTT_SERVER=mqtt://mosquitto:1883
       - ZIGBEE2MQTT_CONFIG_MQTT_USER=ha
       - ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=myStrongPass
-      - ZIGBEE2MQTT_CONFIG_SERIAL_PORT=/dev/serial/by-id/usb-YourRadioHere
+      #- ZIGBEE2MQTT_CONFIG_SERIAL_PORT=/dev/serial/by-id/usb-YourRadioHere
       - ZIGBEE2MQTT_CONFIG_FRONTEND=true
       # - ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER=ezsp   # if Sonoff ZBDongle-E (Silabs)
     volumes:
