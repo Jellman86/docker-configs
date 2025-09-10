@@ -103,6 +103,22 @@ services:
       traefik_default:
         ipv4_address: 172.25.0.2
 #-----------------------------------------------
+  slash:
+    image: yourselfhosted/slash:latest
+    container_name: slash
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+    #ports:
+      #- 5231:5231
+    networks:
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.133
+    volumes:
+      - ${CONFIG_PATH}/slash:/var/opt/slash
+    restart: unless-stopped
+#-----------------------------------------------
 networks:
   llm_stack:
     driver: bridge
