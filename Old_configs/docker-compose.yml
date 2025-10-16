@@ -142,6 +142,51 @@ services:
         ipv4_address: 192.168.215.135
     restart: unless-stopped
 #-----------------------------------------------
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    network_mode: "service:gluetun"
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+    volumes:
+      - ${DOCKERCONFIGPATH}/Lidarr/config:/config
+      - ${DOWNLOADSPATH}/downloads/media/audio/music:/music
+      - ${DOWNLOADSPATH}/downloads:/downloads
+    restart: unless-stopped
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://example.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
+    labels:
+      deunhealth.restart.on.unhealthy: true
+#-----------------------------------------------
+  slskd:
+    image: slskd/slskd
+    container_name: slskd
+    network_mode: "service:gluetun"
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+      - SLSKD_REMOTE_CONFIGURATION=true
+      - SLSKD_FILE_PERMISSION_MODE=777
+      - SLSKD_SLSK_USERNAME=${SLSKUSR}
+      - SLSKD_SLSK_PASSWORD=${SLSKPASS}
+      - SLSKD_DOWNLOADS_DIR=/downloads/slskd/complete
+      - SLSKD_INCOMPLETE_DIR=/downloads/slskd/working
+      - SLSKD_SHARED_DIR=/music
+      - SLSKD_USERNAME=${SLSKUSR}
+      - SLSKD_PASSWORD=${SLSKPASS}
+      - SLSKD_SLSK_LISTEN_PORT=5032
+    volumes:
+      - ${DOCKERCONFIGPATH}/slskd/config:/app
+      - ${DOWNLOADSPATH}/downloads/media/audio/music:/music
+      - ${DOWNLOADSPATH}/downloads/downloads:/downloads
+    restart: unless-stopped
+#-----------------------------------------------
 networks:
   llm_stack:
     driver: bridge
