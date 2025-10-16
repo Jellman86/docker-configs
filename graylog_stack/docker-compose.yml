@@ -16,6 +16,7 @@ services:
       GRAYLOG_DATANODE_NODE_ID_FILE: "/var/lib/graylog-datanode/node-id"
       GRAYLOG_DATANODE_PASSWORD_SECRET: ${GRAYLOGSECRET}
       GRAYLOG_DATANODE_MONGODB_URI: "mongodb://mongodb:27017/graylog"
+      user: "568:568"
     ulimits:
       memlock:
         hard: -1
@@ -43,8 +44,8 @@ services:
         condition: "service_started"
     entrypoint: "/usr/bin/tini --  /docker-entrypoint.sh"
     environment:
+      user: "568:568"
       GRAYLOG_NODE_ID_FILE: "/usr/share/graylog/data/data/node-id"
-      # GRAYLOG_DATANODE_PASSWORD_SECRET and GRAYLOG_PASSWORD_SECRET MUST be the same value
       GRAYLOG_PASSWORD_SECRET: ${GRAYLOGSECRET}
       GRAYLOG_ROOT_PASSWORD_SHA2: ${ADMINPASSSHA2}
       GRAYLOG_HTTP_BIND_ADDRESS: "0.0.0.0:9000"
