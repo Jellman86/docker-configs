@@ -1,20 +1,22 @@
 services:
   mongodb:
-    image: "mongo:7.0"
-    restart: "on-failure"
+    image: mongo:7.0
+    container_name: mongodb
+    restart: unless-stopped
     networks:
-      - graylog_brg
+      graylog_brg:
     volumes:
-      - ${DOCKERCONFIGPATH}/mongodb_data:/data/db
-      - ${DOCKERCONFIGPATH}/mongodb_config:/data/configdb
-#-----------------------------------------------
+      - ${CONFIG_PATH}/mongodb_data:/data/db
+      - ${CONFIG_PATH}/mongodb_config:/data/configdb
+#--------------------------------------------------------------------
   datanode:
-    image: "${DATANODE_IMAGE:-graylog/graylog-datanode:6.3}"
-    hostname: "datanode"
+    image: ${DATANODE_IMAGE:-graylog/graylog-datanode:6.3}
+    hostname: datanode
+    container_name: datanode
     environment:
-      GRAYLOG_DATANODE_NODE_ID_FILE: "/var/lib/graylog-datanode/node-id"
+      GRAYLOG_DATANODE_NODE_ID_FILE: /var/lib/graylog-datanode/node-id
       GRAYLOG_DATANODE_PASSWORD_SECRET: ${GRAYLOGSECRET}
-      GRAYLOG_DATANODE_MONGODB_URI: "mongodb://mongodb:27017/graylog"
+      GRAYLOG_DATANODE_MONGODB_URI: mongodb://mongodb:27017/graylog
     ulimits:
       memlock:
         soft: -1
@@ -23,47 +25,52 @@ services:
         soft: 65536
         hard: 65536
     ports:
-      - "8999:8999/tcp"
-      - "9200:9200/tcp"
-      - "9300:9300/tcp"
+      - 8999:8999/tcp
+      - 9200:9200/tcp
+      - 9300:9300/tcp
     networks:
       - graylog_brg
     volumes:
       - datanode_data:/var/lib/graylog-datanode
-    restart: "on-failure"
+    restart: on-failure
 #-----------------------------------------------
   graylog:
-    hostname: "server"
-    image: "${GRAYLOG_IMAGE:-graylog/graylog:6.3}"
+    hostname: server
+    container_name: server
+    image: ${GRAYLOG_IMAGE:-graylog/graylog:6.3}
     depends_on:
       mongodb:
         condition: service_started
       datanode:
         condition: service_started
-    entrypoint: "/usr/bin/tini -- /docker-entrypoint.sh"
+    entrypoint: /usr/bin/tini -- /docker-entrypoint.sh
     environment:
-      GRAYLOG_NODE_ID_FILE: "/usr/share/graylog/data/data/node-id"
+      GRAYLOG_NODE_ID_FILE: /usr/share/graylog/data/data/node-id
       GRAYLOG_PASSWORD_SECRET: ${GRAYLOGSECRET}
       GRAYLOG_ROOT_PASSWORD_SHA2: ${ADMINPASSSHA2}
-      GRAYLOG_HTTP_BIND_ADDRESS: "0.0.0.0:9000"
-      GRAYLOG_HTTP_EXTERNAL_URI: "http://localhost:9000/"
-      GRAYLOG_MONGODB_URI: "mongodb://mongodb:27017/graylog"
+      GRAYLOG_HTTP_BIND_ADDRESS: 0.0.0.0:9000
+      GRAYLOG_HTTP_EXTERNAL_URI: http://graylog.denbyad.denbygroup.com:9000/
+      GRAYLOG_MONGODB_URI: mongodb://mongodb:27017/graylog
     ports:
-      - "5044:5044/tcp"
-      - "5140:5140/tcp"
-      - "5140:5140/udp"
-      - "5555:5555/tcp"
-      - "5555:5555/udp"
-      - "9000:9000/tcp"
-      - "12201:12201/tcp"
-      - "12201:12201/udp"
-      - "13301:13301/tcp"
-      - "13302:13302/tcp"
+      - "5044:5044/tcp"   # Beats
+      - "5140:5140/udp"   # Syslog
+      - "5140:5140/tcp"   # Syslog
+      - "5555:5555/tcp"   # RAW TCP
+      - "5555:5555/udp"   # RAW UDP
+      - "9000:9000/tcp"   # Server API
+      - "12201:12201/tcp" # GELF TCP
+      - "12201:12201/udp" # GELF UDP
+      #- "10000:10000/tcp" # Custom TCP port
+      #- "10000:10000/udp" # Custom UDP port
+      - "13301:13301/tcp" # Forwarder data
+      - "13302:13302/tcp" # Forwarder config
     networks:
       - graylog_brg
     volumes:
       - graylog_data:/usr/share/graylog/data/data
-    restart: "on-failure"
+      - /mnt/dockerfiles/configdata/certificates/beats.pem:/etc/graylog/certs/beats.pem:ro
+      - /mnt/dockerfiles/configdata/certificates/beats.key:/etc/graylog/certs/beats.key:ro
+    restart: on-failure
 #-----------------------------------------------
 networks:
   graylog_brg:
