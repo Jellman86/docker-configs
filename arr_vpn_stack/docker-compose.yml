@@ -28,12 +28,12 @@ services:
     environment:
       - VPN_SERVICE_PROVIDER=${VPNHOST}
       # OpenVPN:
-      #- VPN_TYPE=openvpn
-      #- OPENVPN_USER=${OPENVPNUSER}
-      #- OPENVPN_PASSWORD=${OPENVPNPASSWORD}
+      - VPN_TYPE=openvpn
+      - OPENVPN_USER=${OPENVPNUSER}
+      - OPENVPN_PASSWORD=${OPENVPNPASSWORD}
       # Wireguard:
-      - VPN_TYPE=wireguard
-      - WIREGUARD_PRIVATE_KEY=${WGPRIVKEY}
+      #- VPN_TYPE=wireguard
+      #- WIREGUARD_PRIVATE_KEY=${WGPRIVKEY}
       #- WIREGUARD_ADDRESSES=10.64.222.21/32
       - TZ=Europe/London
       - SERVER_COUNTRIES=Spain,Switzerland,Netherlands,Panama
