@@ -38,7 +38,7 @@ services:
       - TZ=Europe/London
       - SERVER_COUNTRIES=Spain,Switzerland,Netherlands,Panama
       - UPDATER_PERIOD=12h
-      - DOT=off
+      - DOT=on
       - DOT_CACHING=off
       - BLOCK_MALICIOUS=off
       - BLOCK_SURVEILLANCE=off
