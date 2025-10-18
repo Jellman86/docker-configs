@@ -3,6 +3,8 @@ services:
     image: mongo:7.0
     container_name: mongodb
     restart: unless-stopped
+    environment:
+      TZ: Europe/London
     networks:
       graylog_brg:
     volumes:
@@ -17,6 +19,8 @@ services:
       GRAYLOG_DATANODE_NODE_ID_FILE: /var/lib/graylog-datanode/node-id
       GRAYLOG_DATANODE_PASSWORD_SECRET: ${GRAYLOGSECRET}
       GRAYLOG_DATANODE_MONGODB_URI: mongodb://mongodb:27017/graylog
+      GRAYLOG_DATANODE_OPENSEARCH_HEAP: 7g
+      TZ: Europe/London
     ulimits:
       memlock:
         soft: -1
@@ -51,19 +55,16 @@ services:
       GRAYLOG_HTTP_BIND_ADDRESS: 0.0.0.0:9000
       GRAYLOG_HTTP_EXTERNAL_URI: http://graylog.denbyad.denbygroup.com:9000/
       GRAYLOG_MONGODB_URI: mongodb://mongodb:27017/graylog
+      TZ: Europe/London
     ports:
-      - "5044:5044/tcp"   # Beats
-      - "5140:5140/udp"   # Syslog
-      - "5140:5140/tcp"   # Syslog
-      - "5555:5555/tcp"   # RAW TCP
-      - "5555:5555/udp"   # RAW UDP
-      - "9000:9000/tcp"   # Server API
-      - "12201:12201/tcp" # GELF TCP
-      - "12201:12201/udp" # GELF UDP
-      #- "10000:10000/tcp" # Custom TCP port
-      #- "10000:10000/udp" # Custom UDP port
-      - "13301:13301/tcp" # Forwarder data
-      - "13302:13302/tcp" # Forwarder config
+      - 5044:5044 # Beats
+      - 6000:6000 # Beats TLS
+      - 5140:5140 # Syslog
+      - 5555:5555 # RAW TCP
+      - 9000:9000 # Server API
+      - 12201:12201 # GELF
+      - 13301:13301 # Forwarder data
+      - 13302:13302 # Forwarder config
     networks:
       - graylog_brg
     volumes:
