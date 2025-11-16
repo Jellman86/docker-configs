@@ -39,7 +39,7 @@ services:
       - ${CONFIG_PATH}/homebridge:/homebridge
     networks:
         service_mac_vlan:
-        ipv4_address: 192.168.213.128
+          ipv4_address: 192.168.213.128
 #-----------------------------------------------
 networks:
     dmz_mac_vlan:
