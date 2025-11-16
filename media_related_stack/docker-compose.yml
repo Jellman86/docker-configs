@@ -35,8 +35,7 @@ services:
         - ${CONFIG_PATH}/pms/config/Library/Application Support/Plex Media Server/Logs:/pms-logs
       restart: always
       networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.132
+        general_brg:
         vpn_stack_brg:
 #-----------------------------------------------
     unmanic:
@@ -62,7 +61,7 @@ services:
       group_add:
         - "109" #for iGPU access
       networks:
-        service_mac_vlan:
+        general_brg:
 #-----------------------------------------------
 networks:
     dmz_mac_vlan:
