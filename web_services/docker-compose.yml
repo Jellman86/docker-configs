@@ -31,7 +31,6 @@ services:
     read_only: true
     networks:
       dmz_mac_vlan:
-        ipv4_address: 192.168.215.134
     #ports:
       #- 8099:8080
     restart: always
@@ -52,7 +51,6 @@ services:
       image: openspeedtest/latest
       networks:
         service_mac_vlan:
-          ipv4_address: 192.168.213.137
 #-----------------------------------------------
 volumes:
     privatebin_cfg:
