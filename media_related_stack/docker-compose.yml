@@ -64,9 +64,6 @@ services:
         - "109" #for iGPU access
       networks:
         service_mac_vlan:
-          ipv4_address: 192.168.213.131
-        vpn_stack_brg:
-          ipv4_address: 172.17.0.5
 #-----------------------------------------------
 networks:
     dmz_mac_vlan:
