@@ -14,9 +14,7 @@ services:
       service_mac_vlan:
         ipv4_address: 192.168.213.129
       vpn_stack_brg:
-        ipv4_address: 172.17.0.4
       general_brg:
-        ipv4_address: 172.19.0.3
     environment:
       - PUID=568
       - PGID=568
