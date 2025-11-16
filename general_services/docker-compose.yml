@@ -9,8 +9,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       general_brg:
-      vpn_stack_brg:
-      service_mac_vlan:
 #-----------------------------------------------
   dozzle:
     image: amir20/dozzle:latest
@@ -41,6 +39,7 @@ services:
       - ${CONFIG_PATH}/homebridge:/homebridge
     networks:
         service_mac_vlan:
+        ipv4_address: 192.168.213.128
 #-----------------------------------------------
 networks:
     dmz_mac_vlan:
