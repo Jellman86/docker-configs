@@ -23,8 +23,7 @@ services:
     networks:
       dmz_mac_vlan:
         ipv4_address: 192.168.215.131
-      service_mac_vlan:
-        ipv4_address: 192.168.213.138
+      general_brg:
 #-----------------------------------------------
 networks:
     dmz_mac_vlan:

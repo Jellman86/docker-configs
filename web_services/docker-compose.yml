@@ -31,8 +31,9 @@ services:
     read_only: true
     networks:
       dmz_mac_vlan:
-    #ports:
-      #- 8099:8080
+      general_brg:
+    ports:
+      - 8099:8080
     restart: always
     volumes:
       - privatebin_cfg:/srv/data
@@ -50,7 +51,7 @@ services:
         - '3001:3001'
       image: openspeedtest/latest
       networks:
-        service_mac_vlan:
+        general_brg:
 #-----------------------------------------------
 volumes:
     privatebin_cfg:

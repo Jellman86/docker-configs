@@ -23,7 +23,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-        service_mac_vlan:
+        general_brg:
 #-----------------------------------------------
   homebridge:
     image: homebridge/homebridge:ubuntu
