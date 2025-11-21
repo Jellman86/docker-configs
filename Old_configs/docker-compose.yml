@@ -187,6 +187,21 @@ services:
       - ${DOWNLOADSPATH}/downloads/downloads:/downloads
     restart: unless-stopped
 #-----------------------------------------------
+  tautulli:
+    image: lscr.io/linuxserver/tautulli:latest
+    container_name: tautulli
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+    volumes:
+      - ${CONFIG_PATH}/tautulli/config:/config
+      - ${CONFIG_PATH}/pms/config/Library/Application Support/Plex Media Server/Logs:/pms-logs
+    restart: always
+    networks:
+      general_brg:
+      vpn_stack_brg:
+#-----------------------------------------------
 networks:
   llm_stack:
     driver: bridge
