@@ -12,36 +12,32 @@ services:
       vpn_stack_brg:
         ipv4_address: 172.17.0.2
     ports:
-      - 5041:5041 # qbittorrent
+      - 5041:5041/tcp # qbittorrent
       - 5041:5041/udp # qbittorrent
-      - 8081:8081 # qbittorrent webui
-      - 9696:9696 # prowlarr
-      - 7878:7878 # radarr
-      - 8989:8989 # sonarr
-      - 8191:8191 # Flarrsolvr
-      - 8686:8686 # Lidarr
-      - 5030:5030 # slskd
-      - 5031:5031 # slskd
-      - 5032:5032 # slskd
+      - 8081:8081/tcp # qbittorrent webui
+      - 9696:9696/tcp # prowlarr
+      - 7878:7878/tcp # radarr
+      - 8989:8989/tcp # sonarr
+      - 8191:8191/tcp # Flarrsolvr
     volumes:
       - ${DOCKERCONFIGPATH}/gluetun:/gluetun
     environment:
       - VPN_SERVICE_PROVIDER=${VPNHOST}
       # OpenVPN:
-      - VPN_TYPE=openvpn
-      - OPENVPN_USER=${OPENVPNUSER}
-      - OPENVPN_PASSWORD=${OPENVPNPASSWORD}
+      #- VPN_TYPE=openvpn
+      #- OPENVPN_USER=${OPENVPNUSER}
+      #- OPENVPN_PASSWORD=${OPENVPNPASSWORD}
       # Wireguard:
-      #- VPN_TYPE=wireguard
-      #- WIREGUARD_PRIVATE_KEY=${WGPRIVKEY}
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${WGPRIVKEY}
       #- WIREGUARD_ADDRESSES=10.64.222.21/32
       - TZ=Europe/London
       - SERVER_COUNTRIES=Spain,Switzerland,Netherlands,Panama
       - UPDATER_PERIOD=12h
       - DOT=on
-      - DOT_CACHING=off
+      - DOT_CACHING=on
       - BLOCK_MALICIOUS=off
-      - BLOCK_SURVEILLANCE=off
+      - BLOCK_SURVEILLANCE=on
       - BLOCK_ADS=off
       - DOT_PROVIDERS=cloudflare
 #-----------------------------------------------
