@@ -48,7 +48,8 @@ services:
       - PUID=568
       - PGID=568
       - TZ=Europe/London
-      - PORT=5055 #optional
+      - PORT=5055 #Webui Port
+      - TORRENTING_PORT=5041 #optional, to match gluetun qbittorrent port
     networks:
       vpn_stack_brg:
         ipv4_address: 172.17.0.3
