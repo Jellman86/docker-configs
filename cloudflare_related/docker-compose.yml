@@ -9,7 +9,7 @@ services:
     #network_mode: host
     networks:
       dmz_mac_vlan:
-        ipv4_address: 192.168.215.131
+        ipv4_address: 192.168.215.132
     command: tunnel run 
     environment: 
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
@@ -20,7 +20,7 @@ services:
     #network_mode: host
     networks:
       dmz_mac_vlan:
-        ipv4_address: 192.168.215.132
+        ipv4_address: 192.168.215.130
     restart: always
     user: "568:568"
     read_only: true
