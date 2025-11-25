@@ -6,7 +6,10 @@ services:
     container_name: cloudflare-tunnel
     user: "568:568"
     restart: always 
-    network_mode: host
+    #network_mode: host
+    networks:
+      vpn_stack_brg:
+      dmz_mac_vlan:
     command: tunnel run 
     environment: 
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
@@ -25,3 +28,9 @@ services:
       - DOMAINS=${A_RECORDS}
       - PROXIED=false
       - IP6_PROVIDER=none
+#---------------------------------------------
+networks:
+    dmz_mac_vlan:
+      external: true
+    vpn_stack_brg:
+      external: true
