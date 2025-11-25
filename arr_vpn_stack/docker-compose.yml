@@ -49,10 +49,9 @@ services:
       - PGID=568
       - TZ=Europe/London
       - PORT=5055 #Webui Port
-      - TORRENTING_PORT=5041 #optional, to match gluetun qbittorrent port
     networks:
-      vpn_stack_brg:
-        ipv4_address: 172.17.0.3
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.134
     ports:
       - 5055:5055
     volumes:
@@ -67,6 +66,7 @@ services:
       - PGID=568
       - TZ=Europe/London
       - WEBUI_PORT=8081
+      - TORRENTING_PORT=5041 #optional, to match gluetun qbittorrent port
       - DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest
     volumes:
       - ${DOCKERCONFIGPATH}/qbittorrent/config:/config
@@ -177,4 +177,6 @@ services:
 #-----------------------------------------------
 networks:
   vpn_stack_brg:
+    external: true
+  dmz_mac_vlan:
     external: true
