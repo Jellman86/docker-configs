@@ -34,4 +34,4 @@ services:
 #---------------------------------------------
 networks:
     dmz_mac_vlan:
-    external: true
+      external: true
