@@ -30,9 +30,6 @@ services:
     networks:
       dmz_mac_vlan:
         ipv4_address: 192.168.215.133
-      general_brg:
-    ports:
-      - 8099:8080
     restart: always
     volumes:
       - privatebin_cfg:/srv/data
