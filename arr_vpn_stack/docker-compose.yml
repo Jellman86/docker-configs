@@ -50,6 +50,8 @@ services:
       - TZ=Europe/London
       - PORT=5055 #Webui Port
     networks:
+      vpn_stack_brg:
+        ipv4_address: 172.17.0.3
       dmz_mac_vlan:
         ipv4_address: 192.168.215.134
     ports:
