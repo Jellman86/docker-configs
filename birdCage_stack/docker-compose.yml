@@ -2,22 +2,20 @@ services:
   birdnetserver:
     restart: unless-stopped
     image: mmcc73/birdnetserver:latest 
-    #ports:
-      #- "7667:8080"
+    ports:
+      - "7667:8080"
     networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.134
+      general_brg:
 #-----------------------------------------------
   redis:
     image: "redis:latest"
     networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.132
+      general_brg:
 #-----------------------------------------------
   birdcage_backend:
     image: "mmcc73/birdcage_backend:latest"
-    #ports:
-      #- "7007:7007"
+    ports:
+      "7007:7007"
     environment:
       DATABASE_FILE: /db/birdcage.db #comment for HA addon
       #DATABASE_FILE: share/birdcage/db/birdcage.db #uncomment for HA addon 
@@ -44,13 +42,12 @@ services:
     depends_on:
       - redis
     networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.131
+      general_brg:
 #-----------------------------------------------
   birdcage_frontend:
     image: "mmcc73/birdcage_frontend:latest"
     ports:
-      - "7008:7008"
+      "7008:7008"
     environment:
       API_SERVER_URL: http://192.168.213.130:7007
       WEBUI_PORT: 7008
@@ -67,6 +64,8 @@ services:
     networks:
         service_mac_vlan:
           ipv4_address: 192.168.213.130
+    networks:
+      general_brg:
 #-----------------------------------------------
 networks:
     service_mac_vlan:
