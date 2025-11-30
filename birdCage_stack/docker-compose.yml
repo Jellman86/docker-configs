@@ -68,8 +68,7 @@ services:
     networks:
         service_mac_vlan:
           ipv4_address: 192.168.213.130
-    networks:
-      general_brg:
+        general_brg:
 #-----------------------------------------------
 networks:
     service_mac_vlan:
