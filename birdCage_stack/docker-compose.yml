@@ -18,7 +18,7 @@ services:
     image: "mmcc73/birdcage_backend:latest"
     container_name: birdcage_backend
     ports:
-      "7007:7007"
+      - "7007:7007"
     environment:
       DATABASE_FILE: /db/birdcage.db #comment for HA addon
       #DATABASE_FILE: share/birdcage/db/birdcage.db #uncomment for HA addon 
@@ -51,7 +51,7 @@ services:
     image: "mmcc73/birdcage_frontend:latest"
     container_name: birdcage_frontend
     ports:
-      "7008:7008"
+      - "7008:7008"
     environment:
       API_SERVER_URL: http://192.168.213.130:7007
       WEBUI_PORT: 7008
