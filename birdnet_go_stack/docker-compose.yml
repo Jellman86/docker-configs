@@ -14,7 +14,7 @@ services:
       - BIRDNET_GID=568
       # Optional: uncomment to configure via environment variables
       # BirdNET Configuration
-      - BIRDNET_LOCALE=en                      # Locale code (2-10 chars, e.g., "en" or "en-us")
+      - BIRDNET_LOCALE=en-uk                      # Locale code (2-10 chars, e.g., "en" or "en-us")
       - BIRDNET_LATITUDE=53.0780427                # Valid range: -90.0 to 90.0
       - BIRDNET_LONGITUDE=-1.367608              # Valid range: -180.0 to 180.0
       - BIRDNET_SENSITIVITY=1.0                   # Valid range: 0.1 to 1.5 (higher = more sensitive)
