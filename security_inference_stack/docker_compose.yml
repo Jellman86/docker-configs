@@ -1,0 +1,69 @@
+services:
+#-----------------------------------------------
+  frigate:
+    container_name: frigate
+    privileged: true # this may not be necessary for all setups
+    restart: unless-stopped
+    stop_grace_period: 30s # allow enough time to shut down the various services
+    image: ghcr.io/blakeblackshear/frigate:stable
+    shm_size: "512mb" # update for your cameras based on calculation above
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+      - /dev/dri/card0:/dev/dri/card0
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${DOCKERCONFIGPATH}/frigate/config:/config
+      - ${DOCKERCONFIGPATH}/frigate/media:/media/frigate
+      - type: tmpfs # Optional: 1GB of memory, reduces SSD/SD Card wear
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+    ports:
+      # - "8971:8971"
+      # - "5000:5000" # Internal unauthenticated access. Expose carefully.
+      # - "8554:8554" # RTSP feeds
+      # - "8555:8555/tcp" # WebRTC over tcp
+      # - "8555:8555/udp" # WebRTC over udp
+    environment:
+      FRIGATE_RTSP_PASSWORD: "password"
+#-----------------------------------------------
+  birdnet-go:
+    image: ghcr.io/tphakala/birdnet-go:nightly
+    container_name: birdnet-go
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    networks:
+        service_mac_vlan:
+          ipv4_address: 192.168.213.130
+    environment:
+      - TZ=Europe/London
+      - BIRDNET_UID=568
+      - BIRDNET_GID=568
+      # BirdNET Configuration
+      # Currently configured for the rents place. 
+      - BIRDNET_LOCALE=en-uk                      # Locale code (2-10 chars, e.g., "en" or "en-us")
+      - BIRDNET_LATITUDE=53.037                   # Valid range: -90.0 to 90.0
+      - BIRDNET_LONGITUDE=-1.381                  # Valid range: -180.0 to 180.0
+      - BIRDNET_SENSITIVITY=1.0                   # Valid range: 0.1 to 1.5 (higher = more sensitive)
+      - BIRDNET_THRESHOLD=0.6                     # Valid range: 0.0 to 1.0 (confidence threshold)
+      - BIRDNET_OVERLAP=1.5                       # Valid range: 0.0 to 2.9 seconds (audio chunk overlap)
+      - BIRDNET_THREADS=0                         # 0 = auto (use all CPUs), or specify number of threads
+      - BIRDNET_DEBUG=false                       # Enable debug logging (true/false)
+      - BIRDNET_USEXNNPACK=true                   # Use XNNPACK acceleration (true/false)
+      # Range Filter Configuration               
+      - BIRDNET_RANGEFILTER_MODEL=latest
+      - BIRDNET_RANGEFILTER_THRESHOLD=0.01
+    volumes:
+      - ${DOCKERCONFIGPATH}/birdnet-go/config:/config
+      - ${DOCKERCONFIGPATH}/birdnet-go/data:/data
+    tmpfs:
+      - /config/hls:exec,size=50M,uid=${BIRDNET_UID:-568},gid=${BIRDNET_GID:-568},mode=0755
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+#-----------------------------------------------
+networks:
+    service_mac_vlan:
+      external: true
+    general_brg:
+      external: true
