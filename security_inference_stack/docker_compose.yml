@@ -18,10 +18,6 @@ services:
         target: /tmp/cache
         tmpfs:
           size: 1000000000
-    environment:
-      - TZ=Europe/London
-      - BIRDNET_UID=568
-      - BIRDNET_GID=568
     networks:
         service_mac_vlan:
         general_brg:
@@ -32,7 +28,10 @@ services:
       - "8555:8555/tcp" # WebRTC over tcp
       - "8555:8555/udp" # WebRTC over udp
     environment:
-      FRIGATE_RTSP_PASSWORD: ${FRIGATE_RTSP_PASSWORD}
+      - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD}
+      - TZ=Europe/London
+      - BIRDNET_UID=568
+      - BIRDNET_GID=568
 #-----------------------------------------------
   birdnet-go:
     image: ghcr.io/tphakala/birdnet-go:nightly
