@@ -8,16 +8,16 @@ services:
       - PGID=568
       - TZ=Europe/London
     ports:
-        - 8443:8443 # HTTPS
-        - 8123:8123 # DYNMAP
-        - 19132:19132/udp # BEDROCK
-        - 25565-25570:25565-25570 # MC SERV PORT RANGE
+      - 8443:8443 # HTTPS
+      - 8123:8123 # DYNMAP
+      - 19132:19132/udp # BEDROCK
+      - 25565-25570:25565-25570 # MC SERV PORT RANGE
     volumes:
-        - ${CONFIG_PATH}/crafty/backups:/crafty/backups
-        - ${CONFIG_PATH}/crafty/logs:/crafty/logs
-        - ${CONFIG_PATH}/crafty/servers:/crafty/servers
-        - ${CONFIG_PATH}/crafty/config:/crafty/app/config
-        - ${CONFIG_PATH}/crafty/import:/crafty/import
+      - ${CONFIG_PATH}/crafty/backups:/crafty/backups
+      - ${CONFIG_PATH}/crafty/logs:/crafty/logs
+      - ${CONFIG_PATH}/crafty/servers:/crafty/servers
+      - ${CONFIG_PATH}/crafty/config:/crafty/app/config
+      - ${CONFIG_PATH}/crafty/import:/crafty/import
     restart: unless-stopped
     stop_grace_period: 2m
     networks:

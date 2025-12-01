@@ -41,25 +41,6 @@ services:
       - BLOCK_ADS=off
       - DOT_PROVIDERS=cloudflare
 #-----------------------------------------------
-  overseerr:
-    image: sctx/overseerr:latest
-    container_name: overseerr
-    environment:
-      - PUID=568
-      - PGID=568
-      - TZ=Europe/London
-      - PORT=5055 #Webui Port
-    networks:
-      vpn_stack_brg:
-        ipv4_address: 172.17.0.3
-      dmz_mac_vlan:
-        ipv4_address: 192.168.215.134
-    ports:
-      - 5055:5055
-    volumes:
-      - ${DOCKERCONFIGPATH}/overseerr:/app/config
-    restart: unless-stopped
-#-----------------------------------------------
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
@@ -177,8 +158,29 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 #-----------------------------------------------
+  overseerr:
+    image: sctx/overseerr:latest
+    container_name: overseerr
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+      - PORT=5055 #Webui Port
+    networks:
+      vpn_stack_brg:
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.134
+      service_mac_vlan:
+    ports:
+      - 5055:5055
+    volumes:
+      - ${DOCKERCONFIGPATH}/overseerr:/app/config
+    restart: unless-stopped
+#-----------------------------------------------
 networks:
   vpn_stack_brg:
     external: true
   dmz_mac_vlan:
+    external: true
+  service_mac_vlan:
     external: true
