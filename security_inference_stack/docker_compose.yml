@@ -20,6 +20,7 @@ services:
           size: 1000000000
     networks:
         service_mac_vlan:
+        general_brg:
     ports:
       - "8971:8971"
       # - "5000:5000" # Internal unauthenticated access. Expose carefully.
