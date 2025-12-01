@@ -30,8 +30,8 @@ services:
     environment:
       - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD}
       - TZ=Europe/London
-      - BIRDNET_UID=568
-      - BIRDNET_GID=568
+      - PUID=568
+      - PGID=568
 #-----------------------------------------------
   birdnet-go:
     image: ghcr.io/tphakala/birdnet-go:nightly
