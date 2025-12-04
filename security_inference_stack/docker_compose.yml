@@ -77,7 +77,11 @@ services:
       - XDG_RUNTIME_DIR=/dev/shm   # point runtime dir to shared memory
     volumes:
       - ${DOCKERCONFIGPATH}/whisper-webui/models:/app/models
-      - ${DOCKERCONFIGPATH}/whisper-webui/:/app/output
+      - ${DOCKERCONFIGPATH}/whisper-webui/output:/app/output
+      - ${DOCKERCONFIGPATH}/whisper-webui/configs:/Whisper-WebUI/configs
+    stdin_open: true
+    tty: true
+    entrypoint: ["python", "app.py", "--server_port", "7860", "--server_name", "0.0.0.0",]
     networks:
         service_mac_vlan:
           ipv4_address: 192.168.213.132
