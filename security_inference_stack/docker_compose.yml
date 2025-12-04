@@ -67,27 +67,50 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 #-----------------------------------------------
-  whisper-webui:
-    image: jhj0517/whisper-webui:latest
+whisper-live:
+    container_name: whisper-live
+    image: ghcr.io/collabora/whisperlive:latest
     restart: unless-stopped
-    devices:
-      - /dev/dri:/dev/dri          # Intel iGPU
-    environment:
-      - ACCELERATE_DEVICE=cpu        # CPU inference for Whisper
-      - XDG_RUNTIME_DIR=/dev/shm     # Use shared memory for runtime/temp storage
-    volumes:
-      - ${DOCKERCONFIGPATH}/whisper-webui/models:/app/models
-      - ${DOCKERCONFIGPATH}/whisper-webui/output:/app/output
-      - ${DOCKERCONFIGPATH}/whisper-webui/configs:/Whisper-WebUI/configs
-    stdin_open: true
-    tty: true
-    entrypoint: ["python", "app.py", "--server_port", "7860", "--server_name", "0.0.0.0",]
     networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.132
+      service_mac_vlan:
+        ipv4_address: 192.168.213.133
+
+    # Stick your Intel iGPU into the meat grinder same as the others
+    devices:
+      - /dev/dri:/dev/dri
+
+    environment:
+      TZ: Europe/London
+      
+      # Set the language or let it autodetect
+      WHISPER_LANGUAGE: "auto"
+      WHISPER_MODEL: "base"
+      
+      # Your RTSP stream here or override in .env
+      RTSP_URL: "rtsp://Jellman86:campass123@192.168.214.172/stream1"
+
+      # Change if you want less buffering or faster-but-messier text
+      CHUNK_SIZE: "5"
+
     ports:
-      - "7860:7860"
-    shm_size: "2g" 
+      - "8070:8070"
+
+    # This command does the magic:
+    # ffmpeg pulls audio from RTSP, pipes it raw into WhisperLive.
+    command: >
+      bash -c "
+        ffmpeg -loglevel error -i $RTSP_URL
+              -vn -ac 1 -ar 16000 -f s16le pipe:1 |
+        whisperlive
+          --listen 0.0.0.0:8070
+          --model $WHISPER_MODEL
+          --language $WHISPER_LANGUAGE
+          --chunk_size $CHUNK_SIZE
+          -
+      "
+
+    volumes:
+      - ${DOCKERCONFIGPATH}/whisper-live/output:/output
 #-----------------------------------------------
 networks:
     service_mac_vlan:
