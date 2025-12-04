@@ -74,7 +74,6 @@ services:
     user: "568:568"
     environment:
       - TZ=Europe/London
-    external_url: "https://homeassistant.pownet.uk"
     volumes:
       - ${DOCKERCONFIGPATH}/homeassistant/config:/config
       - /etc/localtime:/etc/localtime:ro
