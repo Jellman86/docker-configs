@@ -20,7 +20,7 @@ services:
     networks:
         service_mac_vlan:
           ipv4_address: 192.168.213.131
-          general_brg:
+        general_brg:
     ports:
       - "8971:8971"
       # - "5000:5000" # Internal unauthenticated access. Expose carefully.
