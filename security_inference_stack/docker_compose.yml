@@ -61,13 +61,6 @@ services:
       # Range Filter Configuration               
       - BIRDNET_RANGEFILTER_MODEL=latest
       - BIRDNET_RANGEFILTER_THRESHOLD=0.01
-      - MQTT_HOST=mosquitto
-      - MQTT_PORT=1883
-      - MQTT_USER=jellman86
-      - MQTT_PASSWORD=${mqttpass}
-      - MQTT_BASE_TOPIC=birdnet 
-      - EBIRD_ENABLED=true
-      - EBIRD_REGION=GB-ENG
     volumes:
       - ${DOCKERCONFIGPATH}/birdnet-go/config:/config
       - ${DOCKERCONFIGPATH}/birdnet-go/data:/data
