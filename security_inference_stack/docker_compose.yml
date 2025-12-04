@@ -67,6 +67,24 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 #-----------------------------------------------
+  whisper-webui:
+    image: jhj0517/whisper-webui:latest
+    restart: unless-stopped
+    devices:
+      - /dev/dri:/dev/dri          # Intel iGPU
+    environment:
+      - ACCELERATE_DEVICE=cpu
+      - XDG_RUNTIME_DIR=/dev/shm   # point runtime dir to shared memory
+    volumes:
+      - ${DOCKERCONFIGPATH}/whisper-webui/models:/app/models
+      - ${DOCKERCONFIGPATH}/whisper-webui/:/app/output
+    networks:
+        service_mac_vlan:
+          ipv4_address: 192.168.213.132
+    ports:
+      - "7860:7860"
+    shm_size: "2g" 
+#-----------------------------------------------
 networks:
     service_mac_vlan:
       external: true
