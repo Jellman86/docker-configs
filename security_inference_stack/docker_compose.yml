@@ -102,6 +102,21 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 #-----------------------------------------------
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    restart: unless-stopped
+    networks:
+      - general_brg
+    ports:
+      - "1883:1883"
+    volumes:
+      - ${DOCKERCONFIGPATH}/mosquitto/config:/mosquitto/config
+      - ${DOCKERCONFIGPATH}/mosquitto/data:/mosquitto/data
+      - ${DOCKERCONFIGPATH}/mosquitto/log:/mosquitto/log
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+#-----------------------------------------------
 networks:
     service_mac_vlan:
       external: true
