@@ -40,8 +40,6 @@ services:
     ports:
       - "${WEB_PORT:-8080}:8080"
     networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.130
         general_brg:
     environment:
       - TZ=Europe/London
@@ -61,6 +59,12 @@ services:
       # Range Filter Configuration               
       - BIRDNET_RANGEFILTER_MODEL=latest
       - BIRDNET_RANGEFILTER_THRESHOLD=0.01
+      - REALTIME_MQTT_ENABLED="true"
+      - REALTIME_MQTT_HOST="mosquitto"
+      - REALTIME_MQTT_PORT="1883"
+      - REALTIME_MQTT_USERNAME="jellman86"
+      - REALTIME_MQTT_PASSWORD="mqqtfuckyou123"
+      - REALTIME_MQTT_BASE_TOPIC="birdnet"     
     volumes:
       - ${DOCKERCONFIGPATH}/birdnet-go/config:/config
       - ${DOCKERCONFIGPATH}/birdnet-go/data:/data
