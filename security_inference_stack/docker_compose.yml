@@ -123,8 +123,6 @@ services:
       - ${DOCKERCONFIGPATH}/mosquitto/config:/mosquitto/config
       - ${DOCKERCONFIGPATH}/mosquitto/data:/mosquitto/data
       - ${DOCKERCONFIGPATH}/mosquitto/log:/mosquitto/log
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 #-----------------------------------------------
 networks:
     service_mac_vlan:
