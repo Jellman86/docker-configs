@@ -2,14 +2,12 @@ services:
 #-----------------------------------------------
   frigate:
     container_name: frigate
-    privileged: true # this may not be necessary for all setups
     restart: unless-stopped
     stop_grace_period: 30s # allow enough time to shut down the various services
     image: ghcr.io/blakeblackshear/frigate:stable
     shm_size: "512mb" # update for your cameras based on calculation above
     devices:
-      - /dev/dri/renderD128:/dev/dri/renderD128
-      - /dev/dri/card0:/dev/dri/card0
+      - /dev/dri:/dev/dri
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${DOCKERCONFIGPATH}/frigate/config:/config
