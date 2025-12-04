@@ -60,7 +60,8 @@ services:
       - BIRDNET_RANGEFILTER_MODEL=latest
       - BIRDNET_RANGEFILTER_THRESHOLD=0.01
     volumes:
-      - ${DOCKERCONFIGPATH}/birdnet-go/config:/config
+      - ${DOCKERCONFIGPATH}/birdnet-go/config:/home/birdnet/.config/birdnet-go
+      #- ${DOCKERCONFIGPATH}/birdnet-go/config:/config
       - ${DOCKERCONFIGPATH}/birdnet-go/data:/data
     tmpfs:
       - /config/hls:exec,size=50M,uid=${BIRDNET_UID:-568},gid=${BIRDNET_GID:-568},mode=0755
