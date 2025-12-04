@@ -75,7 +75,7 @@ services:
     environment:
         - TZ=Europe/London
     volumes:
-      - ${CONFIG_PATH}/homeassistant/config:/config
+      - ${DOCKERCONFIGPATH}/homeassistant/config:/config
       - /etc/localtime:/etc/localtime:ro
     network_mode: host
 #-----------------------------------------------
@@ -93,7 +93,7 @@ services:
     #   - "5580:5580"
     #   - "5540:5540"  # (commissioning API port; often not needed externally)
     volumes:
-      - ${CONFIG_PATH}/matter-server/data:/data:rw
+      - ${DOCKERCONFIGPATH}/matter-server/data:/data:rw
       - /run/dbus:/run/dbus:ro  # optional (BLE commissioning on some setups)
 #-----------------------------------------------
 networks:
