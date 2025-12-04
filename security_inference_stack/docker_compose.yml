@@ -67,50 +67,50 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 #-----------------------------------------------
-whisper-live:
-    container_name: whisper-live
-    image: ghcr.io/collabora/whisperlive:latest
-    restart: unless-stopped
-    networks:
-      service_mac_vlan:
-        ipv4_address: 192.168.213.133
+  whisper-live:
+      container_name: whisper-live
+      image: ghcr.io/collabora/whisperlive:latest
+      restart: unless-stopped
+      networks:
+        service_mac_vlan:
+          ipv4_address: 192.168.213.133
 
-    # Stick your Intel iGPU into the meat grinder same as the others
-    devices:
-      - /dev/dri:/dev/dri
+      # Stick your Intel iGPU into the meat grinder same as the others
+      devices:
+        - /dev/dri:/dev/dri
 
-    environment:
-      TZ: Europe/London
-      
-      # Set the language or let it autodetect
-      WHISPER_LANGUAGE: "auto"
-      WHISPER_MODEL: "base"
-      
-      # Your RTSP stream here or override in .env
-      RTSP_URL: "rtsp://Jellman86:campass123@192.168.214.172/stream1"
+      environment:
+        TZ: Europe/London
+        
+        # Set the language or let it autodetect
+        WHISPER_LANGUAGE: "auto"
+        WHISPER_MODEL: "base"
+        
+        # Your RTSP stream here or override in .env
+        RTSP_URL: "rtsp://Jellman86:campass123@192.168.214.172/stream1"
 
-      # Change if you want less buffering or faster-but-messier text
-      CHUNK_SIZE: "5"
+        # Change if you want less buffering or faster-but-messier text
+        CHUNK_SIZE: "5"
 
-    ports:
-      - "8070:8070"
+      ports:
+        - "8070:8070"
 
-    # This command does the magic:
-    # ffmpeg pulls audio from RTSP, pipes it raw into WhisperLive.
-    command: >
-      bash -c "
-        ffmpeg -loglevel error -i $RTSP_URL
-              -vn -ac 1 -ar 16000 -f s16le pipe:1 |
-        whisperlive
-          --listen 0.0.0.0:8070
-          --model $WHISPER_MODEL
-          --language $WHISPER_LANGUAGE
-          --chunk_size $CHUNK_SIZE
-          -
-      "
+      # This command does the magic:
+      # ffmpeg pulls audio from RTSP, pipes it raw into WhisperLive.
+      command: >
+        bash -c "
+          ffmpeg -loglevel error -i $RTSP_URL
+                -vn -ac 1 -ar 16000 -f s16le pipe:1 |
+          whisperlive
+            --listen 0.0.0.0:8070
+            --model $WHISPER_MODEL
+            --language $WHISPER_LANGUAGE
+            --chunk_size $CHUNK_SIZE
+            -
+        "
 
-    volumes:
-      - ${DOCKERCONFIGPATH}/whisper-live/output:/output
+      volumes:
+        - ${DOCKERCONFIGPATH}/whisper-live/output:/output
 #-----------------------------------------------
 networks:
     service_mac_vlan:
