@@ -81,6 +81,8 @@ services:
       - general_brg
     ports:
       - "8123:8123"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 #-----------------------------------------------
   matter-server:
     image: ghcr.io/home-assistant-libs/python-matter-server:stable
