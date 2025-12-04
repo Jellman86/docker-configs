@@ -20,6 +20,7 @@ services:
     networks:
         service_mac_vlan:
           ipv4_address: 192.168.213.131
+          general_brg:
     ports:
       - "8971:8971"
       # - "5000:5000" # Internal unauthenticated access. Expose carefully.
@@ -41,6 +42,7 @@ services:
     networks:
         service_mac_vlan:
           ipv4_address: 192.168.213.130
+        general_brg:
     environment:
       - TZ=Europe/London
       - BIRDNET_UID=568
