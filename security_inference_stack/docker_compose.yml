@@ -73,8 +73,6 @@ services:
       - ${DOCKERCONFIGPATH}/birdnet-go/data:/data
     tmpfs:
       - /config/hls:exec,size=50M,uid=${BIRDNET_UID:-568},gid=${BIRDNET_GID:-568},mode=0755
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 #-----------------------------------------------
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
@@ -90,8 +88,6 @@ services:
       - general_brg
     ports:
       - "8123:8123"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 #-----------------------------------------------
   matter-server:
     image: ghcr.io/home-assistant-libs/python-matter-server:stable
@@ -108,8 +104,6 @@ services:
     volumes:
       - ${DOCKERCONFIGPATH}/matter-server/data:/data:rw
       - /run/dbus:/run/dbus:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 #-----------------------------------------------
   mosquitto:
     image: eclipse-mosquitto:latest
