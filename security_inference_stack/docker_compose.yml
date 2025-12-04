@@ -73,11 +73,14 @@ services:
     restart: unless-stopped
     user: "568:568"
     environment:
-        - TZ=Europe/London
+      - TZ=Europe/London
     volumes:
       - ${DOCKERCONFIGPATH}/homeassistant/config:/config
       - /etc/localtime:/etc/localtime:ro
-    network_mode: host
+    networks:
+      - general_brg
+    ports:
+      - "8123:8123"
 #-----------------------------------------------
   matter-server:
     image: ghcr.io/home-assistant-libs/python-matter-server:stable
@@ -86,16 +89,17 @@ services:
     user: "568:568"
     environment:
       - TZ=Europe/London
-    # Host networking is strongly recommended
-    network_mode: host
-    # If you cannot use host mode, expose 5580 and ensure IPv6 + mDNS are OK:
-    # ports:
-    #   - "5580:5580"
-    #   - "5540:5540"  # (commissioning API port; often not needed externally)
+    networks:
+      - general_brg
+    ports:
+      - "5580:5580"
+      - "5540:5540"
     volumes:
       - ${DOCKERCONFIGPATH}/matter-server/data:/data:rw
-      - /run/dbus:/run/dbus:ro  # optional (BLE commissioning on some setups)
+      - /run/dbus:/run/dbus:ro
 #-----------------------------------------------
 networks:
     service_mac_vlan:
+      external: true
+    general_brg:
       external: true
