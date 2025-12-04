@@ -19,7 +19,7 @@ services:
           size: 1000000000
     networks:
         service_mac_vlan:
-        general_brg:
+          ipv4_address: 192.168.213.131
     ports:
       - "8971:8971"
       # - "5000:5000" # Internal unauthenticated access. Expose carefully.
