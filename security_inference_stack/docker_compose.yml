@@ -73,8 +73,8 @@ services:
     devices:
       - /dev/dri:/dev/dri          # Intel iGPU
     environment:
-      - ACCELERATE_DEVICE=cpu
-      - XDG_RUNTIME_DIR=/dev/shm   # point runtime dir to shared memory
+      - ACCELERATE_DEVICE=cpu        # CPU inference for Whisper
+      - XDG_RUNTIME_DIR=/dev/shm     # Use shared memory for runtime/temp storage
     volumes:
       - ${DOCKERCONFIGPATH}/whisper-webui/models:/app/models
       - ${DOCKERCONFIGPATH}/whisper-webui/output:/app/output
