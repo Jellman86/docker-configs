@@ -91,15 +91,16 @@ services:
     user: "568:568"
     environment:
       - TZ=Europe/London
-    network_mode: "host"
-    #networks:
-    #  - general_brg
+    networks:
+      - general_brg
     ports:
       - "5580:5580"
       - "5540:5540"
     volumes:
       - ${DOCKERCONFIGPATH}/matter-server/data:/data:rw
       - /run/dbus:/run/dbus:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 #-----------------------------------------------
 networks:
     service_mac_vlan:
