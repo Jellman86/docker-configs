@@ -89,8 +89,9 @@ services:
     user: "568:568"
     environment:
       - TZ=Europe/London
-    networks:
-      - general_brg
+    network_mode: "host"
+    #networks:
+    #  - general_brg
     ports:
       - "5580:5580"
       - "5540:5540"
