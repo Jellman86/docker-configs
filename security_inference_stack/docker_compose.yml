@@ -48,8 +48,8 @@ services:
       # BirdNET Configuration
       # Currently configured for the rents place. 
       - BIRDNET_LOCALE=en-uk                      # Locale code (2-10 chars, e.g., "en" or "en-us")
-      - BIRDNET_LATITUDE=53.037                   # Valid range: -90.0 to 90.0
-      - BIRDNET_LONGITUDE=-1.381                  # Valid range: -180.0 to 180.0
+      - BIRDNET_LATITUDE=53.078037                   # Valid range: -90.0 to 90.0
+      - BIRDNET_LONGITUDE=-1.367469                 # Valid range: -180.0 to 180.0
       - BIRDNET_SENSITIVITY=1.0                   # Valid range: 0.1 to 1.5 (higher = more sensitive)
       - BIRDNET_THRESHOLD=0.7                     # Valid range: 0.0 to 1.0 (confidence threshold)
       - BIRDNET_OVERLAP=1.5                       # Valid range: 0.0 to 2.9 seconds (audio chunk overlap)
