@@ -122,7 +122,9 @@ services:
       - general_brg
     ports:
       - "11434:11434"
+    user: "568:568"
     environment:
+      - TZ=Europe/London
       - OLLAMA_HOST=0.0.0.0:11434
       - ZES_ENABLE_SYSMAN=1
       - USE_XETLA=OFF
@@ -148,7 +150,9 @@ services:
       - general_brg
     ports:
       - "8188:8080"
+    user: "568:568"
     environment:
+      - TZ=Europe/London
       # Point WebUI at the GPU-accelerated Ollama service
       - OLLAMA_BASE_URL=http://ollama-xpu:11434
     depends_on:
