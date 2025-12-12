@@ -118,8 +118,6 @@ services:
     shm_size: "8gb"
     networks:
       - general_brg
-    ports:
-      - "11434:11434"
     environment:
       - TZ=Europe/London
       - OLLAMA_HOST=0.0.0.0:11434
