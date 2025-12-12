@@ -155,8 +155,6 @@ services:
     restart: unless-stopped
     networks:
       - general_brg
-    ports:
-      - "8188:8080"
     environment:
       - TZ=Europe/London
       # Point WebUI at the GPU-accelerated Ollama service
