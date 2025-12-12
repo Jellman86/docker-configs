@@ -125,7 +125,6 @@ services:
       - OLLAMA_HOST=0.0.0.0:11434
       - ZES_ENABLE_SYSMAN=1
       - USE_XETLA=OFF
-      - DEVICE=iGPU
     devices:
       - /dev/dri:/dev/dri
     volumes:
@@ -134,7 +133,7 @@ services:
     command: >
       bash -lc '
         cd /llm/scripts/ &&
-        source ipex-llm-init --gpu --device "$DEVICE" || echo "ipex-llm-init failed, continuing" &&
+        source ipex-llm-init --gpu --device "iGPU" || echo "ipex-llm-init failed, continuing" &&
         bash start-ollama.sh &&
         cd /llm/ollama &&
 
