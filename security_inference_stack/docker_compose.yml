@@ -121,7 +121,6 @@ services:
       - "11434:11434"
     environment:
       - TZ=Europe/London
-      - OLLAMA_VULKAN=1
     devices:
       - /dev/dri:/dev/dri
     volumes:
