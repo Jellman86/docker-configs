@@ -112,6 +112,51 @@ services:
       - ${DOCKERCONFIGPATH}/mosquitto/data:/mosquitto/data
       - ${DOCKERCONFIGPATH}/mosquitto/log:/mosquitto/log
 #-----------------------------------------------
+  ollama-xpu:
+    # Intel XPU image with llama.cpp/Ollama support
+    image: intelanalytics/ipex-llm-inference-cpp-xpu:latest
+    container_name: ollama-xpu
+    restart: unless-stopped
+    # Expose Ollama API to LAN (HA + Open WebUI)
+    networks:
+      - general_brg
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - ZES_ENABLE_SYSMAN=1
+      - USE_XETLA=OFF
+    devices:
+      - /dev/dri:/dev/dri          # Intel iGPU from TrueNAS
+    volumes:
+      # Map to a dataset if you want, e.g. /mnt/tank/ai/ollama
+      - ${DOCKERCONFIGPATH}/ollama_data:/llm/ollama
+      - ${DOCKERCONFIGPATH}/models_data:/llm/models
+    command: >
+      bash -lc "
+        cd /llm/ollama &&
+        source ipex-llm-init --gpu --device gpu &&
+        init-ollama &&
+        ./ollama serve
+      "
+#-----------------------------------------------
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    networks:
+      - general_brg
+    ports:
+      - "8188:8080"
+    environment:
+      # Point WebUI at the GPU-accelerated Ollama service
+      - OLLAMA_BASE_URL=http://ollama-xpu:11434
+    depends_on:
+      - ollama-xpu
+    volumes:
+      # Map to dataset if desired, e.g. /mnt/tank/ai/openwebui
+      - ${DOCKERCONFIGPATH}/openwebui_data:/app/backend/data
+#-----------------------------------------------
 networks:
     service_mac_vlan:
       external: true
