@@ -132,20 +132,10 @@ services:
       - ${DOCKERCONFIGPATH}/ollama/models:/models
     command: >
       bash -lc '
-        cd /llm/scripts/ &&
-        source ipex-llm-init --gpu --device "iGPU" || echo "ipex-llm-init failed, continuing" &&
-
-        /llm/ollama/ollama serve &
-        SERVE_PID=$! &&
-
-        for i in $(seq 1 60); do
-          /llm/ollama/ollama list >/dev/null 2>&1 && break
-          sleep 1
-        done &&
-
-        /llm/ollama/ollama list | grep -q "llama3.1:8b" || /llm/ollama/ollama pull llama3.1:8b &&
-
-        wait $SERVE_PID
+        cd /llm/scripts &&
+        source ipex-llm-init --gpu --device "iGPU" &&
+        bash start-ollama.sh &&
+        tail -F /root/ollama/ollama.log
       '
 #-----------------------------------------------
   open-webui:
