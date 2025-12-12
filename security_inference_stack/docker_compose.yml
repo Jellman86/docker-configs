@@ -133,13 +133,29 @@ services:
       - ${DOCKERCONFIGPATH}/ollama_data:/llm/ollama
       - ${DOCKERCONFIGPATH}/models_data:/llm/models
     command: >
-      bash -lc "
-        cd /llm/scripts/ &&
-        source ipex-llm-init --gpu --device \"$DEVICE\" ||
-        echo 'ipex-llm-init failed, continuing without extra env' &&
-        bash start-ollama.sh &&
+      bash -lc '
+        set -e
+        cd /llm/scripts/
+        # Try to init IPEX-LLM env; if it fails, continue without it
+        if ! source ipex-llm-init --gpu --device "$DEVICE"; then
+          echo "ipex-llm-init failed, continuing without extra env"
+        fi
+
+        # Start Ollama in background
+        bash start-ollama.sh &
+
+        # Give the server a moment to start
+        sleep 10
+
+        # Pull model once if not present
+        cd /llm/ollama
+        if ! ./ollama list | grep -q "llama3.2:8b"; then
+          ./ollama pull llama3.2:8b
+        fi
+
+        # Keep container alive and stream logs
         tail -f /llm/ollama/ollama.log
-      "
+      '
 #-----------------------------------------------
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
