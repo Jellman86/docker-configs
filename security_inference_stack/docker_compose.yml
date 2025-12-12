@@ -126,7 +126,7 @@ services:
       - ZES_ENABLE_SYSMAN=1
       - USE_XETLA=OFF
       # choose an appropriate device string for your GPU/iGPU
-      - DEVICE=GPU
+      - DEVICE=iGPU
     devices:
       - /dev/dri:/dev/dri
     volumes:
