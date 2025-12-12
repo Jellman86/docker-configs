@@ -111,32 +111,20 @@ services:
       - ${DOCKERCONFIGPATH}/mosquitto/data:/mosquitto/data
       - ${DOCKERCONFIGPATH}/mosquitto/log:/mosquitto/log
 #-----------------------------------------------
-  ollama-xpu:
-    image: intelanalytics/ipex-llm-inference-cpp-xpu:latest
-    container_name: ollama-xpu
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
     restart: unless-stopped
-    shm_size: "8gb"
-    ports:
-      - "11434:11434"
     networks:
       - general_brg
+    ports:
+      - "11434:11434"
     environment:
       - TZ=Europe/London
-      - OLLAMA_HOST=0.0.0.0:11434
-      - ZES_ENABLE_SYSMAN=1
-      - USE_XETLA=OFF
     devices:
       - /dev/dri:/dev/dri
     volumes:
       - ${DOCKERCONFIGPATH}/ollama/root:/root/.ollama
-      - ${DOCKERCONFIGPATH}/ollama/models:/models
-    command: >
-      bash -lc '
-        cd /llm/scripts &&
-        source ipex-llm-init --gpu --device "iGPU" &&
-        bash start-ollama.sh &&
-        tail -F /root/ollama/ollama.log
-      '
 #-----------------------------------------------
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -147,12 +135,11 @@ services:
     environment:
       - TZ=Europe/London
       # Point WebUI at the GPU-accelerated Ollama service
-      - OLLAMA_BASE_URL=http://ollama-xpu:11434
+      - OLLAMA_BASE_URL=http://ollama:11434
       - WEBUI_AUTH=False
     depends_on:
-      - ollama-xpu
+      - ollama
     volumes:
-      # Map to dataset if desired, e.g. /mnt/tank/ai/openwebui
       - ${DOCKERCONFIGPATH}/openwebui_data:/app/backend/data
     extra_hosts:
       - host.docker.internal:host-gateway
