@@ -167,6 +167,8 @@ services:
     volumes:
       # Map to dataset if desired, e.g. /mnt/tank/ai/openwebui
       - ${DOCKERCONFIGPATH}/openwebui_data:/app/backend/data
+    extra_hosts:
+      - host.docker.internal:host-gateway
 #-----------------------------------------------
 networks:
     service_mac_vlan:
