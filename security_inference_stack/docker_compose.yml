@@ -113,11 +113,9 @@ services:
       - ${DOCKERCONFIGPATH}/mosquitto/log:/mosquitto/log
 #-----------------------------------------------
   ollama-xpu:
-    # Intel XPU image with llama.cpp/Ollama support
     image: intelanalytics/ipex-llm-inference-cpp-xpu:latest
     container_name: ollama-xpu
     restart: unless-stopped
-    # Expose Ollama API to LAN (HA + Open WebUI)
     networks:
       - general_brg
     ports:
@@ -128,18 +126,20 @@ services:
       - OLLAMA_HOST=0.0.0.0:11434
       - ZES_ENABLE_SYSMAN=1
       - USE_XETLA=OFF
+      # choose an appropriate device string for your GPU/iGPU
+      - DEVICE=GPU
     devices:
-      - /dev/dri:/dev/dri          # Intel iGPU from TrueNAS
+      - /dev/dri:/dev/dri
     volumes:
-      # Map to a dataset if you want, e.g. /mnt/tank/ai/ollama
       - ${DOCKERCONFIGPATH}/ollama_data:/llm/ollama
       - ${DOCKERCONFIGPATH}/models_data:/llm/models
     command: >
       bash -lc "
-        cd /llm/ollama &&
-        source ipex-llm-init --gpu --device gpu &&
-        init-ollama &&
-        ./ollama serve
+        cd /llm/scripts/ &&
+        source ipex-llm-init --gpu --device \"$DEVICE\" ||
+        echo 'ipex-llm-init failed, continuing without extra env' &&
+        bash start-ollama.sh &&
+        tail -f /llm/ollama/ollama.log
       "
 #-----------------------------------------------
   open-webui:
