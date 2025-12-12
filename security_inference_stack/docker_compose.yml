@@ -157,7 +157,6 @@ services:
       - general_brg
     ports:
       - "8188:8080"
-    user: "568:568"
     environment:
       - TZ=Europe/London
       # Point WebUI at the GPU-accelerated Ollama service
