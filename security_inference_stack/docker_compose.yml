@@ -162,6 +162,7 @@ services:
       - TZ=Europe/London
       # Point WebUI at the GPU-accelerated Ollama service
       - OLLAMA_BASE_URL=http://ollama-xpu:11434
+      - WEBUI_AUTH=False
     depends_on:
       - ollama-xpu
     volumes:
