@@ -111,51 +111,39 @@ services:
       - ${DOCKERCONFIGPATH}/mosquitto/data:/mosquitto/data
       - ${DOCKERCONFIGPATH}/mosquitto/log:/mosquitto/log
 #-----------------------------------------------
-  ollama-xpu:
-    image: intelanalytics/ipex-llm-inference-cpp-xpu:latest
-    container_name: ollama-xpu
-    restart: unless-stopped
-    networks:
-      - general_brg
-    ports:
-      - "11434:11434"
-    user: "1000:1000"
-    environment:
-      - TZ=Europe/London
-      - OLLAMA_HOST=0.0.0.0:11434
-      - ZES_ENABLE_SYSMAN=1
-      - USE_XETLA=OFF
-      # choose an appropriate device string for your GPU/iGPU
-      - DEVICE=iGPU
-    devices:
-      - /dev/dri:/dev/dri
-    volumes:
-      - ${DOCKERCONFIGPATH}/ollama_data:/llm/ollama
-      - ${DOCKERCONFIGPATH}/models_data:/llm/models
-    command: >
-      bash -lc '
-        set -e
-        cd /llm/scripts/
-        # Try to init IPEX-LLM env; if it fails, continue without it
-        if ! source ipex-llm-init --gpu --device "$DEVICE"; then
-          echo "ipex-llm-init failed, continuing without extra env"
-        fi
-
-        # Start Ollama in background
-        bash start-ollama.sh &
-
-        # Give the server a moment to start
-        sleep 10
-
-        # Pull model once if not present
-        cd /llm/ollama
-        if ! ./ollama list | grep -q "llama3.2:8b"; then
-          ./ollama pull llama3.2:8b
-        fi
-
-        # Keep container alive and stream logs
-        tail -f /llm/ollama/ollama.log
-      '
+ollama-xpu:
+  image: intelanalytics/ipex-llm-inference-cpp-xpu:latest
+  container_name: ollama-xpu
+  restart: unless-stopped
+  shm_size: "8gb"
+  networks:
+    - general_brg
+  ports:
+    - "11434:11434"
+  # IMPORTANT: run as root (start-ollama.sh creates symlinks/logs)
+  # If you insist on non-root, it becomes a permissions/entrypoint rework exercise.
+  environment:
+    - TZ=Europe/London
+    - OLLAMA_HOST=0.0.0.0:11434
+    - ZES_ENABLE_SYSMAN=1
+    - USE_XETLA=OFF
+    - DEVICE=iGPU
+  devices:
+    - /dev/dri:/dev/dri
+  volumes:
+    # Persist ollama models/blobs (recommended)
+    - ${DOCKERCONFIGPATH}/ollama/root:/root/.ollama
+    # Optional: if you also want to run GGUF-from-/models workflows in the same container
+    - ${DOCKERCONFIGPATH}/ollama/models:/models
+  command: >
+    bash -lc '
+      cd /llm/scripts/ &&
+      source ipex-llm-init --gpu --device "$DEVICE" || echo "ipex-llm-init failed, continuing" &&
+      bash start-ollama.sh &&
+      cd /llm/ollama &&
+      ./ollama list | grep -q "llama3.2:8b" || ./ollama pull llama3.2:8b &&
+      tail -f /root/ollama/ollama.log
+    '
 #-----------------------------------------------
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
