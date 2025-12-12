@@ -120,8 +120,6 @@ services:
       - general_brg
     ports:
       - "11434:11434"
-    # IMPORTANT: run as root (start-ollama.sh creates symlinks/logs)
-    # If you insist on non-root, it becomes a permissions/entrypoint rework exercise.
     environment:
       - TZ=Europe/London
       - OLLAMA_HOST=0.0.0.0:11434
@@ -131,9 +129,7 @@ services:
     devices:
       - /dev/dri:/dev/dri
     volumes:
-      # Persist ollama models/blobs (recommended)
       - ${DOCKERCONFIGPATH}/ollama/root:/root/.ollama
-      # Optional: if you also want to run GGUF-from-/models workflows in the same container
       - ${DOCKERCONFIGPATH}/ollama/models:/models
     command: >
       bash -lc '
@@ -141,7 +137,16 @@ services:
         source ipex-llm-init --gpu --device "$DEVICE" || echo "ipex-llm-init failed, continuing" &&
         bash start-ollama.sh &&
         cd /llm/ollama &&
-        ./ollama list | grep -q "llama3.2:8b" || ./ollama pull llama3.2:8b &&
+
+        # wait for Ollama API to be responsive
+        for i in $(seq 1 30); do
+          ./ollama list >/dev/null 2>&1 && break
+          sleep 1
+        done &&
+
+        # pull a real tag (example: 8B)
+        ./ollama list | grep -q "llama3.1:8b" || ./ollama pull llama3.1:8b &&
+
         tail -f /root/ollama/ollama.log
       '
 #-----------------------------------------------
