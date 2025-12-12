@@ -116,6 +116,8 @@ services:
     container_name: ollama-xpu
     restart: unless-stopped
     shm_size: "8gb"
+    ports:
+      - "11434:11434"
     networks:
       - general_brg
     environment:
@@ -132,19 +134,18 @@ services:
       bash -lc '
         cd /llm/scripts/ &&
         source ipex-llm-init --gpu --device "iGPU" || echo "ipex-llm-init failed, continuing" &&
-        bash start-ollama.sh &&
-        cd /llm/ollama &&
 
-        # wait for Ollama API to be responsive
-        for i in $(seq 1 30); do
-          ./ollama list >/dev/null 2>&1 && break
+        /llm/ollama/ollama serve &
+        SERVE_PID=$! &&
+
+        for i in $(seq 1 60); do
+          /llm/ollama/ollama list >/dev/null 2>&1 && break
           sleep 1
         done &&
 
-        # pull a real tag (example: 8B)
-        ./ollama list | grep -q "llama3.1:8b" || ./ollama pull llama3.1:8b &&
+        /llm/ollama/ollama list | grep -q "llama3.1:8b" || /llm/ollama/ollama pull llama3.1:8b &&
 
-        tail -f /root/ollama/ollama.log
+        wait $SERVE_PID
       '
 #-----------------------------------------------
   open-webui:
@@ -156,7 +157,7 @@ services:
     environment:
       - TZ=Europe/London
       # Point WebUI at the GPU-accelerated Ollama service
-      - OLLAMA_BASE_URL=http://127.0.0.1:11434
+      - OLLAMA_BASE_URL=http://ollama-xpu:11434
       - WEBUI_AUTH=False
     depends_on:
       - ollama-xpu
