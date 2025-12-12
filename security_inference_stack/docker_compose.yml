@@ -62,7 +62,7 @@ services:
       - ${DOCKERCONFIGPATH}/birdnet-go/config:/config
       - ${DOCKERCONFIGPATH}/birdnet-go/data:/data
     tmpfs:
-      - /config/hls:exec,size=50M,uid=${BIRDNET_UID:-568},gid=${BIRDNET_GID:-568},mode=0755
+      - /config/hls:exec,size=50M,uid=${BIRDNET_UID:-1000},gid=${BIRDNET_GID:-1000},mode=0755
 #-----------------------------------------------
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
@@ -119,7 +119,7 @@ services:
       - general_brg
     ports:
       - "11434:11434"
-    user: "568:568"
+    user: "1000:1000"
     environment:
       - TZ=Europe/London
       - OLLAMA_HOST=0.0.0.0:11434
