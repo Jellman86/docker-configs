@@ -121,6 +121,7 @@ services:
       - "11434:11434"
     environment:
       - TZ=Europe/London
+      - OLLAMA_VULKAN=1
     devices:
       - /dev/dri:/dev/dri
     volumes:
@@ -134,7 +135,6 @@ services:
       - general_brg
     environment:
       - TZ=Europe/London
-      # Point WebUI at the GPU-accelerated Ollama service
       - OLLAMA_BASE_URL=http://ollama:11434
       - WEBUI_AUTH=False
     depends_on:
