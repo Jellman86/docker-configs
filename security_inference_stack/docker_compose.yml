@@ -129,6 +129,20 @@ services:
       --model small-int8
       --data-dir /data
 #-----------------------------------------------
+  piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: piper
+    command: --voice en-us-ryan-high --length-scale 1.0
+    volumes:
+      - ${DOCKERCONFIGPATH}/piper/data:/data
+    ports:
+      - "10200:10200"
+      # optional, only if you want the HTTP server exposed too:
+      # - "5000:5000"
+    networks:
+      - general_brg
+    restart: unless-stopped
+#-----------------------------------------------
 networks:
     service_mac_vlan:
       external: true
