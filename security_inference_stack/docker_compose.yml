@@ -111,36 +111,6 @@ services:
       - ${DOCKERCONFIGPATH}/mosquitto/data:/mosquitto/data
       - ${DOCKERCONFIGPATH}/mosquitto/log:/mosquitto/log
 #-----------------------------------------------
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    restart: unless-stopped
-    networks:
-      - general_brg
-    ports:
-      - "11434:11434"
-    environment:
-      - TZ=Europe/London
-    volumes:
-      - ${DOCKERCONFIGPATH}/ollama/root:/root/.ollama
-#-----------------------------------------------
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
-    restart: unless-stopped
-    networks:
-      - general_brg
-    environment:
-      - TZ=Europe/London
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - WEBUI_AUTH=False
-    depends_on:
-      - ollama
-    volumes:
-      - ${DOCKERCONFIGPATH}/openwebui_data:/app/backend/data
-    extra_hosts:
-      - host.docker.internal:host-gateway
-#-----------------------------------------------
   wyoming-whisper:
     image: rhasspy/wyoming-whisper:latest
     container_name: wyoming-whisper
@@ -153,7 +123,6 @@ services:
       - ${DOCKERCONFIGPATH}/wyoming-whisper:/data
     environment:
       - TZ=Europe/London
-    # Pick one model; smaller=int8 is usually faster/less RAM.
     command: >
       --uri tcp://0.0.0.0:10300
       --language en
