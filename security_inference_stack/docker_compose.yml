@@ -129,7 +129,7 @@ services:
       --model small-int8
       --data-dir /data
 #-----------------------------------------------
-  piper:
+  wyoming-piper:
     image: rhasspy/wyoming-piper:latest
     container_name: piper
     command: --voice en-us-ryan-high --length-scale 1.0
