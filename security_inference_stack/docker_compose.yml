@@ -131,7 +131,7 @@ services:
 #-----------------------------------------------
   wyoming-piper:
     image: rhasspy/wyoming-piper:latest
-    container_name: piper
+    container_name: wyoming-piper
     command: --voice en-us-ryan-high --length-scale 1.0
     volumes:
       - ${DOCKERCONFIGPATH}/piper/data:/data
