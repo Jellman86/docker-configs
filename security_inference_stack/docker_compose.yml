@@ -144,6 +144,25 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
 #-----------------------------------------------
+  wyoming-whisper:
+    image: rhasspy/wyoming-whisper:latest
+    container_name: wyoming-whisper
+    restart: unless-stopped
+    networks:
+      - general_brg
+    ports:
+      - "10300:10300"
+    volumes:
+      - ${DOCKERCONFIGPATH}/wyoming-whisper:/data
+    environment:
+      - TZ=Europe/London
+    # Pick one model; smaller=int8 is usually faster/less RAM.
+    command: >
+      --uri tcp://0.0.0.0:10300
+      --language en
+      --model small-int8
+      --data-dir /data
+#-----------------------------------------------
 networks:
     service_mac_vlan:
       external: true
