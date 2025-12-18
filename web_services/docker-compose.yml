@@ -16,8 +16,8 @@ services:
       vpn_stack_brg:
       general_brg:
     environment:
-      - PUID=568
-      - PGID=568
+      - PUID=1000
+      - PGID=1000
       - TZ=Europe/London
     volumes:
       - ${CONFIG_PATH}/nginx-rp/config:/data
