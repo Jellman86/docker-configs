@@ -21,11 +21,6 @@ services:
       networks:
         service_mac_vlan:
           ipv4_address: 192.168.213.133
-      healthcheck:
-        test: "curl -f http://localhost:32400/identity || exit 1"
-        interval: 1m
-        timeout: 10s
-        retries: 3
 #-----------------------------------------------
     unmanic:
       container_name: unmanic
@@ -50,11 +45,6 @@ services:
         - "109" #for iGPU access
       networks:
         general_brg:
-      healthcheck:
-        test: "curl -f http://localhost:8888/ || exit 1"
-        interval: 1m
-        timeout: 10s
-        retries: 3
 #-----------------------------------------------
 networks:
     dmz_mac_vlan:

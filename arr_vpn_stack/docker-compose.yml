@@ -40,11 +40,6 @@ services:
       - BLOCK_SURVEILLANCE=on
       - BLOCK_ADS=off
       - DOT_PROVIDERS=cloudflare
-    healthcheck:
-      test: ["CMD-SHELL", "/gluetun-healthcheck"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 #-----------------------------------------------
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest

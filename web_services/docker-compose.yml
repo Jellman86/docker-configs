@@ -39,11 +39,6 @@ services:
     volumes:
       - privatebin_cfg:/srv/data
       - /dev/shm:/var/lib/nginx/tmp
-    healthcheck:
-      test: "curl -f http://localhost:8080/ || exit 1"
-      interval: 1m
-      timeout: 10s
-      retries: 3
 #-----------------------------------------------
   speedtest:
       restart: unless-stopped
@@ -58,11 +53,6 @@ services:
       image: openspeedtest/latest
       networks:
         general_brg:
-      healthcheck:
-        test: "curl -f http://localhost:3000/ || exit 1"
-        interval: 1m
-        timeout: 10s
-        retries: 3
 #-----------------------------------------------
 volumes:
     privatebin_cfg:

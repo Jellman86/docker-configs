@@ -9,6 +9,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       general_brg:
+    healthcheck:
+      test: ["CMD", "/watchtower", "--health-check"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
 #-----------------------------------------------
   dozzle:
     image: amir20/dozzle:latest
@@ -22,6 +27,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
         general_brg:
+    healthcheck:
+      test: ["CMD", "/dozzle", "healthcheck"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
 #-----------------------------------------------
 networks:
     dmz_mac_vlan:
