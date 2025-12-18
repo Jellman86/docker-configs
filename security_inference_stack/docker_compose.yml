@@ -31,6 +31,11 @@ services:
       - TZ=Europe/London
       - PUID=568
       - PGID=568
+    healthcheck:
+      test: "curl -f http://localhost:5000/api/version || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 3
 #-----------------------------------------------
   birdnet-go:
     image: ghcr.io/tphakala/birdnet-go:nightly
@@ -58,6 +63,11 @@ services:
       # Range Filter Configuration               
       - BIRDNET_RANGEFILTER_MODEL=latest
       - BIRDNET_RANGEFILTER_THRESHOLD=0.01
+    healthcheck:
+      test: "curl -f http://localhost:8080/ || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 3
     volumes:
       - ${DOCKERCONFIGPATH}/birdnet-go/config:/config
       - ${DOCKERCONFIGPATH}/birdnet-go/data:/data
@@ -78,6 +88,11 @@ services:
       - general_brg
     ports:
       - "8123:8123"
+    healthcheck:
+      test: "curl -f http://localhost:8123/manifest.json || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 3
 #-----------------------------------------------
   matter-server:
     image: ghcr.io/home-assistant-libs/python-matter-server:stable
@@ -91,6 +106,11 @@ services:
     ports:
       - "5580:5580"
       - "5540:5540"
+    healthcheck:
+      test: "nc -z localhost 5580 || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 3
     volumes:
       - ${DOCKERCONFIGPATH}/matter-server/data:/data:rw
       - /run/dbus:/run/dbus:ro
@@ -106,6 +126,11 @@ services:
       - general_brg
     ports:
       - "1883:1883"
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -t '$SYS/broker/version' -C 1 || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
     volumes:
       - ${DOCKERCONFIGPATH}/mosquitto/config:/mosquitto/config
       - ${DOCKERCONFIGPATH}/mosquitto/data:/mosquitto/data
@@ -128,6 +153,11 @@ services:
       --language en
       --model small-int8
       --data-dir /data
+    healthcheck:
+      test: "nc -z localhost 10300 || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 3
 #-----------------------------------------------
   wyoming-piper:
     image: rhasspy/wyoming-piper:latest
@@ -142,6 +172,11 @@ services:
     networks:
       - general_brg
     restart: unless-stopped
+    healthcheck:
+      test: "nc -z localhost 10200 || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 3
 #-----------------------------------------------
 networks:
     service_mac_vlan:

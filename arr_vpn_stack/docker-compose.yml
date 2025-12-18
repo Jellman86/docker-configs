@@ -40,6 +40,11 @@ services:
       - BLOCK_SURVEILLANCE=on
       - BLOCK_ADS=off
       - DOT_PROVIDERS=cloudflare
+    healthcheck:
+      test: ["CMD-SHELL", "/gluetun-healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 #-----------------------------------------------
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -57,11 +62,11 @@ services:
       - ${DOWNLOADSPATH}/downloads:/downloads
     network_mode: "service:gluetun"
     restart: unless-stopped
-    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+    healthcheck:
       test: "curl -sf https://example.com  || exit 1"
       interval: 1m
       timeout: 10s
-      retries: 1
+      retries: 3
     labels:
       deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
@@ -78,11 +83,11 @@ services:
       - ${DOWNLOADSPATH}/downloads/media:/media
       - ${DOWNLOADSPATH}/downloads:/downloads
     restart: unless-stopped
-    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+    healthcheck:
       test: "curl -sf https://example.com  || exit 1"
       interval: 1m
       timeout: 10s
-      retries: 1
+      retries: 3
     labels:
       deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
@@ -99,11 +104,11 @@ services:
       - ${DOWNLOADSPATH}/downloads:/downloads
       - ${DOWNLOADSPATH}/downloads/media/video/film:/film
     restart: unless-stopped
-    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+    healthcheck:
       test: "curl -sf https://example.com  || exit 1"
       interval: 1m
       timeout: 10s
-      retries: 1
+      retries: 3
     labels:
       deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
@@ -120,11 +125,11 @@ services:
       - ${DOWNLOADSPATH}/downloads:/downloads
       - ${DOWNLOADSPATH}/downloads/media/video/tv:/tv
     restart: unless-stopped
-    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+    healthcheck:
       test: "curl -sf https://example.com  || exit 1"
       interval: 1m
       timeout: 10s
-      retries: 1
+      retries: 3
     labels:
       deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
@@ -138,11 +143,11 @@ services:
       - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
       - TZ=Europe/London
     restart: unless-stopped
-    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+    healthcheck:
       test: "curl -sf https://example.com  || exit 1"
       interval: 1m
       timeout: 10s
-      retries: 1
+      retries: 3
     labels:
       deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
@@ -176,6 +181,13 @@ services:
     volumes:
       - ${DOCKERCONFIGPATH}/overseerr:/app/config
     restart: unless-stopped
+    healthcheck:
+      test: "curl --fail http://localhost:5055/api/v1/status || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 3
+    labels:
+      deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
 networks:
   vpn_stack_brg:
