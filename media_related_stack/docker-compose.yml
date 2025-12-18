@@ -15,8 +15,7 @@ services:
         - ${MEDIA_PATH}:/library
         - /dev/shm:/transcode
       devices:
-        - /dev/dri/renderD128:/dev/dri/renderD128
-        - /dev/dri/card0:/dev/dri/card0
+        - /dev/dri:/dev/dri
       group_add:
         - "109" #for iGPU access
       networks:
@@ -46,8 +45,7 @@ services:
         # to transcode to --- lesad, poor boy.
         #- ${CONFIG_PATH}/unmanic-tmp:/tmp/unmanic
       devices:
-        - /dev/dri/renderD128:/dev/dri/renderD128
-        - /dev/dri/card0:/dev/dri/card0
+        - /dev/dri:/dev/dri
       group_add:
         - "109" #for iGPU access
       networks:
