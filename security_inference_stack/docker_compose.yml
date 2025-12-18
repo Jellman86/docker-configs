@@ -106,11 +106,6 @@ services:
     ports:
       - "5580:5580"
       - "5540:5540"
-    healthcheck:
-      test: "nc -z localhost 5580 || exit 1"
-      interval: 1m
-      timeout: 10s
-      retries: 3
     volumes:
       - ${DOCKERCONFIGPATH}/matter-server/data:/data:rw
       - /run/dbus:/run/dbus:ro
@@ -126,11 +121,6 @@ services:
       - general_brg
     ports:
       - "1883:1883"
-    healthcheck:
-      test: ["CMD-SHELL", "mosquitto_sub -t '$SYS/broker/version' -C 1 || exit 1"]
-      interval: 1m
-      timeout: 10s
-      retries: 3
     volumes:
       - ${DOCKERCONFIGPATH}/mosquitto/config:/mosquitto/config
       - ${DOCKERCONFIGPATH}/mosquitto/data:/mosquitto/data
@@ -153,11 +143,6 @@ services:
       --language en
       --model small-int8
       --data-dir /data
-    healthcheck:
-      test: "nc -z localhost 10300 || exit 1"
-      interval: 1m
-      timeout: 10s
-      retries: 3
 #-----------------------------------------------
   wyoming-piper:
     image: rhasspy/wyoming-piper:latest
@@ -172,11 +157,6 @@ services:
     networks:
       - general_brg
     restart: unless-stopped
-    healthcheck:
-      test: "nc -z localhost 10200 || exit 1"
-      interval: 1m
-      timeout: 10s
-      retries: 3
 #-----------------------------------------------
 networks:
     service_mac_vlan:

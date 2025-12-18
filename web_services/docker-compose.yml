@@ -22,6 +22,11 @@ services:
     volumes:
       - ${CONFIG_PATH}/nginx-rp/config:/data
       - ${CONFIG_PATH}/nginx-rp/le:/etc/letsencrypt
+    healthcheck:
+      test: ["CMD", "/usr/bin/check-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 #-----------------------------------------------
   privatebin:
     image: "privatebin/nginx-fpm-alpine:stable"
@@ -34,6 +39,11 @@ services:
     volumes:
       - privatebin_cfg:/srv/data
       - /dev/shm:/var/lib/nginx/tmp
+    healthcheck:
+      test: "curl -f http://localhost:8080/ || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 3
 #-----------------------------------------------
   speedtest:
       restart: unless-stopped
@@ -48,6 +58,11 @@ services:
       image: openspeedtest/latest
       networks:
         general_brg:
+      healthcheck:
+        test: "curl -f http://localhost:3000/ || exit 1"
+        interval: 1m
+        timeout: 10s
+        retries: 3
 #-----------------------------------------------
 volumes:
     privatebin_cfg:
