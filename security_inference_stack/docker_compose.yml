@@ -50,8 +50,8 @@ services:
         general_brg:
     environment:
       - TZ=Europe/London
-      - BIRDNET_UID=1000
-      - BIRDNET_GID=1000
+      - BIRDNET_UID=568
+      - BIRDNET_GID=568
       # BirdNET Configuration
       # Currently configured for the rents place. 
       - BIRDNET_LOCALE=en-uk                      # Locale code (2-10 chars, e.g., "en" or "en-us")
@@ -75,7 +75,7 @@ services:
       - ${DOCKERCONFIGPATH}/birdnet-go/config:/config
       - ${DOCKERCONFIGPATH}/birdnet-go/data:/data
     tmpfs:
-      - /config/hls:exec,size=50M,uid=${BIRDNET_UID:-1000},gid=${BIRDNET_GID:-1000},mode=0755
+      - /config/hls:exec,size=50M,uid=${BIRDNET_UID:-568},gid=${BIRDNET_GID:-568},mode=0755
 #-----------------------------------------------
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
