@@ -14,6 +14,7 @@ services:
       service_mac_vlan:
         ipv4_address: 192.168.213.129
       vpn_stack_brg:
+      dev_bridge:
       general_brg:
     environment:
       - PUID=568
@@ -65,5 +66,7 @@ networks:
     general_brg:
       external: true
     vpn_stack_brg:
+      external: true
+    dev_bridge:
       external: true
     
