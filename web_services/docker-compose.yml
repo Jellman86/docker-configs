@@ -25,7 +25,7 @@ services:
       - ${CONFIG_PATH}/nginx-rp/le:/etc/letsencrypt
     healthcheck:
       test: ["CMD", "/usr/bin/check-health"]
-      interval: 10s
+      interval: 120s
       timeout: 3s
       retries: 3
 #-----------------------------------------------
