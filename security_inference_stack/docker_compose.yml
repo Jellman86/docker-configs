@@ -33,7 +33,7 @@ services:
       - "8555:8555/udp" # WebRTC over udp
     environment:
       - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD}
-      - TZ=Europe/London
+      - TZ=${TZ:-UTC}
     healthcheck:
       test: "curl -f http://localhost:5000/api/version || exit 1"
       interval: 1m
@@ -49,7 +49,7 @@ services:
     networks:
         general_brg:
     environment:
-      - TZ=Europe/London
+      - TZ=${TZ:-UTC}
       - BIRDNET_UID=568
       - BIRDNET_GID=568
       # BirdNET Configuration
@@ -82,7 +82,7 @@ services:
     container_name: homeassistant
     restart: unless-stopped
     environment:
-      - TZ=Europe/London
+      - TZ=${TZ:-UTC}
     volumes:
       - ${DOCKERCONFIGPATH}/homeassistant/config:/config
       - /etc/localtime:/etc/localtime:ro
@@ -101,7 +101,7 @@ services:
     container_name: matter-server
     restart: unless-stopped
     environment:
-      - TZ=Europe/London
+      - TZ=${TZ:-UTC}
     networks:
       - general_brg
     ports:
@@ -116,7 +116,7 @@ services:
     container_name: mosquitto
     restart: unless-stopped
     environment:
-      - TZ=Europe/London
+      - TZ=${TZ:-UTC}
     networks:
       - general_brg
     ports:
@@ -137,7 +137,7 @@ services:
     volumes:
       - ${DOCKERCONFIGPATH}/wyoming-whisper:/data
     environment:
-      - TZ=Europe/London
+      - TZ=${TZ:-UTC}
     command: >
       --uri tcp://0.0.0.0:10300
       --language en
@@ -155,6 +155,48 @@ services:
     networks:
       - general_brg
     restart: unless-stopped
+#-----------------------------------------------
+  yawamf-backend:
+    image: ghcr.io/jellman86/wamf-backend:latest
+    container_name: yawamf-backend
+    restart: unless-stopped
+    networks:
+      - general_brg
+    volumes:
+      - ${DOCKERCONFIGPATH}/YA-WAMF/config:/config        # Configuration files (config.json)
+      - ${DOCKERCONFIGPATH}/YA-WAMF/data:/data            # Persistent data (database, models)
+    ports:
+      - "8946:8000"
+    environment:
+      - TZ=${TZ:-UTC}
+      - FRIGATE__FRIGATE_URL=${FRIGATE_URL:-http://frigate:5000}
+      - FRIGATE__FRIGATE_AUTH_TOKEN=${FRIGATE_AUTH_TOKEN:-}
+      - FRIGATE__MQTT_SERVER=${MQTT_SERVER:-mqtt}
+      - FRIGATE__MQTT_PORT=${MQTT_PORT:-1883}
+      - FRIGATE__MQTT_AUTH=${MQTT_AUTH:-false}
+      - FRIGATE__MQTT_USERNAME=${MQTT_USERNAME:-}
+      - FRIGATE__MQTT_PASSWORD=${MQTT_PASSWORD:-}
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+#----------------
+  yawamf-frontend:
+    image: ghcr.io/jellman86/wamf-frontend:latest
+    container_name: yawamf-frontend
+    restart: unless-stopped
+    networks:
+      - general_brg
+    ports:
+      - "9852:80"
+    depends_on:
+      - yawamf-backend
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 #-----------------------------------------------
 networks:
     service_mac_vlan:
