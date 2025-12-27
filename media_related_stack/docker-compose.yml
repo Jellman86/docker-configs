@@ -17,7 +17,7 @@ services:
       devices:
         - /dev/dri:/dev/dri
       group_add:
-        - "109" #for iGPU access
+        - "109"
       networks:
         service_mac_vlan:
           ipv4_address: 192.168.213.133
@@ -42,7 +42,7 @@ services:
       devices:
         - /dev/dri:/dev/dri
       group_add:
-        - "109" #for iGPU access
+        - "109"
       networks:
         general_brg:
 #-----------------------------------------------
