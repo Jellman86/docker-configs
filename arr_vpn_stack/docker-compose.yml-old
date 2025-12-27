@@ -1,3 +1,4 @@
+---
 services:
   gluetun:
     image: qmcgaw/gluetun
@@ -17,14 +18,19 @@ services:
       - 9696:9696/tcp # prowlarr
       - 7878:7878/tcp # radarr
       - 8989:8989/tcp # sonarr
-      - 8191:8191/tcp # flaresolverr
+      - 8191:8191/tcp # Flarrsolvr
     volumes:
       - ${DOCKERCONFIGPATH}/gluetun:/gluetun
     environment:
       - VPN_SERVICE_PROVIDER=${VPNHOST}
+      # OpenVPN:
       - VPN_TYPE=openvpn
       - OPENVPN_USER=${OPENVPNUSER}
       - OPENVPN_PASSWORD=${OPENVPNPASSWORD}
+      # Wireguard:
+      #- VPN_TYPE=wireguard
+      #- WIREGUARD_PRIVATE_KEY=${WGPRIVKEY}
+      #- WIREGUARD_ADDRESSES=10.64.222.21/32
       - TZ=Europe/London
       - SERVER_COUNTRIES=Spain,Switzerland,Netherlands,Panama
       - UPDATER_PERIOD=12h
@@ -34,10 +40,6 @@ services:
       - BLOCK_SURVEILLANCE=on
       - BLOCK_ADS=off
       - DOT_PROVIDERS=cloudflare
-    labels:
-      # Optional: Restart gluetun if the VPN tunnel goes down (handled internally usually, but good for deunhealth)
-      deunhealth.restart.on.unhealthy: true 
-
 #-----------------------------------------------
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -47,27 +49,21 @@ services:
       - PGID=568
       - TZ=Europe/London
       - WEBUI_PORT=8081
-      - TORRENTING_PORT=5041
+      - TORRENTING_PORT=5041 #optional, to match gluetun qbittorrent port
       - DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest
     volumes:
       - ${DOCKERCONFIGPATH}/qbittorrent/config:/config
       - ${DOCKERCONFIGPATH}/qbittorrent/logs:/logs
       - ${DOWNLOADSPATH}/downloads:/downloads
     network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      # Checks if WebUI is responsive.
-      test: "curl --fail http://localhost:8081 || exit 1"
+      test: "curl -sf https://example.com  || exit 1"
       interval: 1m
       timeout: 10s
       retries: 3
-      start_period: 30s
     labels:
       deunhealth.restart.on.unhealthy: true
-
 #-----------------------------------------------
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
@@ -77,23 +73,18 @@ services:
       - PGID=568
       - TZ=Europe/London
     network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     volumes:
       - ${DOCKERCONFIGPATH}/prowlarr/config:/config
       - ${DOWNLOADSPATH}/downloads/media:/media
       - ${DOWNLOADSPATH}/downloads:/downloads
     restart: unless-stopped
     healthcheck:
-      test: "curl --fail http://localhost:9696/ping || exit 1"
+      test: "curl -sf https://example.com  || exit 1"
       interval: 1m
       timeout: 10s
       retries: 3
-      start_period: 30s
     labels:
       deunhealth.restart.on.unhealthy: true
-
 #-----------------------------------------------
   radarr:
     image: lscr.io/linuxserver/radarr:latest
@@ -103,23 +94,18 @@ services:
       - PGID=568
       - TZ=Europe/London
     network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     volumes:
       - ${DOCKERCONFIGPATH}/radarr/config:/config
       - ${DOWNLOADSPATH}/downloads:/downloads
       - ${DOWNLOADSPATH}/downloads/media/video/film:/film
     restart: unless-stopped
     healthcheck:
-      test: "curl --fail http://localhost:7878/ping || exit 1"
+      test: "curl -sf https://example.com  || exit 1"
       interval: 1m
       timeout: 10s
       retries: 3
-      start_period: 30s
     labels:
       deunhealth.restart.on.unhealthy: true
-
 #-----------------------------------------------
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
@@ -129,31 +115,23 @@ services:
       - PGID=568
       - TZ=Europe/London
     network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     volumes:
       - ${DOCKERCONFIGPATH}/sonarr/config:/config
       - ${DOWNLOADSPATH}/downloads:/downloads
       - ${DOWNLOADSPATH}/downloads/media/video/tv:/tv
     restart: unless-stopped
     healthcheck:
-      test: "curl --fail http://localhost:8989/ping || exit 1"
+      test: "curl -sf https://example.com  || exit 1"
       interval: 1m
       timeout: 10s
       retries: 3
-      start_period: 30s
     labels:
       deunhealth.restart.on.unhealthy: true
-
 #-----------------------------------------------
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
     network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - LOG_HTML=${LOG_HTML:-false}
@@ -161,14 +139,12 @@ services:
       - TZ=Europe/London
     restart: unless-stopped
     healthcheck:
-      test: "curl --fail http://localhost:8191 || exit 1"
+      test: "curl -sf https://example.com  || exit 1"
       interval: 1m
       timeout: 10s
       retries: 3
-      start_period: 30s
     labels:
       deunhealth.restart.on.unhealthy: true
-
 #-----------------------------------------------
   deunhealth:
     image: qmcgaw/deunhealth
@@ -181,15 +157,15 @@ services:
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-
 #-----------------------------------------------
   overseerr:
-    image: lscr.io/linuxserver/overseerr:latest
+    image: sctx/overseerr:latest
     container_name: overseerr
     environment:
       - PUID=568
       - PGID=568
       - TZ=Europe/London
+      - PORT=5055 #Webui Port
     networks:
       vpn_stack_brg:
       dmz_mac_vlan:
@@ -198,17 +174,15 @@ services:
     ports:
       - 5055:5055
     volumes:
-      - ${DOCKERCONFIGPATH}/overseerr:/config
+      - ${DOCKERCONFIGPATH}/overseerr:/app/config
     restart: unless-stopped
     healthcheck:
       test: "curl --fail http://localhost:5055/api/v1/status || exit 1"
       interval: 1m
       timeout: 10s
       retries: 3
-      start_period: 60s # Vital: Gives Overseerr time to boot
     labels:
       deunhealth.restart.on.unhealthy: true
-
 #-----------------------------------------------
 networks:
   vpn_stack_brg:
