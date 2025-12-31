@@ -9,7 +9,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     networks:
       vpn_stack_brg:
-        ipv4_address: 172.17.0.2
+        #ipv4_address: 172.17.0.2
     ports:
       - 5041:5041/tcp # qbittorrent
       - 5041:5041/udp # qbittorrent
@@ -181,39 +181,9 @@ services:
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-
-#-----------------------------------------------
-  overseerr:
-    image: lscr.io/linuxserver/overseerr:latest
-    container_name: overseerr
-    environment:
-      - PUID=568
-      - PGID=568
-      - TZ=Europe/London
-    networks:
-      vpn_stack_brg:
-      dmz_mac_vlan:
-        ipv4_address: 192.168.215.134
-      service_mac_vlan:
-    ports:
-      - 5055:5055
-    volumes:
-      - ${DOCKERCONFIGPATH}/overseerr:/config
-    restart: unless-stopped
-    healthcheck:
-      test: "curl --fail http://localhost:5055/api/v1/status || exit 1"
-      interval: 1m
-      timeout: 10s
-      retries: 3
-      start_period: 60s # Vital: Gives Overseerr time to boot
-    labels:
-      deunhealth.restart.on.unhealthy: true
-
 #-----------------------------------------------
 networks:
   vpn_stack_brg:
-    external: true
-  dmz_mac_vlan:
     external: true
   service_mac_vlan:
     external: true
