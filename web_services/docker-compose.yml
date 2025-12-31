@@ -65,10 +65,11 @@ services:
       vpn_stack_brg:
       dmz_mac_vlan:
         ipv4_address: 192.168.215.134
+      general_brg:
     ports:
       - 5055:5055
     volumes:
-      - ${DOCKERCONFIGPATH}/overseerr:/config
+      - ${CONFIG_PATH}/overseerr:/config
     restart: unless-stopped
     healthcheck:
       test: "curl --fail http://localhost:5055/api/v1/status || exit 1"
