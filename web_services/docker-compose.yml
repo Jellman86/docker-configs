@@ -16,9 +16,9 @@ services:
       vpn_stack_brg:
       general_brg:
     environment:
-      - PUID=568
-      - PGID=568
-      - TZ=Europe/London
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
     volumes:
       - ${CONFIG_PATH}/nginx-rp/config:/data
       - ${CONFIG_PATH}/nginx-rp/le:/etc/letsencrypt
@@ -46,7 +46,7 @@ services:
       environment:
         - PUID=568
         - PGID=568
-        - TZ=Europe/London
+        - TZ=${TZ}
       ports:
         - '3000:3000'
         - '3001:3001'
@@ -60,7 +60,7 @@ services:
     environment:
       - PUID=568
       - PGID=568
-      - TZ=Europe/London
+      - TZ=${TZ}
     networks:
       vpn_stack_brg:
       dmz_mac_vlan:
