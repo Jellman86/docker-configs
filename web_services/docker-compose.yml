@@ -10,7 +10,7 @@ services:
       - 443:443
     networks:
       dmz_mac_vlan:
-        ipv4_address: 192.168.215.129
+        #ipv4_address: 192.168.215.129
       service_mac_vlan:
         ipv4_address: 192.168.213.129
       vpn_stack_brg:
