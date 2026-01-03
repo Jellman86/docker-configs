@@ -157,7 +157,7 @@ services:
     restart: unless-stopped
 #-----------------------------------------------
   yawamf-backend:
-    image: ghcr.io/jellman86/wamf-backend:latest
+    image: ghcr.io/jellman86/wamf-backend:dev
     container_name: yawamf-backend
     restart: unless-stopped
     networks:
@@ -183,7 +183,7 @@ services:
       retries: 3
 #----------------
   yawamf-frontend:
-    image: ghcr.io/jellman86/wamf-frontend:latest
+    image: ghcr.io/jellman86/wamf-frontend:dev
     container_name: yawamf-frontend
     restart: unless-stopped
     networks:
