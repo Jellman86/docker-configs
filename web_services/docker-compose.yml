@@ -10,15 +10,15 @@ services:
       - 443:443
     networks:
       dmz_mac_vlan:
-        ipv4_address: 192.168.215.129
+        #ipv4_address: 192.168.215.129
       service_mac_vlan:
         ipv4_address: 192.168.213.129
       vpn_stack_brg:
       general_brg:
     environment:
-      - PUID=568
-      - PGID=568
-      - TZ=Europe/London
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
     volumes:
       - ${CONFIG_PATH}/nginx-rp/config:/data
       - ${CONFIG_PATH}/nginx-rp/le:/etc/letsencrypt
@@ -46,13 +46,37 @@ services:
       environment:
         - PUID=568
         - PGID=568
-        - TZ=Europe/London
+        - TZ=${TZ}
       ports:
         - '3000:3000'
         - '3001:3001'
       image: openspeedtest/latest
       networks:
         general_brg:
+#-----------------------------------------------
+  overseerr:
+    image: lscr.io/linuxserver/overseerr:latest
+    container_name: overseerr
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=${TZ}
+    networks:
+      vpn_stack_brg:
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.134
+      general_brg:
+    ports:
+      - 5055:5055
+    volumes:
+      - ${CONFIG_PATH}/overseerr:/config
+    restart: unless-stopped
+    healthcheck:
+      test: "curl --fail http://localhost:5055/api/v1/status || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 60s # Vital: Gives Overseerr time to boot
 #-----------------------------------------------
 volumes:
     privatebin_cfg:
