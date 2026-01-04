@@ -198,21 +198,6 @@ services:
       timeout: 10s
       retries: 3
 #-----------------------------------------------
-  # Headless Browser for UI Testing & Visual Inspection
-  playwright:
-    image: mcr.microsoft.com/playwright:v1.49.1-noble
-    container_name: playwright-service
-    restart: unless-stopped
-    ipc: host # Recommended for browser stability
-    networks:
-      - general_brg
-    environment:
-      - BROWSER_PORT=9222 # Expose CDP port if needed
-    # Keep the container running
-    command: ["npx", "-y", "playwright", "run-server", "--port", "3000"]
-    expose:
-      - "3000"
-#-----------------------------------------------
 networks:
     service_mac_vlan:
       external: true
