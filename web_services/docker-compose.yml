@@ -65,7 +65,7 @@ services:
       vpn_stack_brg:
       dmz_mac_vlan:
         ipv4_address: 192.168.215.134
-      general_brg:
+      service_mac_vlan:
     ports:
       - 5055:5055
     volumes:
