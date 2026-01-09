@@ -3,7 +3,7 @@ services:
   frigate:
     container_name: frigate
     restart: unless-stopped
-    user: "568:568"
+    #user: "568:568"
     stop_grace_period: 30s # allow enough time to shut down the various services
     image: ghcr.io/blakeblackshear/frigate:stable
     shm_size: "512mb" # update for your cameras based on calculation above
