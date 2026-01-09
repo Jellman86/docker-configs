@@ -3,6 +3,7 @@ services:
   frigate:
     container_name: frigate
     restart: unless-stopped
+    user: "568:568"
     stop_grace_period: 30s # allow enough time to shut down the various services
     image: ghcr.io/blakeblackshear/frigate:stable
     shm_size: "512mb" # update for your cameras based on calculation above
@@ -81,6 +82,7 @@ services:
     image: ghcr.io/home-assistant/home-assistant:stable
     container_name: homeassistant
     restart: unless-stopped
+    user: "568:568"
     environment:
       - TZ=${TZ:-UTC}
     volumes:
@@ -100,6 +102,7 @@ services:
     image: ghcr.io/home-assistant-libs/python-matter-server:stable
     container_name: matter-server
     restart: unless-stopped
+    user: "568:568"
     environment:
       - TZ=${TZ:-UTC}
     networks:
@@ -115,6 +118,7 @@ services:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     restart: unless-stopped
+    user: "568:568"
     environment:
       - TZ=${TZ:-UTC}
     networks:
@@ -130,6 +134,7 @@ services:
     image: rhasspy/wyoming-whisper:latest
     container_name: wyoming-whisper
     restart: unless-stopped
+    user: "568:568"
     networks:
       - general_brg
     ports:
@@ -147,6 +152,7 @@ services:
   wyoming-piper:
     image: rhasspy/wyoming-piper:latest
     container_name: wyoming-piper
+    user: "568:568"
     command: --voice en-us-ryan-high --length-scale 1.0
     volumes:
       - ${DOCKERCONFIGPATH}/piper/data:/data
