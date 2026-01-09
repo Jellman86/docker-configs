@@ -118,7 +118,6 @@ services:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     restart: unless-stopped
-    user: "568:568"
     environment:
       - TZ=${TZ:-UTC}
     networks:
