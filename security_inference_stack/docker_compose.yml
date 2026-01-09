@@ -160,6 +160,7 @@ services:
     image: ghcr.io/jellman86/wamf-backend:dev
     container_name: yawamf-backend
     restart: unless-stopped
+    user: "568:568"
     networks:
       - general_brg
     volumes:
@@ -186,6 +187,7 @@ services:
     image: ghcr.io/jellman86/wamf-frontend:dev
     container_name: yawamf-frontend
     restart: unless-stopped
+    user: "568:568"
     networks:
       - general_brg
     ports:
