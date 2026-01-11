@@ -82,7 +82,6 @@ services:
     image: ghcr.io/home-assistant/home-assistant:stable
     container_name: homeassistant
     restart: unless-stopped
-    user: "568:568"
     environment:
       - TZ=${TZ:-UTC}
     volumes:
@@ -129,38 +128,6 @@ services:
       - ${DOCKERCONFIGPATH}/mosquitto/config:/mosquitto/config
       - ${DOCKERCONFIGPATH}/mosquitto/data:/mosquitto/data
       - ${DOCKERCONFIGPATH}/mosquitto/log:/mosquitto/log
-#-----------------------------------------------
-  wyoming-whisper:
-    image: rhasspy/wyoming-whisper:latest
-    container_name: wyoming-whisper
-    restart: unless-stopped
-    user: "568:568"
-    networks:
-      - general_brg
-    ports:
-      - "10300:10300"
-    volumes:
-      - ${DOCKERCONFIGPATH}/wyoming-whisper:/data
-    environment:
-      - TZ=${TZ:-UTC}
-    command: >
-      --uri tcp://0.0.0.0:10300
-      --language en
-      --model small-int8
-      --data-dir /data
-#-----------------------------------------------
-  wyoming-piper:
-    image: rhasspy/wyoming-piper:latest
-    container_name: wyoming-piper
-    user: "568:568"
-    command: --voice en-us-ryan-high --length-scale 1.0
-    volumes:
-      - ${DOCKERCONFIGPATH}/piper/data:/data
-    ports:
-      - "10200:10200"
-    networks:
-      - general_brg
-    restart: unless-stopped
 #-----------------------------------------------
   yawamf-backend:
     image: ghcr.io/jellman86/wamf-backend:dev
