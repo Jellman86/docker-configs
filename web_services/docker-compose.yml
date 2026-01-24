@@ -10,14 +10,14 @@ services:
       - 443:443
     networks:
       dmz_mac_vlan:
-        #ipv4_address: 192.168.215.129
+        ipv4_address: 192.168.215.136
       service_mac_vlan:
         ipv4_address: 192.168.213.129
       vpn_stack_brg:
       general_brg:
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=568
+      - PGID=568
       - TZ=${TZ}
     volumes:
       - ${CONFIG_PATH}/nginx-rp/config:/data
