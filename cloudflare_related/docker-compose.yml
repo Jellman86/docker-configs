@@ -37,3 +37,5 @@ services:
 networks:
     dmz_mac_vlan:
       external: true
+    general_brg:
+      external: true
