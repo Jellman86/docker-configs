@@ -137,7 +137,7 @@ services:
     networks:
       general_brg:
       dmz_mac_vlan:
-        ipv4_address: 192.168.215.136
+        ipv4_address: 192.168.215.137
     volumes:
       - ${DOCKERCONFIGPATH}/YA-WAMF/config:/config        # Configuration files (config.json)
       - ${DOCKERCONFIGPATH}/YA-WAMF/data:/data            # Persistent data (database, models)
