@@ -10,6 +10,7 @@ services:
     networks:
       dmz_mac_vlan:
         ipv4_address: 192.168.215.132
+      general_brg:
     command: tunnel run 
     environment: 
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
@@ -21,6 +22,7 @@ services:
     networks:
       dmz_mac_vlan:
         ipv4_address: 192.168.215.130
+      general_brg:
     restart: always
     user: "568:568"
     read_only: true
