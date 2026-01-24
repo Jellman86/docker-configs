@@ -162,7 +162,9 @@ services:
     restart: unless-stopped
     user: "568:568"
     networks:
-      - general_brg
+      general_brg:
+    dmz_mac_vlan:
+      ipv4_address: 192.168.215.135
     ports:
       - "9852:80"
     depends_on:
@@ -177,4 +179,6 @@ networks:
     service_mac_vlan:
       external: true
     general_brg:
+      external: true
+    dmz_mac_vlan:
       external: true
