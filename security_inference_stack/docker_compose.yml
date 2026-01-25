@@ -130,7 +130,7 @@ services:
       - ${DOCKERCONFIGPATH}/mosquitto/log:/mosquitto/log
 #-----------------------------------------------
   yawamf-backend:
-    image: ghcr.io/jellman86/wamf-backend:bea56071c565016a143abd1e5e75214bef8d2b0c
+    image: ghcr.io/jellman86/wamf-backend:bdd3b3b59dc6b774a295827a8fa6a94533bf0cd7
     container_name: yawamf-backend
     restart: unless-stopped
     user: "568:568"
@@ -157,7 +157,7 @@ services:
       retries: 3
 #----------------
   yawamf-frontend:
-    image: ghcr.io/jellman86/wamf-frontend:bea56071c565016a143abd1e5e75214bef8d2b0c
+    image: ghcr.io/jellman86/wamf-frontend:bdd3b3b59dc6b774a295827a8fa6a94533bf0cd7
     container_name: yawamf-frontend
     restart: unless-stopped
     user: "568:568"
