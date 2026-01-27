@@ -1,4 +1,5 @@
 services:
+#-----------------------------------------------
   gluetun:
     image: qmcgaw/gluetun
     restart: unless-stopped
@@ -35,9 +36,7 @@ services:
       - BLOCK_ADS=off
       - DOT_PROVIDERS=cloudflare
     labels:
-      # Optional: Restart gluetun if the VPN tunnel goes down (handled internally usually, but good for deunhealth)
       deunhealth.restart.on.unhealthy: true 
-
 #-----------------------------------------------
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -67,7 +66,6 @@ services:
       start_period: 30s
     labels:
       deunhealth.restart.on.unhealthy: true
-
 #-----------------------------------------------
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
@@ -93,7 +91,6 @@ services:
       start_period: 30s
     labels:
       deunhealth.restart.on.unhealthy: true
-
 #-----------------------------------------------
   radarr:
     image: lscr.io/linuxserver/radarr:latest
@@ -119,7 +116,6 @@ services:
       start_period: 30s
     labels:
       deunhealth.restart.on.unhealthy: true
-
 #-----------------------------------------------
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
@@ -145,7 +141,6 @@ services:
       start_period: 30s
     labels:
       deunhealth.restart.on.unhealthy: true
-
 #-----------------------------------------------
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
@@ -168,7 +163,6 @@ services:
       start_period: 30s
     labels:
       deunhealth.restart.on.unhealthy: true
-
 #-----------------------------------------------
   deunhealth:
     image: qmcgaw/deunhealth

@@ -28,32 +28,6 @@ services:
       timeout: 3s
       retries: 3
 #-----------------------------------------------
-  privatebin:
-    image: "privatebin/nginx-fpm-alpine:stable"
-    container_name: privatebin
-    read_only: true
-    networks:
-      dmz_mac_vlan:
-        ipv4_address: 192.168.215.133
-    restart: always
-    volumes:
-      - privatebin_cfg:/srv/data
-      - /dev/shm:/var/lib/nginx/tmp
-#-----------------------------------------------
-  speedtest:
-      restart: unless-stopped
-      container_name: openspeedtest
-      environment:
-        - PUID=568
-        - PGID=568
-        - TZ=${TZ}
-      ports:
-        - '3000:3000'
-        - '3001:3001'
-      image: openspeedtest/latest
-      networks:
-        general_brg:
-#-----------------------------------------------
   overseerr:
     image: lscr.io/linuxserver/overseerr:latest
     container_name: overseerr
@@ -77,9 +51,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s # Vital: Gives Overseerr time to boot
-#-----------------------------------------------
-volumes:
-    privatebin_cfg:
 #-----------------------------------------------
 networks:
     dmz_mac_vlan:

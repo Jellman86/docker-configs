@@ -1,5 +1,57 @@
 ---
 services:
+#-----------------------------------------------
+  crafty:
+    container_name: crafty_container
+    image: registry.gitlab.com/crafty-controller/crafty-4:latest
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+    ports:
+      - 8443:8443 # HTTPS
+      - 8123:8123 # DYNMAP
+      - 19132:19132/udp # BEDROCK
+      - 25565-25570:25565-25570 # MC SERV PORT RANGE
+    volumes:
+      - ${CONFIG_PATH}/crafty/backups:/crafty/backups
+      - ${CONFIG_PATH}/crafty/logs:/crafty/logs
+      - ${CONFIG_PATH}/crafty/servers:/crafty/servers
+      - ${CONFIG_PATH}/crafty/config:/crafty/app/config
+      - ${CONFIG_PATH}/crafty/import:/crafty/import
+    restart: unless-stopped
+    stop_grace_period: 2m
+    networks:
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.131
+      general_brg:
+#-----------------------------------------------
+  valheim:
+    container_name: valheim
+    image: ghcr.io/lloesche/valheim-server
+    cap_add:
+      - sys_nice
+    volumes:
+      - ${CONFIG_PATH}/valheim/config:/config
+      - ${CONFIG_PATH}/valheim/data:/opt/valheim
+    #ports: !non needed in macvlan!
+      #- 2456-2458:2456-2458/udp
+      #- 9001:9001/tcp
+    environment:
+      - PUID=568
+      - PGID=568
+      - TZ=Europe/London
+      - SERVER_NAME=${VALHEIMSRNAME}
+      - WORLD_NAME=${VALHEIMWORLDNAME}
+      - SERVER_PASS=${VALHEIMSRPASS}
+      - SERVER_PUBLIC=false
+      - SERVER_ARGS=-crossplay
+    restart: unless-stopped
+    stop_grace_period: 2m
+    networks:
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.132
+#-----------------------------------------------
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
@@ -56,32 +108,6 @@ services:
     networks:
         service_mac_vlan:
           ipv4_address: 192.168.213.134
-#-----------------------------------------------
-  valheim:
-    container_name: valheim
-    image: ghcr.io/lloesche/valheim-server
-    cap_add:
-      - sys_nice
-    volumes:
-      - ${CONFIG_PATH}/valheim/config:/config
-      - ${CONFIG_PATH}/valheim/data:/opt/valheim
-    #ports: !non needed in macvlan!
-      #- 2456-2458:2456-2458/udp
-      #- 9001:9001/tcp
-    environment:
-      - PUID=568
-      - PGID=568
-      - TZ=Europe/London
-      - SERVER_NAME=${VALHEIMSRNAME}
-      - WORLD_NAME=${VALHEIMWORLDNAME}
-      - SERVER_PASS=${VALHEIMSRPASS}
-      - SERVER_PUBLIC=false
-      - SERVER_ARGS=-crossplay
-    restart: unless-stopped
-    stop_grace_period: 2m
-    networks:
-      dmz_mac_vlan:
-        ipv4_address: 192.168.215.132
 #-----------------------------------------------
   traefik:
     image: docker.io/library/traefik:latest
@@ -202,53 +228,52 @@ services:
       general_brg:
       vpn_stack_brg:
 #-----------------------------------------------
-  homebridge:
-    image: homebridge/homebridge:ubuntu
-    container_name: homebridge
+  privatebin:
+    image: "privatebin/nginx-fpm-alpine:stable"
+    container_name: privatebin
+    read_only: true
+    networks:
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.133
     restart: always
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    environment:
-      - PUID=568
-      - PGID=568
-      - TZ=Europe/London
-      - HOMEBRIDGE_CONFIG_UI_PORT=8581
     volumes:
-      - ${CONFIG_PATH}/homebridge:/homebridge
-    networks:
-        service_mac_vlan:
-          ipv4_address: 192.168.213.128
+      - privatebin_cfg:/srv/data
+      - /dev/shm:/var/lib/nginx/tmp
 #-----------------------------------------------
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    restart: unless-stopped
-    networks:
-      - general_brg
-    ports:
-      - "11434:11434"
-    environment:
-      - TZ=Europe/London
-    volumes:
-      - ${DOCKERCONFIGPATH}/ollama/root:/root/.ollama
+  speedtest:
+      restart: unless-stopped
+      container_name: openspeedtest
+      environment:
+        - PUID=568
+        - PGID=568
+        - TZ=${TZ}
+      ports:
+        - '3000:3000'
+        - '3001:3001'
+      image: openspeedtest/latest
+      networks:
+        general_brg:
 #-----------------------------------------------
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
     restart: unless-stopped
-    networks:
-      - general_brg
     environment:
-      - TZ=Europe/London
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - WEBUI_AUTH=False
-    depends_on:
-      - ollama
+      DOZZLE_LEVEL: info
+      DOZZLE_TAILSIZE: 300
+      DOZZLE_FILTER: "status=running"
     volumes:
-      - ${DOCKERCONFIGPATH}/openwebui_data:/app/backend/data
-    extra_hosts:
-      - host.docker.internal:host-gateway
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+        general_brg:
+    healthcheck:
+      test: ["CMD", "/dozzle", "healthcheck"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+#-----------------------------------------------
+volumes:
+    privatebin_cfg:
 #-----------------------------------------------
 networks:
   llm_stack:

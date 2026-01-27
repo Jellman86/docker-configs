@@ -15,24 +15,6 @@ services:
       timeout: 10s
       retries: 3
 #-----------------------------------------------
-  dozzle:
-    image: amir20/dozzle:latest
-    container_name: dozzle
-    restart: unless-stopped
-    environment:
-      DOZZLE_LEVEL: info
-      DOZZLE_TAILSIZE: 300
-      DOZZLE_FILTER: "status=running"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-        general_brg:
-    healthcheck:
-      test: ["CMD", "/dozzle", "healthcheck"]
-      interval: 1m
-      timeout: 10s
-      retries: 3
-#-----------------------------------------------
 networks:
     dmz_mac_vlan:
       external: true
