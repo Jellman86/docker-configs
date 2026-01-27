@@ -1,5 +1,5 @@
----
 services:
+#-----------------------------------------------
   nginx-pm:
     container_name: nginx-rp
     image: 'jc21/nginx-proxy-manager:latest'
@@ -9,12 +9,12 @@ services:
       - 81:81
       - 443:443
     networks:
+      general_brg:
       dmz_mac_vlan:
         ipv4_address: 192.168.215.136
-      service_mac_vlan:
-        ipv4_address: 192.168.213.129
+      #service_mac_vlan:
+        #ipv4_address: 192.168.213.129
       vpn_stack_brg:
-      general_brg:
     environment:
       - PUID=568
       - PGID=568
@@ -28,6 +28,20 @@ services:
       timeout: 3s
       retries: 3
 #-----------------------------------------------
+  cloudflared: 
+    image: cloudflare/cloudflared 
+    container_name: cloudflare-tunnel
+    user: "568:568"
+    restart: always 
+    #network_mode: host
+    networks:
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.132
+      general_brg:
+    command: tunnel run 
+    environment: 
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+#-----------------------------------------------
   overseerr:
     image: lscr.io/linuxserver/overseerr:latest
     container_name: overseerr
@@ -39,7 +53,7 @@ services:
       vpn_stack_brg:
       dmz_mac_vlan:
         ipv4_address: 192.168.215.134
-      service_mac_vlan:
+      general_brg:
     ports:
       - 5055:5055
     volumes:

@@ -271,6 +271,22 @@ services:
       interval: 1m
       timeout: 10s
       retries: 3
+#---------------------------------------------
+  cloudflare-ddns:
+    image: favonia/cloudflare-ddns:latest
+    container_name: cloudflare-ddns
+    networks:
+      general_brg:
+    restart: always
+    user: "568:568"
+    read_only: true
+    cap_drop: [all]
+    security_opt: [no-new-privileges:true]
+    environment:
+      - CLOUDFLARE_API_TOKEN=${NEW_DOMAIN_DNS_EDIT_CF}
+      - DOMAINS=${A_RECORDS}
+      - PROXIED=false
+      - IP6_PROVIDER=none
 #-----------------------------------------------
 volumes:
     privatebin_cfg:

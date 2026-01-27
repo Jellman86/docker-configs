@@ -10,7 +10,6 @@ services:
       - /dev/net/tun:/dev/net/tun
     networks:
       vpn_stack_brg:
-        #ipv4_address: 172.17.0.2
     ports:
       - 5041:5041/tcp # qbittorrent
       - 5041:5041/udp # qbittorrent

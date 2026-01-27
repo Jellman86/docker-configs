@@ -19,8 +19,9 @@ services:
       group_add:
         - "109"
       networks:
-        service_mac_vlan:
+        dmz_mac_vlan:
           ipv4_address: 192.168.213.133
+        general_brg:
 #-----------------------------------------------
     unmanic:
       container_name: unmanic
