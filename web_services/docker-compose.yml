@@ -12,14 +12,8 @@ services:
     networks:
       general_brg:
       vpn_stack_brg:
-      dmz_mac_vlan:
-        ipv4_address: 192.168.215.137
-    entrypoint: 
-      - /bin/sh
-      - -c
-      - |
-        ip route add 172.16.0.0/12 via 172.19.0.1 &&
-        exec /init
+      #dmz_mac_vlan:
+        #ipv4_address: 192.168.215.137
     # --- END OF FIX ---
 
     # --- ORIGINAL CONFIG (Uncomment to revert) ---
