@@ -178,5 +178,3 @@ services:
 networks:
   vpn_stack_brg:
     external: true
-  service_mac_vlan:
-    external: true

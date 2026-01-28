@@ -11,10 +11,8 @@ services:
     networks:
       general_brg:
       vpn_stack_brg:
-      #dmz_mac_vlan:
-        #ipv4_address: 192.168.215.136
-      #service_mac_vlan:
-        #ipv4_address: 192.168.213.129
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.136
     environment:
       - PUID=568
       - PGID=568
@@ -68,8 +66,6 @@ services:
 #-----------------------------------------------
 networks:
     dmz_mac_vlan:
-      external: true
-    service_mac_vlan:
       external: true
     general_brg:
       external: true

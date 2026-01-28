@@ -52,7 +52,6 @@ services:
       - BIRDNET_UID=568
       - BIRDNET_GID=568
       # BirdNET Configuration
-      # Currently configured for the rents place. 
       - BIRDNET_LOCALE=en-uk                      # Locale code (2-10 chars, e.g., "en" or "en-us")
       - BIRDNET_LATITUDE=${loclat}                 # Valid range: -90.0 to 90.0
       - BIRDNET_LONGITUDE=${loclong}              # Valid range: -180.0 to 180.0
