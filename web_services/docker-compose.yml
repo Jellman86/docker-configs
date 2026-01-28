@@ -12,8 +12,17 @@ services:
     networks:
       general_brg:
       vpn_stack_brg:
-      #dmz_mac_vlan:
-        #ipv4_address: 192.168.215.137
+      dmz_mac_vlan:
+        ipv4_address: 192.168.215.137
+    cap_add:
+      - NET_ADMIN
+    entrypoint: 
+      - /bin/sh
+      - -c
+      - |
+        apt-get update && apt-get install -y iproute2 &&
+        ip route add 172.16.0.0/12 via 172.19.0.1 &&
+        exec /init
     # --- END OF FIX ---
 
     # --- ORIGINAL CONFIG (Uncomment to revert) ---
