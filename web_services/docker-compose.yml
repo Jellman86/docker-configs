@@ -8,30 +8,9 @@ services:
       - 80:80
       - 81:81
       - 443:443
-    # --- START OF FIX (Delete this block to revert) ---
     networks:
       general_brg:
       vpn_stack_brg:
-      dmz_mac_vlan:
-        ipv4_address: 192.168.215.137
-    cap_add:
-      - NET_ADMIN
-    entrypoint: 
-      - /bin/sh
-      - -c
-      - |
-        apt-get update && apt-get install -y iproute2 &&
-        ip route add 172.16.0.0/12 via 172.19.0.1 &&
-        exec /init
-    # --- END OF FIX ---
-
-    # --- ORIGINAL CONFIG (Uncomment to revert) ---
-    #networks:
-    #  general_brg:
-    #  vpn_stack_brg:
-    #  dmz_mac_vlan:
-    #    ipv4_address: 192.168.215.136
-    # ---------------------------------------------
     environment:
       - PUID=568
       - PGID=568
