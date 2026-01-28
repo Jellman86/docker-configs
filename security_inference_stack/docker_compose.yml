@@ -172,8 +172,6 @@ services:
       retries: 3
 #-----------------------------------------------
 networks:
-    service_mac_vlan:
-      external: true
     general_brg:
       external: true
     dmz_mac_vlan:

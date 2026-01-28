@@ -10,11 +10,11 @@ services:
       - 443:443
     networks:
       general_brg:
-      dmz_mac_vlan:
-        ipv4_address: 192.168.215.136
+      vpn_stack_brg:
+      #dmz_mac_vlan:
+        #ipv4_address: 192.168.215.136
       #service_mac_vlan:
         #ipv4_address: 192.168.213.129
-      vpn_stack_brg:
     environment:
       - PUID=568
       - PGID=568
@@ -51,9 +51,9 @@ services:
       - TZ=${TZ}
     networks:
       vpn_stack_brg:
+      general_brg:
       dmz_mac_vlan:
         ipv4_address: 192.168.215.134
-      general_brg:
     ports:
       - 5055:5055
     volumes:
