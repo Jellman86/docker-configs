@@ -18,8 +18,9 @@ services:
         - /dev/dri:/dev/dri
       group_add:
         - "109"
-      networks:
-        general_brg:
+      network_mode: host
+      #networks:
+        #general_brg:
 #-----------------------------------------------
     unmanic:
       container_name: unmanic
