@@ -16,8 +16,6 @@ services:
       retries: 3
 #-----------------------------------------------
 networks:
-    dmz_mac_vlan:
-      external: true
     general_brg:
       external: true
     vpn_stack_brg:

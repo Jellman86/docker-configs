@@ -20,8 +20,6 @@ services:
         - "109"
       networks:
         general_brg:
-        dmz_mac_vlan:
-          ipv4_address: 192.168.213.133
 #-----------------------------------------------
     unmanic:
       container_name: unmanic
@@ -38,7 +36,6 @@ services:
         - ${MEDIA_PATH}:/library
         - /dev/shm:/tmp/unmanic
         # Swap this out when there isnt enough ram
-        # to transcode to --- lesad, poor boy.
         #- ${CONFIG_PATH}/unmanic-tmp:/tmp/unmanic
       devices:
         - /dev/dri:/dev/dri
@@ -48,8 +45,6 @@ services:
         general_brg:
 #-----------------------------------------------
 networks:
-    dmz_mac_vlan:
-      external: true
     general_brg:
       external: true
     vpn_stack_brg:

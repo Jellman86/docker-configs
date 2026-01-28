@@ -46,8 +46,6 @@ services:
     networks:
       vpn_stack_brg:
       general_brg:
-      dmz_mac_vlan:
-        ipv4_address: 192.168.215.134
     ports:
       - 5055:5055
     volumes:
@@ -58,11 +56,9 @@ services:
       interval: 1m
       timeout: 10s
       retries: 3
-      start_period: 60s # Vital: Gives Overseerr time to boot
+      start_period: 60s
 #-----------------------------------------------
 networks:
-    dmz_mac_vlan:
-      external: true
     general_brg:
       external: true
     vpn_stack_brg:
