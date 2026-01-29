@@ -32,6 +32,16 @@ Most compose files expect a `.env` alongside the compose file. Common keys inclu
 Docker’s environment file handling is documented here:
 - https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/
 
+## Configuration Notes
+
+### Web Services (Cloudflare Tunnel + Nginx Proxy Manager)
+When chaining Cloudflare Tunnel (`cloudflared`) with Nginx Proxy Manager (`nginx-pm`), beware of **Infinite Redirect Loops** (ERR_TOO_MANY_REDIRECTS).
+
+- **The Issue:** If NPM has "Force SSL" enabled, it redirects all HTTP traffic to HTTPS. If Cloudflare Tunnel connects to NPM via HTTP (e.g., `http://nginx-rp:80`), NPM returns a 301 Redirect. Cloudflare sees this and retries, creating a loop.
+- **The Fix:**
+    1.  **Option A (Recommended):** Configure Cloudflare Tunnel to connect to NPM via HTTPS (`https://nginx-rp:443`) with "No TLS Verify" enabled in the Cloudflare dashboard.
+    2.  **Option B:** Disable "Force SSL" in Nginx Proxy Manager for the specific proxy host and let Cloudflare handle the HTTP->HTTPS redirection at the edge.
+
 ## Networking assumptions
 These stacks reference external networks that must already exist on the host:
 - `dmz_mac_vlan`
