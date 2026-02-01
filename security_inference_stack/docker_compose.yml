@@ -146,7 +146,7 @@ services:
       - FRIGATE__MQTT_AUTH=${MQTT_AUTH:-false}
       - FRIGATE__MQTT_USERNAME=${MQTT_USERNAME:-}
       - FRIGATE__MQTT_PASSWORD=${MQTT_PASSWORD:-}
-      - DEBUG_UI_ENABLED=true
+      - SYSTEM__DEBUG_UI_ENABLED=true
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "75"]
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
