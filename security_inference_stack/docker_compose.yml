@@ -74,25 +74,6 @@ services:
     tmpfs:
       - /config/hls:exec,size=50M,uid=${BIRDNET_UID:-568},gid=${BIRDNET_GID:-568},mode=0755
 #-----------------------------------------------
-  homeassistant:
-    image: ghcr.io/home-assistant/home-assistant:stable
-    container_name: homeassistant
-    restart: unless-stopped
-    environment:
-      - TZ=${TZ:-UTC}
-    volumes:
-      - ${DOCKERCONFIGPATH}/homeassistant/config:/config
-      - /etc/localtime:/etc/localtime:ro
-    networks:
-      - general_brg
-    ports:
-      - "8123:8123"
-    healthcheck:
-      test: "curl -f http://localhost:8123/manifest.json || exit 1"
-      interval: 1m
-      timeout: 10s
-      retries: 3
-#-----------------------------------------------
   matter-server:
     image: ghcr.io/home-assistant-libs/python-matter-server:stable
     container_name: matter-server
