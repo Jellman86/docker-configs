@@ -1,19 +1,6 @@
 ---
 services:
 #-----------------------------------------------
-  watchtower:
-    container_name: watchtower
-    restart: always
-    image: containrrr/watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      general_brg:
-    healthcheck:
-      test: ["CMD", "/watchtower", "--health-check"]
-      interval: 1m
-      timeout: 10s
-      retries: 3
 #-----------------------------------------------
 networks:
     general_brg:
