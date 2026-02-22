@@ -34,8 +34,6 @@ services:
       - BLOCK_SURVEILLANCE=on
       - BLOCK_ADS=off
       - DOT_PROVIDERS=cloudflare
-    labels:
-      deunhealth.restart.on.unhealthy: true 
 #-----------------------------------------------
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -63,8 +61,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    labels:
-      deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
@@ -88,8 +84,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    labels:
-      deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
   radarr:
     image: lscr.io/linuxserver/radarr:latest
@@ -113,8 +107,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    labels:
-      deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
@@ -138,8 +130,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    labels:
-      deunhealth.restart.on.unhealthy: true
 #-----------------------------------------------
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
@@ -160,20 +150,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    labels:
-      deunhealth.restart.on.unhealthy: true
-#-----------------------------------------------
-  deunhealth:
-    image: qmcgaw/deunhealth
-    container_name: deunhealth
-    network_mode: "none"
-    environment:
-      - LOG_LEVEL=info
-      - HEALTH_SERVER_ADDRESS=127.0.0.1:9999
-      - TZ=Europe/London
-    restart: always
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
 #-----------------------------------------------
 networks:
   vpn_stack_brg:
