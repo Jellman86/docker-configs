@@ -12,7 +12,8 @@ services:
     devices:
       - /dev/dri:/dev/dri
     group_add:
-      - "109" #for iGPU access
+      - "44"  # /dev/dri/card0 group on this host (video)
+      - "107" # /dev/dri/renderD128 group on this host (render)
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${DOCKERCONFIGPATH}/frigate/config:/config
@@ -133,7 +134,8 @@ services:
     devices:
       - /dev/dri:/dev/dri
     group_add:
-      - "109" #for iGPU access
+      - "44"  # /dev/dri/card0 group on this host (video)
+      - "107" # /dev/dri/renderD128 group on this host (render)
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
