@@ -16,8 +16,6 @@ services:
         - /dev/shm:/transcode
       devices:
         - /dev/dri:/dev/dri
-      group_add:
-        - "109"
       network_mode: host
       #networks:
         #general_brg:
@@ -40,8 +38,6 @@ services:
         #- ${CONFIG_PATH}/unmanic-tmp:/tmp/unmanic
       devices:
         - /dev/dri:/dev/dri
-      group_add:
-        - "109"
       networks:
         general_brg:
 #-----------------------------------------------
@@ -50,4 +46,3 @@ networks:
       external: true
     vpn_stack_brg:
       external: true
-
