@@ -11,9 +11,9 @@ services:
       - CAP_PERFMON
     devices:
       - /dev/dri:/dev/dri
-    user: "568:568"
+    user: ${PUID}:${PGID}
     group_add:
-      - "44"  # /dev/dri/card0 group on this host (video)
+      - "44"  # /dev/dri/card0 group on this host (vsayideo)
       - "107" # /dev/dri/renderD128 group on this host (render)
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -50,8 +50,8 @@ services:
         general_brg:
     environment:
       - TZ=${TZ:-UTC}
-      - BIRDNET_UID=568
-      - BIRDNET_GID=568
+      - BIRDNET_UID=${PUID}
+      - BIRDNET_GID=${PGID}
       # BirdNET Configuration
       - BIRDNET_LOCALE=en-uk                      # Locale code (2-10 chars, e.g., "en" or "en-us")
       - BIRDNET_LATITUDE=${loclat}                 # Valid range: -90.0 to 90.0
@@ -80,7 +80,7 @@ services:
     image: ghcr.io/home-assistant-libs/python-matter-server:stable
     container_name: matter-server
     restart: unless-stopped
-    user: "568:568"
+    user: ${PUID}:${PGID}
     environment:
       - TZ=${TZ:-UTC}
     networks:
@@ -96,7 +96,7 @@ services:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     restart: unless-stopped
-    user: "568:568"
+    user: ${PUID}:${PGID}
     environment:
       - TZ=${TZ:-UTC}
     networks:
@@ -112,7 +112,7 @@ services:
     image: ghcr.io/jellman86/wamf-backend:dev
     container_name: yawamf-backend
     restart: unless-stopped
-    user: 568:568
+    user: ${PUID}:${PGID}
     networks:
       general_brg:
     volumes:
@@ -145,7 +145,7 @@ services:
     image: ghcr.io/jellman86/wamf-frontend:dev
     container_name: yawamf-frontend
     restart: unless-stopped
-    user: 568:568
+    user: ${PUID}:${PGID}
     networks:
       general_brg:
     ports:
