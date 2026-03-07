@@ -13,7 +13,7 @@ services:
       - /dev/dri:/dev/dri
     user: ${PUID}:${PGID}
     group_add:
-      - "44"  # /dev/dri/card0 group on this host (vsayideo)
+      - "44"  # /dev/dri/card0 group on this host (video)
       - "107" # /dev/dri/renderD128 group on this host (render)
     volumes:
       - /etc/localtime:/etc/localtime:ro
