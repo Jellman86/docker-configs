@@ -5,12 +5,13 @@ services:
     restart: unless-stopped
     stop_grace_period: 30s # allow enough time to shut down the various services
     image: ghcr.io/blakeblackshear/frigate:stable
-    shm_size: "512mb" # update for your cameras based on calculation above
+    shm_size: "1024mb" # update for your cameras based on calculation above
     cap_add:
       - SYS_ADMIN
       - CAP_PERFMON
     devices:
       - /dev/dri:/dev/dri
+    user: "568:568"
     group_add:
       - "44"  # /dev/dri/card0 group on this host (video)
       - "107" # /dev/dri/renderD128 group on this host (render)
@@ -112,41 +113,40 @@ services:
     image: ghcr.io/jellman86/wamf-backend:dev
     container_name: yawamf-backend
     restart: unless-stopped
-    user: "568:568"
+    user: 568:568
     networks:
       general_brg:
     volumes:
       - ${DOCKERCONFIGPATH}/YA-WAMF/config:/config        # Configuration files (config.json)
-      - ${DOCKERCONFIGPATH}/YA-WAMF/data:/data            # Persistent data (database, models)
+      - ${DOCKERCONFIGPATH}/YA-WAMF/data:/data 
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "44"   # video (example)
+      - "107"  # render (example)
     ports:
-      - "8946:8000"
+      - "${BACKEND_BIND_IP:-127.0.0.1}:8946:8000"
     environment:
       - TZ=${TZ:-UTC}
       - FRIGATE__FRIGATE_URL=${FRIGATE_URL:-http://frigate:5000}
       - FRIGATE__FRIGATE_AUTH_TOKEN=${FRIGATE_AUTH_TOKEN:-}
-      - FRIGATE__MQTT_SERVER=${MQTT_SERVER:-mqtt}
+      - FRIGATE__MQTT_SERVER=${MQTT_SERVER:-mosquitto}
       - FRIGATE__MQTT_PORT=${MQTT_PORT:-1883}
       - FRIGATE__MQTT_AUTH=${MQTT_AUTH:-false}
       - FRIGATE__MQTT_USERNAME=${MQTT_USERNAME:-}
       - FRIGATE__MQTT_PASSWORD=${MQTT_PASSWORD:-}
-      - SYSTEM__DEBUG_UI_ENABLED=true
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "75"]
-    devices:
-      - /dev/dri:/dev/dri
-    group_add:
-      - "44"  # /dev/dri/card0 group on this host (video)
-      - "107" # /dev/dri/renderD128 group on this host (render)
+      - SYSTEM__DEBUG_UI_ENABLED=${DEBUG_UI_ENABLED:-true}
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
-#----------------
+#--------
   yawamf-frontend:
     image: ghcr.io/jellman86/wamf-frontend:dev
     container_name: yawamf-frontend
     restart: unless-stopped
-    user: "568:568"
+    user: 568:568
     networks:
       general_brg:
     ports:
