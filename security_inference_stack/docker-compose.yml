@@ -11,7 +11,6 @@ services:
       - CAP_PERFMON
     devices:
       - /dev/dri:/dev/dri
-    user: ${PUID}:${PGID}
     group_add:
       - "44"  # /dev/dri/card0 group on this host (video)
       - "107" # /dev/dri/renderD128 group on this host (render)
@@ -45,7 +44,7 @@ services:
     container_name: birdnet-go
     restart: unless-stopped
     ports:
-      - "${WEB_PORT:-8080}:8080"
+      - "${BN_WEBPORT:-8080}:8080"
     networks:
         general_brg:
     environment:
@@ -54,8 +53,8 @@ services:
       - BIRDNET_GID=${PGID}
       # BirdNET Configuration
       - BIRDNET_LOCALE=en-uk                      # Locale code (2-10 chars, e.g., "en" or "en-us")
-      - BIRDNET_LATITUDE=${loclat}                 # Valid range: -90.0 to 90.0
-      - BIRDNET_LONGITUDE=${loclong}              # Valid range: -180.0 to 180.0
+      - BIRDNET_LATITUDE=${BN_LAT}                 # Valid range: -90.0 to 90.0
+      - BIRDNET_LONGITUDE=${BN_LONG}              # Valid range: -180.0 to 180.0
       - BIRDNET_SENSITIVITY=1.0                   # Valid range: 0.1 to 1.5 (higher = more sensitive)
       - BIRDNET_THRESHOLD=0.7                     # Valid range: 0.0 to 1.0 (confidence threshold)
       - BIRDNET_OVERLAP=1.5                       # Valid range: 0.0 to 2.9 seconds (audio chunk overlap)
