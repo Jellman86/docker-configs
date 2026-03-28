@@ -107,9 +107,9 @@ services:
       - ${DOCKERCONFIGPATH}/mosquitto/data:/mosquitto/data
       - ${DOCKERCONFIGPATH}/mosquitto/log:/mosquitto/log
 #-----------------------------------------------
-  yawamf-backend:
-    image: ghcr.io/jellman86/wamf-backend:dev
-    container_name: yawamf-backend
+  yawamf:
+    image: ghcr.io/jellman86/yawamf-monalithic:dev
+    container_name: yawamf-monalithic
     restart: unless-stopped
     user: ${PUID}:${PGID}
     networks:
@@ -123,7 +123,7 @@ services:
       - "44"   # video (example)
       - "107"  # render (example)
     ports:
-      - "${BACKEND_BIND_IP:-127.0.0.1}:8946:8000"
+      - "9852:8080"
     environment:
       - TZ=${TZ:-UTC}
       - FRIGATE__FRIGATE_URL=${FRIGATE_URL:-http://frigate:5000}
@@ -135,24 +135,7 @@ services:
       - FRIGATE__MQTT_PASSWORD=${MQTT_PASSWORD:-}
       - SYSTEM__DEBUG_UI_ENABLED=${DEBUG_UI_ENABLED:-true}
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-#--------
-  yawamf-frontend:
-    image: ghcr.io/jellman86/wamf-frontend:dev
-    container_name: yawamf-frontend
-    restart: unless-stopped
-    user: ${PUID}:${PGID}
-    networks:
-      general_brg:
-    ports:
-      - "9852:80"
-    depends_on:
-      - yawamf-backend
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost/" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
