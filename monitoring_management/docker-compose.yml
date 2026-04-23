@@ -1,0 +1,61 @@
+services:
+#-----------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    user: "${PUID:-568}:${PGID:-568}"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-30d}
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+      - --web.enable-lifecycle
+    networks:
+      general_brg:
+    ports:
+      - "${PROMETHEUS_WEB_PORT:-9090}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/snmp-targets.yml:/etc/prometheus/snmp-targets.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      - ${DOCKERCONFIGPATH:-${CONFIG_PATH}}/monitoring_management/prometheus/data:/prometheus
+#-----------------------------------------------
+  snmp-exporter:
+    image: prom/snmp-exporter:latest
+    container_name: snmp-exporter
+    restart: unless-stopped
+    networks:
+      general_brg:
+    ports:
+      - "${SNMP_EXPORTER_WEB_PORT:-9116}:9116"
+    command:
+      - --config.expand-environment-variables
+    environment:
+      - TZ=${TZ:-UTC}
+#-----------------------------------------------
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    restart: unless-stopped
+    user: "${PUID:-568}:${PGID:-568}"
+    networks:
+      general_brg:
+    ports:
+      - "${GRAFANA_WEB_PORT:-3000}:3000"
+    environment:
+      - TZ=${TZ:-UTC}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ${DOCKERCONFIGPATH:-${CONFIG_PATH}}/monitoring_management/grafana/data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+#-----------------------------------------------
+networks:
+  general_brg:
+    external: true

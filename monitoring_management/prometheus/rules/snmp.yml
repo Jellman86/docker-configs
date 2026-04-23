@@ -1,0 +1,20 @@
+groups:
+  - name: snmp-monitoring
+    rules:
+      - alert: SnmpDeviceDown
+        expr: up{job="snmp_devices"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SNMP device {{ $labels.instance }} is not reachable"
+          description: "Prometheus has not been able to scrape {{ $labels.instance }} through snmp_exporter for 5 minutes."
+
+      - alert: SnmpExporterDown
+        expr: up{job="snmp_exporter"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SNMP exporter is down"
+          description: "Prometheus cannot scrape snmp-exporter:9116."

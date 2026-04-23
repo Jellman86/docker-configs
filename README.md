@@ -4,6 +4,7 @@ Personal Docker Compose stacks used on TrueNAS Scale. Most stacks expect externa
 ## Repo layout
 - `arr_vpn_stack/` - Gluetun VPN stack with qBittorrent, Prowlarr, Radarr, Sonarr, and FlareSolverr.
 - `media_related_stack/` - Plex and Unmanic.
+- `monitoring_management/` - Prometheus, Grafana, SNMP exporter, and SNMP trap receiver.
 - `security_inference_stack/` - Frigate, BirdNET-Go, Matter Server, Mosquitto, and YA-WAMF.
 - `web_services/` - Nginx Proxy Manager, Cloudflare Tunnel, and Overseerr.
 
