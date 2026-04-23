@@ -31,9 +31,12 @@ services:
     ports:
       - "${SNMP_EXPORTER_WEB_PORT:-9116}:9116"
     command:
+      - --config.file=/etc/snmp_exporter/snmp.yml
       - --config.expand-environment-variables
     environment:
       - TZ=${TZ:-UTC}
+    volumes:
+      - ./snmp-exporter/snmp.yml:/etc/snmp_exporter/snmp.yml:ro
 #-----------------------------------------------
   grafana:
     image: grafana/grafana-oss:latest
