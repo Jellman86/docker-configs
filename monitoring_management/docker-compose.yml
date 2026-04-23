@@ -26,6 +26,7 @@ services:
     image: prom/snmp-exporter:latest
     container_name: snmp-exporter
     restart: unless-stopped
+    user: "${PUID:-568}:${PGID:-568}"
     networks:
       general_brg:
     ports:
@@ -45,6 +46,7 @@ services:
     image: ghcr.io/unpoller/unpoller:latest
     container_name: unpoller
     restart: unless-stopped
+    user: "${PUID:-568}:${PGID:-568}"
     networks:
       general_brg:
     ports:
