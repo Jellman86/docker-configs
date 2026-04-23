@@ -17,10 +17,10 @@ services:
     ports:
       - "${PROMETHEUS_WEB_PORT:-9090}:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus/snmp-targets.yml:/etc/prometheus/snmp-targets.yml:ro
-      - ./prometheus/rules:/etc/prometheus/rules:ro
-      - ${DOCKERCONFIGPATH:-${CONFIG_PATH}}/monitoring_management/prometheus/data:/prometheus
+      - ${CONFIG_PATH}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ${CONFIG_PATH}/prometheus/snmp-targets.yml:/etc/prometheus/snmp-targets.yml:ro
+      - ${CONFIG_PATH}/prometheus/rules:/etc/prometheus/rules:ro
+      - ${CONFIG_PATH}/prometheus/data:/prometheus
 #-----------------------------------------------
   snmp-exporter:
     image: prom/snmp-exporter:latest
@@ -50,9 +50,9 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
-      - ${DOCKERCONFIGPATH:-${CONFIG_PATH}}/monitoring_management/grafana/data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ${CONFIG_PATH}/grafana/data:/var/lib/grafana
+      - ${CONFIG_PATH}/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ${CONFIG_PATH}/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
 #-----------------------------------------------
