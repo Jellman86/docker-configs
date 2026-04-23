@@ -1,16 +1,16 @@
-# Add SNMP-enabled devices here. The default auth/module names come from
-# prometheus/snmp_exporter's bundled snmp.yml.
+# Add SNMP-enabled devices here. The auth/module names come from
+# the mounted snmp-exporter/snmp.yml.
 #
-# For SNMP v2c polling with a public read-only community:
+# For SNMPv3 polling:
 # - targets:
-#     - 192.168.1.1
+#     - 192.168.211.254
 #     - switch.example.lan
 #   labels:
-#     auth: public_v2
+#     auth: snmpv3_env
 #     module: if_mib
 
 - targets:
-    - 192.168.1.1
+    - 192.168.211.254
   labels:
-    auth: public_v2
+    auth: snmpv3_env
     module: if_mib

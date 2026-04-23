@@ -33,7 +33,7 @@ Edit `prometheus/snmp-targets.yml` to add routers, switches, access points, UPS 
     module: if_mib
 ```
 
-Use SNMPv3 wherever possible. If you need custom auth profiles or vendor MIB modules, generate a custom `snmp.yml` with the `prometheus/snmp_exporter` generator and replace `${CONFIG_PATH}/snmp-exporter/snmp.yml`.
+Use SNMPv3 wherever possible. The default SNMPv3 auth profile is `snmpv3_env`, which reads `SNMPV3_USERNAME`, `SNMPV3_AUTH_PASSWORD`, and `SNMPV3_PRIV_PASSWORD` from `.env`. If you need different auth protocols or vendor MIB modules, generate a custom `snmp.yml` with the `prometheus/snmp_exporter` generator and replace `${CONFIG_PATH}/snmp-exporter/snmp.yml`.
 
 ## Grafana
 
