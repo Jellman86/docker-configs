@@ -18,7 +18,7 @@ Prometheus-based SNMP monitoring stack for polling SNMP devices.
 docker compose up -d
 ```
 
-The starter target uses `auth: public_v2` and `module: if_mib`, both provided by the mounted `snmp-exporter/snmp.yml` configuration. Replace `192.168.1.1` before expecting successful scrapes.
+The starter target uses `auth: public_v2` and `module: if_mib`, both provided by the mounted `${CONFIG_PATH}/snmp-exporter/snmp.yml` configuration. Replace `192.168.1.1` before expecting successful scrapes.
 
 ## SNMP Polling
 
@@ -33,7 +33,7 @@ Edit `prometheus/snmp-targets.yml` to add routers, switches, access points, UPS 
     module: if_mib
 ```
 
-Use SNMPv3 wherever possible. If you need custom auth profiles or vendor MIB modules, generate a custom `snmp.yml` with the `prometheus/snmp_exporter` generator and replace `snmp-exporter/snmp.yml`.
+Use SNMPv3 wherever possible. If you need custom auth profiles or vendor MIB modules, generate a custom `snmp.yml` with the `prometheus/snmp_exporter` generator and replace `${CONFIG_PATH}/snmp-exporter/snmp.yml`.
 
 ## Grafana
 

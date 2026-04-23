@@ -36,7 +36,7 @@ services:
     environment:
       - TZ=${TZ:-UTC}
     volumes:
-      - ./snmp-exporter/snmp.yml:/etc/snmp_exporter/snmp.yml:ro
+      - ${CONFIG_PATH}/snmp-exporter/snmp.yml:/etc/snmp_exporter/snmp.yml:ro
 #-----------------------------------------------
   grafana:
     image: grafana/grafana-oss:latest
