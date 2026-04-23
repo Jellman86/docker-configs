@@ -41,6 +41,31 @@ services:
     volumes:
       - ${CONFIG_PATH}/snmp-exporter/snmp.yml:/etc/snmp_exporter/snmp.yml:ro
 #-----------------------------------------------
+  unpoller:
+    image: ghcr.io/unpoller/unpoller:latest
+    container_name: unpoller
+    restart: unless-stopped
+    networks:
+      general_brg:
+    ports:
+      - "${UNPOLLER_WEB_PORT:-9130}:9130"
+    environment:
+      - TZ=${TZ:-UTC}
+      - UP_INFLUXDB_DISABLE=true
+      - UP_POLLER_DEBUG=${UNPOLLER_DEBUG:-false}
+      - UP_POLLER_QUIET=${UNPOLLER_QUIET:-false}
+      - UP_PROMETHEUS_HTTP_LISTEN=0.0.0.0:9130
+      - UP_PROMETHEUS_NAMESPACE=unpoller
+      - UP_UNIFI_DYNAMIC=false
+      - UP_UNIFI_DEFAULT_URL=${UNIFI_CONTROLLER_URL}
+      - UP_UNIFI_DEFAULT_USER=${UNIFI_CONTROLLER_USER}
+      - UP_UNIFI_DEFAULT_PASS=${UNIFI_CONTROLLER_PASS}
+      - UP_UNIFI_DEFAULT_VERIFY_SSL=${UNIFI_VERIFY_SSL:-false}
+      - UP_UNIFI_DEFAULT_SAVE_SITES=true
+      - UP_UNIFI_DEFAULT_SAVE_IDS=true
+      - UP_UNIFI_DEFAULT_SAVE_DPI=${UNIFI_SAVE_DPI:-false}
+      - UP_UNIFI_DEFAULT_SITE_0=${UNIFI_SITE:-all}
+#-----------------------------------------------
   grafana:
     image: grafana/grafana-oss:latest
     container_name: grafana
@@ -61,6 +86,7 @@ services:
       - ${CONFIG_PATH}/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+      - unpoller
 #-----------------------------------------------
 networks:
   general_brg:
