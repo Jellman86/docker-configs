@@ -57,9 +57,6 @@ services:
       - ${DOCKERCONFIGPATH}/qbittorrent/logs:/logs
       - ${DOWNLOADSPATH}/downloads:/downloads
     network_mode: "service:gluetun"
-    #depends_on:
-      #gluetun:
-        #condition: service_healthy
     restart: unless-stopped
     healthcheck:
       # Checks if WebUI is responsive.
@@ -77,9 +74,6 @@ services:
       - PGID=568
       - TZ=Europe/London
     network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     volumes:
       - ${DOCKERCONFIGPATH}/prowlarr/config:/config
       - ${DOWNLOADSPATH}/downloads/media:/media
@@ -100,9 +94,6 @@ services:
       - PGID=568
       - TZ=Europe/London
     network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     volumes:
       - ${DOCKERCONFIGPATH}/radarr/config:/config
       - ${DOWNLOADSPATH}/downloads:/downloads
@@ -123,9 +114,6 @@ services:
       - PGID=568
       - TZ=Europe/London
     network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     volumes:
       - ${DOCKERCONFIGPATH}/sonarr/config:/config
       - ${DOWNLOADSPATH}/downloads:/downloads
@@ -142,9 +130,6 @@ services:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
     network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - LOG_HTML=${LOG_HTML:-false}
