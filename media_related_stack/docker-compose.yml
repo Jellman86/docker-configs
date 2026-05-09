@@ -20,27 +20,6 @@ services:
       #networks:
         #general_brg:
 #-----------------------------------------------
-    unmanic:
-      container_name: unmanic
-      image: josh5/unmanic:latest
-      restart: always
-      ports:
-        - 8888:8888
-      environment:
-        - PUID=568
-        - PGID=568
-        - TZ=Europe/London
-      volumes:
-        - ${CONFIG_PATH}/unmanic:/config
-        - ${MEDIA_PATH}:/library
-        - /dev/shm:/tmp/unmanic
-        # Swap this out when there isnt enough ram
-        #- ${CONFIG_PATH}/unmanic-tmp:/tmp/unmanic
-      devices:
-        - /dev/dri:/dev/dri
-      networks:
-        general_brg:
-#-----------------------------------------------
 networks:
     general_brg:
       external: true
