@@ -40,7 +40,7 @@ services:
       # nginx reverse proxy without going through the VPN. Each /24 is
       # listed explicitly rather than collapsed to a /21 to keep the
       # exception scoped to the actually-used subnets.
-      - FIREWALL_OUTBOUND_SUBNETS=192.168.211.0/24,192.168.212.0/24,192.168.213.0/24,192.168.214.0/24,192.168.215.0/24
+      #- FIREWALL_OUTBOUND_SUBNETS=192.168.211.0/24,192.168.212.0/24,192.168.213.0/24,192.168.214.0/24,192.168.215.0/24
 #-----------------------------------------------
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -51,15 +51,15 @@ services:
       - TZ=Europe/London
       - WEBUI_PORT=8081
       - TORRENTING_PORT=5041
-      #- DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest
+      - DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest
     volumes:
       - ${DOCKERCONFIGPATH}/qbittorrent/config:/config
       - ${DOCKERCONFIGPATH}/qbittorrent/logs:/logs
       - ${DOWNLOADSPATH}/downloads:/downloads
     network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
+    #depends_on:
+      #gluetun:
+        #condition: service_healthy
     restart: unless-stopped
     healthcheck:
       # Checks if WebUI is responsive.
