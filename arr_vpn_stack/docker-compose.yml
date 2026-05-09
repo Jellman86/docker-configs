@@ -51,7 +51,7 @@ services:
       - TZ=Europe/London
       - WEBUI_PORT=8081
       - TORRENTING_PORT=5041
-      #- DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest
+      - DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest
     volumes:
       - ${DOCKERCONFIGPATH}/qbittorrent/config:/config
       - ${DOCKERCONFIGPATH}/qbittorrent/logs:/logs
