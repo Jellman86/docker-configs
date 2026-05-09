@@ -75,22 +75,6 @@ services:
     tmpfs:
       - /config/hls:exec,size=50M,uid=${BIRDNET_UID:-568},gid=${BIRDNET_GID:-568},mode=0755
 #-----------------------------------------------
-  matter-server:
-    image: ghcr.io/home-assistant-libs/python-matter-server:stable
-    container_name: matter-server
-    restart: unless-stopped
-    user: ${PUID}:${PGID}
-    environment:
-      - TZ=${TZ:-UTC}
-    networks:
-      - general_brg
-    ports:
-      - "5580:5580"
-      - "5540:5540"
-    volumes:
-      - ${DOCKERCONFIGPATH}/matter-server/data:/data:rw
-      - /run/dbus:/run/dbus:ro
-#-----------------------------------------------
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
