@@ -12,12 +12,12 @@ services:
       general_brg:
       vpn_stack_brg:
     environment:
-      - PUID=568
-      - PGID=568
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=${TZ}
     volumes:
-      - ${CONFIG_PATH}/nginx-rp/config:/data
-      - ${CONFIG_PATH}/nginx-rp/le:/etc/letsencrypt
+      - ${DOCKERCONFIGPATH}/npm/config:/data
+      - ${DOCKERCONFIGPATH}/npm/le:/etc/letsencrypt
     healthcheck:
       test: ["CMD", "/usr/bin/check-health"]
       interval: 120s
@@ -27,21 +27,22 @@ services:
   cloudflared: 
     image: cloudflare/cloudflared 
     container_name: cloudflare-tunnel
-    user: "568:568"
     restart: always 
-    #network_mode: host
     networks:
       general_brg:
     command: tunnel run 
     environment: 
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
 #-----------------------------------------------
   overseerr:
     image: lscr.io/linuxserver/overseerr:latest
     container_name: overseerr
     environment:
-      - PUID=568
-      - PGID=568
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=${TZ}
     networks:
       vpn_stack_brg:
@@ -49,7 +50,7 @@ services:
     ports:
       - 5055:5055
     volumes:
-      - ${CONFIG_PATH}/overseerr:/config
+      - ${DOCKERCONFIGPATH}/overseerr:/config
     restart: unless-stopped
     healthcheck:
       test: "curl --fail http://localhost:5055/api/v1/status || exit 1"
