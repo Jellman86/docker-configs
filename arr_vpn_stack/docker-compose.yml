@@ -31,8 +31,8 @@ services:
       - DOT=on
       - DOT_CACHING=on
       - BLOCK_MALICIOUS=off
-      - BLOCK_SURVEILLANCE=on
-      - BLOCK_ADS=on
+      - BLOCK_SURVEILLANCE=off
+      - BLOCK_ADS=off
       - DOT_PROVIDERS=cloudflare
       # Carve LAN-direct exceptions so containers sharing this network
       # namespace (sonarr/radarr/prowlarr/qbittorrent/flaresolverr) can
