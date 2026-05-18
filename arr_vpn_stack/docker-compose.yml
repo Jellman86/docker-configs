@@ -79,6 +79,7 @@ services:
       - ${DOCKERCONFIGPATH}/prowlarr/config:/config
       - ${MEDIAPATH}:/media
       - ${DOWNLOADSPATH}:/downloads
+      - ${DOWNLOADSPATH}:/torrents
     restart: unless-stopped
     healthcheck:
       test: "curl --fail http://localhost:9696/ping || exit 1"
@@ -98,6 +99,7 @@ services:
     volumes:
       - ${DOCKERCONFIGPATH}/radarr/config:/config
       - ${DOWNLOADSPATH}:/downloads
+      - ${DOWNLOADSPATH}:/torrents
       - ${MEDIAPATH}/video/film:/film-base
     restart: unless-stopped
     healthcheck:
@@ -118,6 +120,7 @@ services:
     volumes:
       - ${DOCKERCONFIGPATH}/sonarr/config:/config
       - ${DOWNLOADSPATH}:/downloads
+      - ${DOWNLOADSPATH}:/torrents
       - ${MEDIAPATH}/video/tv:/tv-base
     restart: unless-stopped
     healthcheck:
