@@ -58,6 +58,9 @@ services:
       - ${DOCKERCONFIGPATH}/qbittorrent/logs:/logs
       - ${DOWNLOADSPATH}:/downloads
       - ${DOWNLOADSPATH}:/torrents
+      - ${DOWNLOADSPATH}/working:/working
+      - ${DOWNLOADSPATH}/complete:/complete
+      - ${DOWNLOADSPATH}/source:/source
     network_mode: "service:gluetun"
     restart: unless-stopped
     healthcheck:
