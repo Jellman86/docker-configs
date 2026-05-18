@@ -97,7 +97,7 @@ services:
     volumes:
       - ${DOCKERCONFIGPATH}/radarr/config:/config
       - ${DOWNLOADSPATH}:/downloads
-      - ${MEDIAPATH}/video/film:/film
+      - ${MEDIAPATH}/video/film:/film-base
     restart: unless-stopped
     healthcheck:
       test: "curl --fail http://localhost:7878/ping || exit 1"
@@ -117,7 +117,7 @@ services:
     volumes:
       - ${DOCKERCONFIGPATH}/sonarr/config:/config
       - ${DOWNLOADSPATH}:/downloads
-      - ${MEDIAPATH}/video/tv:/tv
+      - ${MEDIAPATH}/video/tv:/tv-base
     restart: unless-stopped
     healthcheck:
       test: "curl --fail http://localhost:8989/ping || exit 1"
