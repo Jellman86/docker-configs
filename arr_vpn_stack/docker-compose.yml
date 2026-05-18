@@ -55,7 +55,7 @@ services:
     volumes:
       - ${DOCKERCONFIGPATH}/qbittorrent/config:/config
       - ${DOCKERCONFIGPATH}/qbittorrent/logs:/logs
-      - ${DOWNLOADSPATH}/downloads:/downloads
+      - ${DOWNLOADSPATH}:/downloads
     network_mode: "service:gluetun"
     restart: unless-stopped
     healthcheck:
