@@ -1,6 +1,6 @@
 services:
 #-----------------------------------------------
-  nginx-pm:
+  npm:
     container_name: npm
     image: 'jc21/nginx-proxy-manager:latest'
     restart: always
