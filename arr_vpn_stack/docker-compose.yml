@@ -62,6 +62,7 @@ services:
       - ${DOWNLOADSPATH}/complete:/complete
       - ${DOWNLOADSPATH}/source:/source
     network_mode: "service:gluetun"
+    stop_grace_period: 60s
     restart: unless-stopped
     healthcheck:
       # Checks if WebUI is responsive.
