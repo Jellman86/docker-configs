@@ -4,16 +4,17 @@ services:
     container_name: frigate
     restart: unless-stopped
     stop_grace_period: 30s # allow enough time to shut down the various services
-    image: ghcr.io/blakeblackshear/frigate:stable
+    image: ghcr.io/blakeblackshear/frigate:stable-tensorrt
     shm_size: "1024mb" # update for your cameras based on calculation above
-    cap_add:
-      - SYS_ADMIN
-      - CAP_PERFMON
-    devices:
-      - /dev/dri:/dev/dri
-    group_add:
-      - "44"  # /dev/dri/card0 group on this host (video)
-      - "107" # /dev/dri/renderD128 group on this host (render)
+    # NVIDIA GPU access for Docker running inside WSL2. The NVIDIA driver is
+    # provided by Windows/WSL; do not mount Intel /dev/dri devices here.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${DOCKERCONFIGPATH}/frigate/config:/config
@@ -33,6 +34,8 @@ services:
     environment:
       - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD}
       - TZ=${TZ:-UTC}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
     healthcheck:
       test: "curl -f http://localhost:5000/api/version || exit 1"
       interval: 1m
@@ -101,11 +104,15 @@ services:
     volumes:
       - ${DOCKERCONFIGPATH}/YA-WAMF/config:/config        # Configuration files (config.json)
       - ${DOCKERCONFIGPATH}/YA-WAMF/data:/data 
-    devices:
-      - /dev/dri:/dev/dri
-    group_add:
-      - "44"   # video (example)
-      - "107"  # render (example)
+    # NVIDIA CUDA access for Docker running inside WSL2. Requires NVIDIA
+    # Container Toolkit configured in the WSL distro that runs Docker.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     ports:
       - "9852:8080"
     environment:
@@ -118,6 +125,8 @@ services:
       - FRIGATE__MQTT_USERNAME=${MQTT_USERNAME:-}
       - FRIGATE__MQTT_PASSWORD=${MQTT_PASSWORD:-}
       - SYSTEM__DEBUG_UI_ENABLED=${DEBUG_UI_ENABLED:-true}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
       interval: 30s
