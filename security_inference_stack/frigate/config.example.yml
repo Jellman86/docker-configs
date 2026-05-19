@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=http://frigate:5000/api/config/schema.json
+#
+# Starter Frigate config for security_inference_stack.
+# Copy this to ${DOCKERCONFIGPATH}/frigate/config/config.yml and replace the
+# placeholder camera URL before starting Frigate.
+
+mqtt:
+  enabled: true
+  host: mosquitto
+  port: 1883
+
+ffmpeg:
+  # Requires the docker-compose NVIDIA GPU reservation and NVIDIA Container
+  # Toolkit in the WSL2 distro that runs Docker.
+  hwaccel_args: preset-nvidia
+
+record:
+  enabled: true
+  retain:
+    days: 3
+    mode: motion
+  alerts:
+    retain:
+      days: 14
+      mode: motion
+  detections:
+    retain:
+      days: 14
+      mode: motion
+
+snapshots:
+  enabled: true
+  clean_copy: true
+  retain:
+    default: 14
+
+objects:
+  track:
+    - person
+    - car
+    - cat
+    - dog
+    - bird
+
+cameras:
+  front_door:
+    enabled: true
+    ffmpeg:
+      inputs:
+        # Replace the username, host, and path for your camera.
+        # FRIGATE_RTSP_PASSWORD is supplied by the compose environment.
+        - path: rtsp://camera-user:{FRIGATE_RTSP_PASSWORD}@192.168.1.50:554/stream1
+          roles:
+            - detect
+            - record
+    detect:
+      enabled: true
+      # Set these to the actual resolution of the stream used for detection.
+      width: 1280
+      height: 720
+      fps: 5
+    motion:
+      # Add masks after the feed is visible in the UI. Example timestamp mask:
+      # mask:
+      #   - 0.000,0.000,0.450,0.000,0.450,0.080,0.000,0.080
+      threshold: 30
