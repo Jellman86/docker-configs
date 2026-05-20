@@ -1,9 +1,9 @@
 services:
 #-----------------------------------------------
   gluetun:
-    image: qmcgaw/gluetun
-    restart: unless-stopped
+    image: ${GLUETUN_IMAGE:-qmcgaw/gluetun:latest}
     container_name: gluetun
+    restart: unless-stopped
     cap_add:
       - NET_ADMIN
     devices:
@@ -11,142 +11,158 @@ services:
     networks:
       vpn_stack_brg:
     ports:
-      - 5041:5041/tcp # qbittorrent
-      - 5041:5041/udp # qbittorrent
-      - 8081:8081/tcp # qbittorrent webui
-      - 9696:9696/tcp # prowlarr
-      - 7878:7878/tcp # radarr
-      - 8989:8989/tcp # sonarr
-      - 8191:8191/tcp # flaresolverr
+      - "${QBITTORRENT_PORT:-5041}:5041/tcp"
+      - "${QBITTORRENT_PORT:-5041}:5041/udp"
+      - "${QBITTORRENT_WEBUI_PORT:-8081}:8081/tcp"
+      - "${PROWLARR_PORT:-9696}:9696/tcp"
+      - "${RADARR_PORT:-7878}:7878/tcp"
+      - "${SONARR_PORT:-8989}:8989/tcp"
+      - "${FLARESOLVERR_PORT:-8191}:8191/tcp"
     volumes:
-      - ${DOCKERCONFIGPATH}/gluetun:/gluetun
+      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/gluetun:/gluetun
     environment:
-      - VPN_SERVICE_PROVIDER=${VPNHOST}
-      - VPN_TYPE=${VPNPROTOCOL}
-      - WIREGUARD_PRIVATE_KEY=${WGPRIVKEY}
-      - OPENVPN_USER=${OPENVPNUSER}
-      - OPENVPN_PASSWORD=${OPENVPNPASSWORD}
-      - TZ=${TZ}
-      - SERVER_COUNTRIES=${VPNCOUNTRY}
-      - UPDATER_PERIOD=12h
-      - DOT=on
-      - DOT_CACHING=on
-      - BLOCK_MALICIOUS=off
-      - BLOCK_SURVEILLANCE=off
-      - BLOCK_ADS=off
-      - DOT_PROVIDERS=cloudflare
-      # Carve LAN-direct exceptions so containers sharing this network
-      # namespace (sonarr/radarr/prowlarr/qbittorrent/flaresolverr) can
-      # reach LAN services like Plex notifications, NAS APIs, and the
-      # nginx reverse proxy without going through the VPN. Each /24 is
-      # listed explicitly rather than collapsed to a /21 to keep the
-      # exception scoped to the actually-used subnets.
-      #- FIREWALL_OUTBOUND_SUBNETS=192.168.211.0/24,192.168.212.0/24,192.168.213.0/24,192.168.214.0/24,192.168.215.0/24
+      VPN_SERVICE_PROVIDER: ${VPNHOST:-nordvpn}
+      VPN_TYPE: ${VPNPROTOCOL:-wireguard}
+      WIREGUARD_PRIVATE_KEY: ${WGPRIVKEY:-}
+      OPENVPN_USER: ${OPENVPNUSER:-}
+      OPENVPN_PASSWORD: ${OPENVPNPASSWORD:-}
+      TZ: ${TZ:-Europe/London}
+      SERVER_COUNTRIES: ${VPNCOUNTRY:-Netherlands,Switzerland,Sweden,Denmark,Germany,Belgium,France,Ireland,Norway,Spain}
+      UPDATER_PERIOD: ${UPDATER_PERIOD:-12h}
+      DNS_UPSTREAM_RESOLVER_TYPE: ${DNS_UPSTREAM_RESOLVER_TYPE:-dot}
+      DNS_UPSTREAM_RESOLVERS: ${DNS_UPSTREAM_RESOLVERS:-cloudflare}
+      DNS_CACHING: ${DNS_CACHING:-on}
+      DNS_UPSTREAM_IPV6: ${DNS_UPSTREAM_IPV6:-off}
+      BLOCK_MALICIOUS: ${BLOCK_MALICIOUS:-off}
+      BLOCK_SURVEILLANCE: ${BLOCK_SURVEILLANCE:-off}
+      BLOCK_ADS: ${BLOCK_ADS:-off}
+      FIREWALL_INPUT_PORTS: ${FIREWALL_INPUT_PORTS:-5041,8081,9696,7878,8989,8191}
+      FIREWALL_OUTBOUND_SUBNETS: ${FIREWALL_OUTBOUND_SUBNETS:-192.168.211.0/24,192.168.212.0/24,192.168.213.0/24,192.168.214.0/24,192.168.215.0/24}
+    healthcheck:
+      test: ["CMD", "/gluetun-entrypoint", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 #-----------------------------------------------
   qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:latest
+    image: ${QBITTORRENT_IMAGE:-lscr.io/linuxserver/qbittorrent:latest}
     container_name: qbittorrent
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-      - WEBUI_PORT=8081
-      - TORRENTING_PORT=5041
-      - DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest
-    volumes:
-      - ${DOCKERCONFIGPATH}/qbittorrent/config:/config
-      - ${DOCKERCONFIGPATH}/qbittorrent/logs:/logs
-      - ${DOWNLOADSPATH}:/downloads
-      - ${DOWNLOADSPATH}:/torrents
-      - ${DOWNLOADSPATH}/working:/working
-      - ${DOWNLOADSPATH}/complete:/complete
-      - ${DOWNLOADSPATH}/source:/source
-    network_mode: "service:gluetun"
-    stop_grace_period: 60s
     restart: unless-stopped
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    stop_grace_period: 60s
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/London}
+      WEBUI_PORT: 8081
+      TORRENTING_PORT: 5041
+      DOCKER_MODS: ${QBITTORRENT_DOCKER_MODS:-ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest}
+    volumes:
+      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/qbittorrent/config:/config
+      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/qbittorrent/logs:/logs
+      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/downloads
+      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/torrents
+      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}/working:/working
+      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}/complete:/complete
+      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}/source:/source
     healthcheck:
-      # Checks if WebUI is responsive.
-      test: "curl --fail http://localhost:8081 || exit 1"
+      test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:8081 || exit 1"]
       interval: 1m
       timeout: 10s
       retries: 3
       start_period: 30s
 #-----------------------------------------------
   prowlarr:
-    image: lscr.io/linuxserver/prowlarr:latest
+    image: ${PROWLARR_IMAGE:-lscr.io/linuxserver/prowlarr:latest}
     container_name: prowlarr
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    network_mode: "service:gluetun"
-    volumes:
-      - ${DOCKERCONFIGPATH}/prowlarr/config:/config
-      - ${MEDIAPATH}:/media
-      - ${DOWNLOADSPATH}:/downloads
-      - ${DOWNLOADSPATH}:/torrents
     restart: unless-stopped
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/London}
+    volumes:
+      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/prowlarr/config:/config
+      - ${MEDIAPATH:-/mnt/d/media}:/media
+      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/downloads
+      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/torrents
     healthcheck:
-      test: "curl --fail http://localhost:9696/ping || exit 1"
+      test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:9696/ping || exit 1"]
       interval: 1m
       timeout: 10s
       retries: 3
       start_period: 30s
 #-----------------------------------------------
   radarr:
-    image: lscr.io/linuxserver/radarr:latest
+    image: ${RADARR_IMAGE:-lscr.io/linuxserver/radarr:latest}
     container_name: radarr
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    network_mode: "service:gluetun"
-    volumes:
-      - ${DOCKERCONFIGPATH}/radarr/config:/config
-      - ${DOWNLOADSPATH}:/downloads
-      - ${DOWNLOADSPATH}:/torrents
-      - ${MEDIAPATH}/video/film:/film-base
     restart: unless-stopped
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/London}
+    volumes:
+      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/radarr/config:/config
+      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/downloads
+      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/torrents
+      - ${MEDIAPATH:-/mnt/d/media}/video/film:/film-base
     healthcheck:
-      test: "curl --fail http://localhost:7878/ping || exit 1"
+      test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:7878/ping || exit 1"]
       interval: 1m
       timeout: 10s
       retries: 3
       start_period: 30s
 #-----------------------------------------------
   sonarr:
-    image: lscr.io/linuxserver/sonarr:latest
+    image: ${SONARR_IMAGE:-lscr.io/linuxserver/sonarr:latest}
     container_name: sonarr
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    network_mode: "service:gluetun"
-    volumes:
-      - ${DOCKERCONFIGPATH}/sonarr/config:/config
-      - ${DOWNLOADSPATH}:/downloads
-      - ${DOWNLOADSPATH}:/torrents
-      - ${MEDIAPATH}/video/tv:/tv-base
     restart: unless-stopped
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/London}
+    volumes:
+      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/sonarr/config:/config
+      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/downloads
+      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/torrents
+      - ${MEDIAPATH:-/mnt/d/media}/video/tv:/tv-base
     healthcheck:
-      test: "curl --fail http://localhost:8989/ping || exit 1"
+      test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:8989/ping || exit 1"]
       interval: 1m
       timeout: 10s
       retries: 3
       start_period: 30s
 #-----------------------------------------------
   flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:latest
+    image: ${FLARESOLVERR_IMAGE:-ghcr.io/flaresolverr/flaresolverr:latest}
     container_name: flaresolverr
-    network_mode: "service:gluetun"
-    environment:
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - LOG_HTML=${LOG_HTML:-false}
-      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
-      - TZ=${TZ}
     restart: unless-stopped
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_HTML: ${LOG_HTML:-false}
+      CAPTCHA_SOLVER: ${CAPTCHA_SOLVER:-none}
+      TZ: ${TZ:-Europe/London}
     healthcheck:
-      test: "curl --fail http://localhost:8191 || exit 1"
+      test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:8191 || exit 1"]
       interval: 1m
       timeout: 10s
       retries: 3
@@ -154,4 +170,5 @@ services:
 #-----------------------------------------------
 networks:
   vpn_stack_brg:
+    name: ${NETWORK:-vpn_stack_brg}
     external: true
