@@ -168,6 +168,27 @@ services:
       retries: 3
       start_period: 30s
 #-----------------------------------------------
+  overseerr:
+    image: lscr.io/linuxserver/overseerr:latest
+    container_name: overseerr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    networks:
+      vpn_stack_brg:
+    ports:
+      - 5055:5055
+    volumes:
+      - ${DOCKERCONFIGPATH}/overseerr:/config
+    restart: unless-stopped
+    healthcheck:
+      test: "curl --fail http://localhost:5055/api/v1/status || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+#-----------------------------------------------
 networks:
   vpn_stack_brg:
     name: ${NETWORK:-vpn_stack_brg}
