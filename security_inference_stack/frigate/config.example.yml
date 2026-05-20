@@ -36,11 +36,15 @@ snapshots:
 
 objects:
   track:
-    - person
-    - car
-    - cat
-    - dog
     - bird
+
+review:
+  alerts:
+    labels:
+      - bird
+  detections:
+    labels:
+      - bird
 
 cameras:
   front_door:
