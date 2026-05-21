@@ -180,7 +180,7 @@ services:
     ports:
       - 5055:5055
     volumes:
-      - ${DOCKERCONFIGPATH}/overseerr:/app/config
+      - seerr_config:/app/config
     restart: unless-stopped
     healthcheck:
       test: "wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1"
@@ -193,3 +193,8 @@ networks:
   vpn_stack_brg:
     name: ${NETWORK:-vpn_stack_brg}
     external: true
+
+volumes:
+  seerr_config:
+    external: true
+    name: seerr_config
