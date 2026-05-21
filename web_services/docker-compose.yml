@@ -10,6 +10,8 @@ services:
       - 443:443
     networks:
       general_brg:
+        aliases:
+          - nginx-rp
       vpn_stack_brg:
     environment:
       - PUID=${PUID}
