@@ -16,8 +16,8 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
     volumes:
-      - ${DOCKERCONFIGPATH}/npm/config:/data
-      - ${DOCKERCONFIGPATH}/npm/le:/etc/letsencrypt
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
     healthcheck:
       test: ["CMD", "/usr/bin/check-health"]
       interval: 120s
@@ -42,4 +42,12 @@ networks:
       external: true
     vpn_stack_brg:
       external: true
+
+volumes:
+    npm_data:
+      external: true
+      name: npm_data
+    npm_letsencrypt:
+      external: true
+      name: npm_letsencrypt
     
