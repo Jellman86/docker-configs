@@ -52,8 +52,8 @@ services:
         general_brg:
     environment:
       - TZ=${TZ:-UTC}
-      - BIRDNET_UID=${PUID}
-      - BIRDNET_GID=${PGID}
+      - BIRDNET_UID=${SECURITY_STACK_UID:-1000}
+      - BIRDNET_GID=${SECURITY_STACK_GID:-1000}
       # BirdNET Configuration
       - BIRDNET_LOCALE=en-uk                      # Locale code (2-10 chars, e.g., "en" or "en-us")
       - BIRDNET_LATITUDE=${BN_LAT}                 # Valid range: -90.0 to 90.0
@@ -76,13 +76,13 @@ services:
       - ${DOCKERCONFIGPATH}/birdnet-go/config:/config
       - ${DOCKERCONFIGPATH}/birdnet-go/data:/data
     tmpfs:
-      - /config/hls:exec,size=50M,uid=${BIRDNET_UID:-568},gid=${BIRDNET_GID:-568},mode=0755
+      - /config/hls:exec,size=50M,uid=${SECURITY_STACK_UID:-1000},gid=${SECURITY_STACK_GID:-1000},mode=0755
 #-----------------------------------------------
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     restart: unless-stopped
-    user: ${PUID}:${PGID}
+    user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}
     environment:
       - TZ=${TZ:-UTC}
     networks:
@@ -98,7 +98,7 @@ services:
     image: ghcr.io/jellman86/yawamf-monalithic:dev
     container_name: yawamf-monalithic
     restart: unless-stopped
-    user: ${PUID}:${PGID}
+    user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}
     networks:
       general_brg:
     volumes:
@@ -121,9 +121,6 @@ services:
       - FRIGATE__FRIGATE_AUTH_TOKEN=${FRIGATE_AUTH_TOKEN:-}
       - FRIGATE__MQTT_SERVER=${MQTT_SERVER:-mosquitto}
       - FRIGATE__MQTT_PORT=${MQTT_PORT:-1883}
-      - FRIGATE__MQTT_AUTH=${MQTT_AUTH:-false}
-      - FRIGATE__MQTT_USERNAME=${MQTT_USERNAME:-}
-      - FRIGATE__MQTT_PASSWORD=${MQTT_PASSWORD:-}
       - SYSTEM__DEBUG_UI_ENABLED=${DEBUG_UI_ENABLED:-true}
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
