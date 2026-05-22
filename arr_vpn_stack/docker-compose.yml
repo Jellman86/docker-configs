@@ -189,6 +189,40 @@ services:
       timeout: 3s
       retries: 3
 #-----------------------------------------------
+  wamr:
+    image: ${WAMR_IMAGE:-ghcr.io/techieanant/wamr:latest}
+    container_name: wamr
+    restart: unless-stopped
+    networks:
+      vpn_stack_brg:
+    ports:
+      - "${WAMR_PORT:-9002}:9000"
+    environment:
+      NODE_ENV: ${WAMR_NODE_ENV:-production}
+      PORT: 9000
+      DATABASE_PATH: /app/data/wamr.db
+      JWT_SECRET: ${WAMR_JWT_SECRET:-change-this-wamr-jwt-secret-before-production}
+      ENCRYPTION_KEY: ${WAMR_ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
+      ADMIN_USERNAME: ${WAMR_ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${WAMR_ADMIN_PASSWORD:-}
+      CORS_ORIGIN: ${WAMR_CORS_ORIGIN:-*}
+      WHATSAPP_SESSION_PATH: /app/.baileys_auth
+      RATE_LIMIT_WINDOW_MS: ${WAMR_RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${WAMR_RATE_LIMIT_MAX_REQUESTS:-100}
+      LOGIN_RATE_LIMIT_MAX: ${WAMR_LOGIN_RATE_LIMIT_MAX:-5}
+      MEDIA_MONITORING_INTERVAL_MS: ${WAMR_MEDIA_MONITORING_INTERVAL_MS:-300000}
+      LOG_LEVEL: ${WAMR_LOG_LEVEL:-info}
+      LOG_PRETTY: ${WAMR_LOG_PRETTY:-false}
+    volumes:
+      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/wamr/data:/app/data
+      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/wamr/baileys_auth:/app/.baileys_auth
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:9000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+#-----------------------------------------------
 networks:
   vpn_stack_brg:
     name: ${NETWORK:-vpn_stack_brg}
