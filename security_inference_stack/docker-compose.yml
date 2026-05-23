@@ -61,7 +61,7 @@ services:
       - BIRDNET_SENSITIVITY=1.0                   # Valid range: 0.1 to 1.5 (higher = more sensitive)
       - BIRDNET_THRESHOLD=0.7                     # Valid range: 0.0 to 1.0 (confidence threshold)
       - BIRDNET_OVERLAP=1.5                       # Valid range: 0.0 to 2.9 seconds (audio chunk overlap)
-      - BIRDNET_THREADS=0                         # 0 = auto (use all CPUs), or specify number of threads
+      - BIRDNET_THREADS=2                         # 0 = auto (use all CPUs), or specify number of threads
       - BIRDNET_DEBUG=false                       # Enable debug logging (true/false)
       - BIRDNET_USEXNNPACK=true                   # Use XNNPACK acceleration (true/false)
       # Range Filter Configuration               
