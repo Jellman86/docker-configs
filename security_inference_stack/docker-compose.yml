@@ -68,15 +68,25 @@ services:
       - BIRDNET_RANGEFILTER_MODEL=latest
       - BIRDNET_RANGEFILTER_THRESHOLD=0.01
     healthcheck:
-      test: "curl -f http://localhost:8080/ || exit 1"
+      test:
+        [
+          "CMD-SHELL",
+          "test -s /config/config.yaml && grep -q 'name: birdcam' /config/config.yaml && grep -q 'name: nestcam' /config/config.yaml && grep -q 'username: security_stack' /config/config.yaml && curl -f http://localhost:8080/ || exit 1"
+        ]
       interval: 1m
       timeout: 10s
       retries: 3
     volumes:
-      - ${DOCKERCONFIGPATH}/birdnet-go/config:/config
-      - ${DOCKERCONFIGPATH}/birdnet-go/data:/data
-    tmpfs:
-      - /config/hls:exec,size=50M,uid=${SECURITY_STACK_UID:-1000},gid=${SECURITY_STACK_GID:-1000},mode=0755
+      - type: bind
+        source: ${DOCKERCONFIGPATH}/birdnet-go/config
+        target: /config
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOCKERCONFIGPATH}/birdnet-go/data
+        target: /data
+        bind:
+          create_host_path: false
 #-----------------------------------------------
   mosquitto:
     image: eclipse-mosquitto:latest
