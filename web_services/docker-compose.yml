@@ -39,6 +39,22 @@ services:
       - TZ=${TZ}
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
 #-----------------------------------------------
+  dockhand:
+    image: fnsys/dockhand:latest
+    container_name: dockhand
+    restart: always
+    ports:
+      - 3000:3000
+    networks:
+      general_brg:
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - TZ=${TZ}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - dockhand_data:/app/data
+#-----------------------------------------------
 networks:
     general_brg:
       external: true
@@ -52,4 +68,7 @@ volumes:
     npm_letsencrypt:
       external: true
       name: npm_letsencrypt
+    dockhand_data:
+      external: true
+      name: dockhand_data
     
