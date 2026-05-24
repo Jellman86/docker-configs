@@ -13,6 +13,7 @@ $portproxyTaskName = 'WSL Native Docker NPM Portproxy'
 $taskPath = '\Server Automation\'
 $scriptPath = Join-Path $PSScriptRoot 'update-wsl-npm-portproxy.ps1'
 $powerShellExe = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
+$wslExe = Join-Path $env:WINDIR 'System32\wsl.exe'
 
 if (-not (Test-Path $scriptPath)) {
     throw "Missing portproxy update script: $scriptPath"
@@ -22,9 +23,13 @@ if (-not (Test-Path $powerShellExe)) {
     throw "Missing Windows PowerShell executable: $powerShellExe"
 }
 
+if (-not (Test-Path $wslExe)) {
+    throw "Missing WSL executable: $wslExe"
+}
+
 $launcherAction = New-ScheduledTaskAction `
-    -Execute $powerShellExe `
-    -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$scriptPath`" -LaunchOnly" `
+    -Execute $wslExe `
+    -Argument '-d Ubuntu --exec sleep infinity' `
     -WorkingDirectory $PSScriptRoot
 
 $portproxyAction = New-ScheduledTaskAction `
