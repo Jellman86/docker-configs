@@ -53,7 +53,16 @@ $portproxyPrincipal = New-ScheduledTaskPrincipal `
     -LogonType Interactive `
     -RunLevel Highest
 
-$settings = New-ScheduledTaskSettingsSet `
+$launcherSettings = New-ScheduledTaskSettingsSet `
+    -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries `
+    -StartWhenAvailable `
+    -MultipleInstances IgnoreNew `
+    -RestartCount 3 `
+    -RestartInterval (New-TimeSpan -Minutes 1) `
+    -ExecutionTimeLimit ([TimeSpan]::Zero)
+
+$portproxySettings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `
     -DontStopIfGoingOnBatteries `
     -StartWhenAvailable `
@@ -68,7 +77,7 @@ Register-ScheduledTask `
     -Action $launcherAction `
     -Trigger $launcherTrigger `
     -Principal $launcherPrincipal `
-    -Settings $settings `
+    -Settings $launcherSettings `
     -Description 'Launch Ubuntu WSL and save its NAT address for the NPM portproxy task.' `
     -Force | Out-Null
 
@@ -78,7 +87,7 @@ Register-ScheduledTask `
     -Action $portproxyAction `
     -Trigger $portproxyTrigger `
     -Principal $portproxyPrincipal `
-    -Settings $settings `
+    -Settings $portproxySettings `
     -Description 'Refresh Windows portproxy rules for native Docker NPM running inside Ubuntu WSL.' `
     -Force | Out-Null
 
