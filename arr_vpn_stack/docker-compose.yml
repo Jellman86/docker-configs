@@ -3,7 +3,7 @@ services:
   gluetun:
     image: ${GLUETUN_IMAGE:-qmcgaw/gluetun:latest}
     container_name: gluetun
-    restart: unless-stopped
+    restart: always
     cap_add:
       - NET_ADMIN
     devices:
@@ -48,7 +48,7 @@ services:
   qbittorrent:
     image: ${QBITTORRENT_IMAGE:-lscr.io/linuxserver/qbittorrent:latest}
     container_name: qbittorrent
-    restart: unless-stopped
+    restart: always
     network_mode: "service:gluetun"
     depends_on:
       gluetun:
@@ -79,7 +79,7 @@ services:
   prowlarr:
     image: ${PROWLARR_IMAGE:-lscr.io/linuxserver/prowlarr:latest}
     container_name: prowlarr
-    restart: unless-stopped
+    restart: always
     network_mode: "service:gluetun"
     depends_on:
       gluetun:
@@ -103,7 +103,7 @@ services:
   radarr:
     image: ${RADARR_IMAGE:-lscr.io/linuxserver/radarr:latest}
     container_name: radarr
-    restart: unless-stopped
+    restart: always
     network_mode: "service:gluetun"
     depends_on:
       gluetun:
@@ -127,7 +127,7 @@ services:
   sonarr:
     image: ${SONARR_IMAGE:-lscr.io/linuxserver/sonarr:latest}
     container_name: sonarr
-    restart: unless-stopped
+    restart: always
     network_mode: "service:gluetun"
     depends_on:
       gluetun:
@@ -151,7 +151,7 @@ services:
   flaresolverr:
     image: ${FLARESOLVERR_IMAGE:-ghcr.io/flaresolverr/flaresolverr:latest}
     container_name: flaresolverr
-    restart: unless-stopped
+    restart: always
     network_mode: "service:gluetun"
     depends_on:
       gluetun:
@@ -181,7 +181,7 @@ services:
       - 5055:5055
     volumes:
       - seerr_config:/app/config
-    restart: unless-stopped
+    restart: always
     healthcheck:
       test: "wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1"
       start_period: 20s
