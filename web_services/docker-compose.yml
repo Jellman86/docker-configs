@@ -52,7 +52,11 @@ services:
       - PGID=1001
       - TZ=${TZ}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        bind:
+          create_host_path: false
       - dockhand_data:/app/data
 #-----------------------------------------------
 networks:

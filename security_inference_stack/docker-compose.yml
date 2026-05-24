@@ -16,10 +16,27 @@ services:
               count: 1
               capabilities: [gpu]
     volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - ${DOCKERCONFIGPATH}/frigate/config:/config
-      - ${DOCKERCONFIGPATH}/frigate/media:/media/frigate
-      - ${DOCKERCONFIGPATH}/frigate/models:/models
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOCKERCONFIGPATH}/frigate/config
+        target: /config
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOCKERCONFIGPATH}/frigate/media
+        target: /media/frigate
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOCKERCONFIGPATH}/frigate/models
+        target: /models
+        bind:
+          create_host_path: false
       - type: tmpfs
         target: /tmp/cache
         tmpfs:
@@ -100,9 +117,21 @@ services:
     ports:
       - "1883:1883"
     volumes:
-      - ${DOCKERCONFIGPATH}/mosquitto/config:/mosquitto/config
-      - ${DOCKERCONFIGPATH}/mosquitto/data:/mosquitto/data
-      - ${DOCKERCONFIGPATH}/mosquitto/log:/mosquitto/log
+      - type: bind
+        source: ${DOCKERCONFIGPATH}/mosquitto/config
+        target: /mosquitto/config
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOCKERCONFIGPATH}/mosquitto/data
+        target: /mosquitto/data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOCKERCONFIGPATH}/mosquitto/log
+        target: /mosquitto/log
+        bind:
+          create_host_path: false
 #-----------------------------------------------
   yawamf:
     image: ghcr.io/jellman86/yawamf-monalithic:dev
@@ -112,8 +141,16 @@ services:
     networks:
       general_brg:
     volumes:
-      - ${DOCKERCONFIGPATH}/YA-WAMF/config:/config        # Configuration files (config.json)
-      - ${DOCKERCONFIGPATH}/YA-WAMF/data:/data 
+      - type: bind
+        source: ${DOCKERCONFIGPATH}/YA-WAMF/config
+        target: /config
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOCKERCONFIGPATH}/YA-WAMF/data
+        target: /data
+        bind:
+          create_host_path: false
     # NVIDIA CUDA access for Docker running inside WSL2. Requires NVIDIA
     # Container Toolkit configured in the WSL distro that runs Docker.
     deploy:

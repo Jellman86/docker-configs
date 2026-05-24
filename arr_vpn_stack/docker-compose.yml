@@ -19,7 +19,11 @@ services:
       - "${SONARR_PORT:-8989}:8989/tcp"
       - "${FLARESOLVERR_PORT:-8191}:8191/tcp"
     volumes:
-      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/gluetun:/gluetun
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/gluetun
+        target: /gluetun
+        bind:
+          create_host_path: false
     environment:
       VPN_SERVICE_PROVIDER: ${VPNHOST:-nordvpn}
       VPN_TYPE: ${VPNPROTOCOL:-wireguard}
@@ -62,13 +66,41 @@ services:
       TORRENTING_PORT: 5041
       DOCKER_MODS: ${QBITTORRENT_DOCKER_MODS:-ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest}
     volumes:
-      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/qbittorrent/config:/config
-      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/qbittorrent/logs:/logs
-      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/downloads
-      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/torrents
-      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}/working:/working
-      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}/complete:/complete
-      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}/source:/source
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/qbittorrent/config
+        target: /config
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/qbittorrent/logs
+        target: /logs
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}
+        target: /downloads
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}
+        target: /torrents
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}/working
+        target: /working
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}/complete
+        target: /complete
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}/source
+        target: /source
+        bind:
+          create_host_path: false
     healthcheck:
       test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:8081 || exit 1"]
       interval: 1m
@@ -89,10 +121,26 @@ services:
       PGID: ${PGID:-1000}
       TZ: ${TZ:-Europe/London}
     volumes:
-      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/prowlarr/config:/config
-      - ${MEDIAPATH:-/mnt/d/media}:/media
-      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/downloads
-      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/torrents
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/prowlarr/config
+        target: /config
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${MEDIAPATH:-/mnt/d/media}
+        target: /media
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}
+        target: /downloads
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}
+        target: /torrents
+        bind:
+          create_host_path: false
     healthcheck:
       test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:9696/ping || exit 1"]
       interval: 1m
@@ -113,10 +161,26 @@ services:
       PGID: ${PGID:-1000}
       TZ: ${TZ:-Europe/London}
     volumes:
-      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/radarr/config:/config
-      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/downloads
-      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/torrents
-      - ${MEDIAPATH:-/mnt/d/media}/video/film:/film-base
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/radarr/config
+        target: /config
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}
+        target: /downloads
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}
+        target: /torrents
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${MEDIAPATH:-/mnt/d/media}/video/film
+        target: /film-base
+        bind:
+          create_host_path: false
     healthcheck:
       test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:7878/ping || exit 1"]
       interval: 1m
@@ -137,10 +201,26 @@ services:
       PGID: ${PGID:-1000}
       TZ: ${TZ:-Europe/London}
     volumes:
-      - ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/sonarr/config:/config
-      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/downloads
-      - ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}:/torrents
-      - ${MEDIAPATH:-/mnt/d/media}/video/tv:/tv-base
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/sonarr/config
+        target: /config
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}
+        target: /downloads
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}
+        target: /torrents
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${MEDIAPATH:-/mnt/d/media}/video/tv
+        target: /tv-base
+        bind:
+          create_host_path: false
     healthcheck:
       test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:8989/ping || exit 1"]
       interval: 1m

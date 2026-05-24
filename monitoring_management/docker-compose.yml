@@ -17,10 +17,29 @@ services:
     ports:
       - "${PROMETHEUS_WEB_PORT:-9090}:9090"
     volumes:
-      - ${CONFIG_PATH}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ${CONFIG_PATH}/prometheus/snmp-targets.yml:/etc/prometheus/snmp-targets.yml:ro
-      - ${CONFIG_PATH}/prometheus/rules:/etc/prometheus/rules:ro
-      - ${CONFIG_PATH}/prometheus/data:/prometheus
+      - type: bind
+        source: ${CONFIG_PATH}/prometheus/prometheus.yml
+        target: /etc/prometheus/prometheus.yml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CONFIG_PATH}/prometheus/snmp-targets.yml
+        target: /etc/prometheus/snmp-targets.yml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CONFIG_PATH}/prometheus/rules
+        target: /etc/prometheus/rules
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CONFIG_PATH}/prometheus/data
+        target: /prometheus
+        bind:
+          create_host_path: false
 #-----------------------------------------------
   snmp-exporter:
     image: prom/snmp-exporter:latest
@@ -40,7 +59,12 @@ services:
       - SNMPV3_AUTH_PASSWORD=${SNMPV3_AUTH_PASSWORD}
       - SNMPV3_PRIV_PASSWORD=${SNMPV3_PRIV_PASSWORD}
     volumes:
-      - ${CONFIG_PATH}/snmp-exporter/snmp.yml:/etc/snmp_exporter/snmp.yml:ro
+      - type: bind
+        source: ${CONFIG_PATH}/snmp-exporter/snmp.yml
+        target: /etc/snmp_exporter/snmp.yml
+        read_only: true
+        bind:
+          create_host_path: false
 #-----------------------------------------------
   unpoller:
     image: ghcr.io/unpoller/unpoller:latest
@@ -84,9 +108,23 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_PLUGINS_PREINSTALL_AUTO_UPDATE=false
     volumes:
-      - ${CONFIG_PATH}/grafana/data:/var/lib/grafana
-      - ${CONFIG_PATH}/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ${CONFIG_PATH}/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - type: bind
+        source: ${CONFIG_PATH}/grafana/data
+        target: /var/lib/grafana
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CONFIG_PATH}/grafana/provisioning
+        target: /etc/grafana/provisioning
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CONFIG_PATH}/grafana/dashboards
+        target: /var/lib/grafana/dashboards
+        read_only: true
+        bind:
+          create_host_path: false
     depends_on:
       - prometheus
       - unpoller

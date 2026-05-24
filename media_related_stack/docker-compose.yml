@@ -11,9 +11,21 @@ services:
         - TZ=Europe/London
         - PLEX_CLAIM=${PLEX_CLAIM}
       volumes:
-        - ${CONFIG_PATH}/pms:/config
-        - ${MEDIA_PATH}:/library
-        - /dev/shm:/transcode
+        - type: bind
+          source: ${CONFIG_PATH}/pms
+          target: /config
+          bind:
+            create_host_path: false
+        - type: bind
+          source: ${MEDIA_PATH}
+          target: /library
+          bind:
+            create_host_path: false
+        - type: bind
+          source: /dev/shm
+          target: /transcode
+          bind:
+            create_host_path: false
       devices:
         - /dev/dri:/dev/dri
       network_mode: host
