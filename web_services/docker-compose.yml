@@ -3,7 +3,7 @@ services:
   npm:
     container_name: npm
     image: 'jc21/nginx-proxy-manager:latest'
-    restart: always
+    restart: on-failure:5
     ports:
       - 80:80
       - 81:81
@@ -29,7 +29,7 @@ services:
   cloudflared: 
     image: cloudflare/cloudflared 
     container_name: cloudflare-tunnel
-    restart: always 
+    restart: on-failure:5
     networks:
       general_brg:
     command: tunnel run 
@@ -42,7 +42,7 @@ services:
   dockhand:
     image: fnsys/dockhand:latest
     container_name: dockhand
-    restart: always
+    restart: on-failure:5
     ports:
       - 3000:3000
     networks:

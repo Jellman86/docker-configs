@@ -16,6 +16,30 @@ cd <stack>
 docker compose up -d
 ```
 
+## Windows/WSL boot startup
+Docker Desktop can restart containers before WSL bind mounts are fully ready. That can make
+containers briefly fail on boot even when their restart policy is correct.
+
+Use `scripts/start-stacks-on-boot.ps1` from Windows Task Scheduler to start the stacks in a
+controlled order:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Users\ServerAdmin\Documents\GitHub\docker-configs\scripts\start-stacks-on-boot.ps1"
+```
+
+To register the task from an elevated PowerShell session:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Users\ServerAdmin\Documents\GitHub\docker-configs\scripts\register-startup-task.ps1"
+```
+
+The wrapper waits 30 seconds after launching Docker Desktop. The WSL script then waits for
+Docker and the bind-mounted paths, starts `gluetun`, waits 60 seconds, then starts the rest
+of the VPN stack plus the web and security stacks. Logs are written to
+`%USERPROFILE%\docker-startup-logs`.
+
+The task is registered as `\Server Automation\Start Docker Compose Stacks`.
+
 Notes:
 - `security_inference_stack/` uses `docker_compose.yml` (underscore naming).
 - Most stacks expect a `.env` file in the same directory as the compose file.

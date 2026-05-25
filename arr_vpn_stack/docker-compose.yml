@@ -52,7 +52,7 @@ services:
   qbittorrent:
     image: ${QBITTORRENT_IMAGE:-lscr.io/linuxserver/qbittorrent:latest}
     container_name: qbittorrent
-    restart: always
+    restart: on-failure:5
     network_mode: "service:gluetun"
     depends_on:
       gluetun:
@@ -111,7 +111,7 @@ services:
   prowlarr:
     image: ${PROWLARR_IMAGE:-lscr.io/linuxserver/prowlarr:latest}
     container_name: prowlarr
-    restart: always
+    restart: on-failure:5
     network_mode: "service:gluetun"
     depends_on:
       gluetun:
@@ -151,7 +151,7 @@ services:
   radarr:
     image: ${RADARR_IMAGE:-lscr.io/linuxserver/radarr:latest}
     container_name: radarr
-    restart: always
+    restart: on-failure:5
     network_mode: "service:gluetun"
     depends_on:
       gluetun:
@@ -191,7 +191,7 @@ services:
   sonarr:
     image: ${SONARR_IMAGE:-lscr.io/linuxserver/sonarr:latest}
     container_name: sonarr
-    restart: always
+    restart: on-failure:5
     network_mode: "service:gluetun"
     depends_on:
       gluetun:
@@ -231,7 +231,7 @@ services:
   flaresolverr:
     image: ${FLARESOLVERR_IMAGE:-ghcr.io/flaresolverr/flaresolverr:latest}
     container_name: flaresolverr
-    restart: always
+    restart: on-failure:5
     network_mode: "service:gluetun"
     depends_on:
       gluetun:
@@ -261,7 +261,7 @@ services:
       - 5055:5055
     volumes:
       - seerr_config:/app/config
-    restart: always
+    restart: on-failure:5
     healthcheck:
       test: "wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1"
       start_period: 20s
