@@ -5,3 +5,4 @@
 traefik.yaml
 stack.env
 *stack.env
+.agents/
