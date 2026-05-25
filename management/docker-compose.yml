@@ -1,0 +1,31 @@
+services:
+#-----------------------------------------------
+  dockhand:
+    image: fnsys/dockhand:latest
+    container_name: dockhand
+    restart: on-failure:5
+    ports:
+      - 3000:3000
+    networks:
+      general_brg:
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - TZ=${TZ}
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        bind:
+          create_host_path: false
+      - dockhand_data:/app/data
+#-----------------------------------------------
+networks:
+    general_brg:
+      external: true
+
+volumes:
+    dockhand_data:
+      external: true
+      name: dockhand_data
+

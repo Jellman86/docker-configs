@@ -76,6 +76,7 @@ main() {
 
   log "Waiting for WSL bind-mount paths"
   wait_for_path "$ROOT/arr_vpn_stack/docker-compose.yml"
+  wait_for_path "$ROOT/management/docker-compose.yml"
   wait_for_path "$ROOT/security_inference_stack/docker-compose.yml"
   wait_for_path "$ROOT/web_services/docker-compose.yml"
   wait_for_path "/home/jellman86/docker/arrstack/gluetun"
@@ -87,6 +88,9 @@ main() {
 
   ensure_network "vpn_stack_brg"
   ensure_network "general_brg"
+
+  log "Starting management stack"
+  compose_up "management" "$ROOT/management"
 
   log "Starting gluetun first"
   compose_up "arr_stack_vpn" "$ROOT/arr_vpn_stack" gluetun
