@@ -9,31 +9,24 @@ services:
         - PUID=568
         - PGID=568
         - TZ=Europe/London
-        - PLEX_CLAIM=${PLEX_CLAIM}
+        - PLEX_CLAIM=${plexClaim}
       volumes:
         - type: bind
-          source: ${CONFIG_PATH}/pms
+          source: ${appsPath}/pms
           target: /config
           bind:
             create_host_path: false
         - type: bind
-          source: ${MEDIA_PATH}
+          source: ${mediaPath}
           target: /library
           bind:
             create_host_path: false
         - type: bind
-          source: /dev/shm
+          source: ${mediaPath}/transcode
           target: /transcode
           bind:
             create_host_path: false
       devices:
         - /dev/dri:/dev/dri
       network_mode: host
-      #networks:
-        #general_brg:
 #-----------------------------------------------
-networks:
-    general_brg:
-      external: true
-    vpn_stack_brg:
-      external: true
