@@ -91,6 +91,7 @@ main() {
 
   log "Starting management stack"
   compose_up "management" "$ROOT/management"
+  wait_for_container_healthy "dockhand" 120
 
   log "Starting gluetun first"
   compose_up "arr_stack_vpn" "$ROOT/arr_vpn_stack" gluetun
