@@ -3,7 +3,8 @@ $ErrorActionPreference = "Stop"
 $TaskName = "Start Docker Compose Stacks"
 $TaskPath = "\Server Automation\"
 $TaskFolderPath = "\Server Automation"
-$StartupScript = "C:\Users\ServerAdmin\Documents\GitHub\docker-configs\scripts\start-stacks-on-boot.ps1"
+$StartupScript = Join-Path $PSScriptRoot "start-stacks-on-boot.ps1"
+$CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 
 $ScheduleService = New-Object -ComObject "Schedule.Service"
 $ScheduleService.Connect()
@@ -30,21 +31,25 @@ $Action = New-ScheduledTaskAction `
     -Execute "powershell.exe" `
     -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$StartupScript`""
 
-$Trigger = New-ScheduledTaskTrigger -AtLogOn
+$Trigger = New-ScheduledTaskTrigger -AtLogOn -User $CurrentUser
+$Principal = New-ScheduledTaskPrincipal -UserId $CurrentUser -LogonType Interactive -RunLevel Limited
 
 $Settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `
     -DontStopIfGoingOnBatteries `
-    -StartWhenAvailable
+    -StartWhenAvailable `
+    -MultipleInstances IgnoreNew
 
 Register-ScheduledTask `
     -TaskName $TaskName `
     -TaskPath $TaskPath `
     -Action $Action `
     -Trigger $Trigger `
+    -Principal $Principal `
     -Settings $Settings `
     -Description "Start Docker Desktop and Compose stacks in WSL after login, with gluetun first." `
-    -RunLevel Highest `
     -Force
 
 Write-Host "Registered scheduled task: $TaskPath$TaskName"
+Write-Host "Startup script: $StartupScript"
+Write-Host "Logon user: $CurrentUser"
