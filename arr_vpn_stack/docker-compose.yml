@@ -250,17 +250,23 @@ networks:
 
 volumes:
   gluetun_config:
+    external: true
     name: gluetun_config
   qbittorrent_config:
+    external: true
     name: qbittorrent_config
   qbittorrent_logs:
+    external: true
     name: qbittorrent_logs
   prowlarr_config:
+    external: true
     name: prowlarr_config
   radarr_config:
+    external: true
     name: radarr_config
   seerr_config:
     external: true
     name: seerr_config
   sonarr_config:
+    external: true
     name: sonarr_config
