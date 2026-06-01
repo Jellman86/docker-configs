@@ -14,10 +14,6 @@ services:
       - "${QBITTORRENT_PORT:-5041}:5041/tcp"
       - "${QBITTORRENT_PORT:-5041}:5041/udp"
       - "${QBITTORRENT_WEBUI_PORT:-8081}:8081/tcp"
-      - "${PROWLARR_PORT:-9696}:9696/tcp"
-      - "${RADARR_PORT:-7878}:7878/tcp"
-      - "${SONARR_PORT:-8989}:8989/tcp"
-      - "${FLARESOLVERR_PORT:-8191}:8191/tcp"
     volumes:
       - type: bind
         source: ${DOCKERCONFIGPATH:-/home/jellman86/docker/arrstack}/gluetun
@@ -40,7 +36,10 @@ services:
       BLOCK_MALICIOUS: ${BLOCK_MALICIOUS:-off}
       BLOCK_SURVEILLANCE: ${BLOCK_SURVEILLANCE:-off}
       BLOCK_ADS: ${BLOCK_ADS:-off}
-      FIREWALL_INPUT_PORTS: ${FIREWALL_INPUT_PORTS:-5041,8081,9696,7878,8989,8191}
+      HTTPPROXY: ${HTTPPROXY:-on}
+      HTTPPROXY_LISTENING_ADDRESS: ${HTTPPROXY_LISTENING_ADDRESS:-:8888}
+      HTTPPROXY_STEALTH: ${HTTPPROXY_STEALTH:-on}
+      FIREWALL_INPUT_PORTS: ${FIREWALL_INPUT_PORTS:-5041,8081,8888}
       FIREWALL_OUTBOUND_SUBNETS: ${FIREWALL_OUTBOUND_SUBNETS:-192.168.211.0/24,192.168.212.0/24,192.168.213.0/24,192.168.214.0/24,192.168.215.0/24}
     healthcheck:
       test: ["CMD", "/gluetun-entrypoint", "healthcheck"]
@@ -112,10 +111,10 @@ services:
     image: ${PROWLARR_IMAGE:-lscr.io/linuxserver/prowlarr:latest}
     container_name: prowlarr
     restart: on-failure:5
-    network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
+    networks:
+      vpn_stack_brg:
+    ports:
+      - "${PROWLARR_PORT:-9696}:9696/tcp"
     environment:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
@@ -152,10 +151,10 @@ services:
     image: ${RADARR_IMAGE:-lscr.io/linuxserver/radarr:latest}
     container_name: radarr
     restart: on-failure:5
-    network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
+    networks:
+      vpn_stack_brg:
+    ports:
+      - "${RADARR_PORT:-7878}:7878/tcp"
     environment:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
@@ -192,10 +191,10 @@ services:
     image: ${SONARR_IMAGE:-lscr.io/linuxserver/sonarr:latest}
     container_name: sonarr
     restart: on-failure:5
-    network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
+    networks:
+      vpn_stack_brg:
+    ports:
+      - "${SONARR_PORT:-8989}:8989/tcp"
     environment:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
@@ -228,21 +227,21 @@ services:
       retries: 3
       start_period: 30s
 #-----------------------------------------------
-  flaresolverr:
-    image: ${FLARESOLVERR_IMAGE:-ghcr.io/flaresolverr/flaresolverr:latest}
-    container_name: flaresolverr
+  byparr:
+    image: ${BYPARR_IMAGE:-ghcr.io/thephaseless/byparr:latest}
+    container_name: byparr
     restart: on-failure:5
-    network_mode: "service:gluetun"
+    networks:
+      vpn_stack_brg:
     depends_on:
       gluetun:
         condition: service_healthy
     environment:
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      LOG_HTML: ${LOG_HTML:-false}
-      CAPTCHA_SOLVER: ${CAPTCHA_SOLVER:-none}
       TZ: ${TZ:-Europe/London}
+      PORT: 8191
+      PROXY_SERVER: ${BYPARR_PROXY_SERVER:-http://gluetun:8888}
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:8191 || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8191/docs', timeout=5).read()\" || exit 1"]
       interval: 1m
       timeout: 10s
       retries: 3
