@@ -141,7 +141,7 @@ services:
         bind:
           create_host_path: false
       - type: bind
-        source: ${MEDIAPATH:-/mnt/d/media}/video/film
+        source: ${MEDIAPATH:-/mnt/d/media}/film
         target: /film-base
         bind:
           create_host_path: false
@@ -177,7 +177,7 @@ services:
         bind:
           create_host_path: false
       - type: bind
-        source: ${MEDIAPATH:-/mnt/d/media}/video/tv
+        source: ${MEDIAPATH:-/mnt/d/media}/tv
         target: /tv-base
         bind:
           create_host_path: false
