@@ -73,21 +73,6 @@ services:
         target: /torrents
         bind:
           create_host_path: false
-      - type: bind
-        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}/working
-        target: /working
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}/complete
-        target: /complete
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}/source
-        target: /source
-        bind:
-          create_host_path: false
     healthcheck:
       test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:8081 || exit 1"]
       interval: 1m
