@@ -208,6 +208,24 @@ services:
       retries: 3
       start_period: 5s
 #-----------------------------------------------
+  cleanuparr:
+    image: ${CLEANUPARR_IMAGE:-ghcr.io/cleanuparr/cleanuparr:latest}
+    container_name: cleanuparr
+    restart: unless-stopped
+    networks:
+      vpn_stack_brg:
+    ports:
+      - "${CLEANUPARR_PORT:-11011}:11011/tcp"
+    volumes:
+      - cleanuparr_config:/config
+    environment:
+      PORT: 11011
+      BASE_PATH: ${CLEANUPARR_BASE_PATH:-}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      UMASK: ${UMASK:-022}
+      TZ: ${TZ:-Europe/London}
+#-----------------------------------------------
   seerr:
     image: ghcr.io/seerr-team/seerr:latest
     init: true
@@ -232,8 +250,11 @@ networks:
   vpn_stack_brg:
     name: ${NETWORK:-vpn_stack_brg}
     external: true
-
+#-----------------------------------------------
 volumes:
+  cleanuparr_config:
+    external: true
+    name: cleanuparr_config
   gluetun_config:
     external: true
     name: gluetun_config
