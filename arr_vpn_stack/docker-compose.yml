@@ -220,6 +220,11 @@ services:
       - "${CLEANUPARR_PORT:-11011}:11011/tcp"
     volumes:
       - cleanuparr_config:/config
+      - type: bind
+        source: ${DOWNLOADSPATH:-/mnt/d/downloads/torrents}
+        target: /downloads
+        bind:
+          create_host_path: false
     environment:
       PORT: 11011
       BASE_PATH: ${CLEANUPARR_BASE_PATH:-}
