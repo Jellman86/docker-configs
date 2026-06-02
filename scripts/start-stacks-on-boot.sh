@@ -94,15 +94,15 @@ main() {
   wait_for_container_healthy "dockhand" 120
 
   log "Starting gluetun first"
-  compose_up "arr_stack_vpn" "$ROOT/arr_vpn_stack" gluetun
+  compose_up "arr_stack" "$ROOT/arr_vpn_stack" gluetun
   wait_for_container_healthy "gluetun" 120
 
   log "Waiting ${VPN_DELAY_SECONDS}s before starting the rest of the VPN stack"
   sleep "$VPN_DELAY_SECONDS"
 
   log "Starting remaining VPN stack services"
-  compose_up "arr_stack_vpn" "$ROOT/arr_vpn_stack" \
-    qbittorrent prowlarr radarr sonarr flaresolverr seerr
+  compose_up "arr_stack" "$ROOT/arr_vpn_stack" \
+    qbittorrent prowlarr radarr sonarr byparr cleanuparr seerr
 
   log "Starting web services stack"
   compose_up "web_services" "$ROOT/web_services"
