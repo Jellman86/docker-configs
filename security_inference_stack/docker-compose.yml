@@ -29,12 +29,12 @@ services:
         source: frigate_media
         target: /media/frigate
       - type: bind
-        source: ${SECURITY_EXPORT_PATH:-/run/desktop/mnt/host/s/security_inference_stack}/frigate/clips
+        source: ${SECURITY_EXPORT_PATH:-/mnt/s/docker/security_inference_stack}/frigate/clips
         target: /media/frigate/clips
         bind:
           create_host_path: true
       - type: bind
-        source: ${SECURITY_EXPORT_PATH:-/run/desktop/mnt/host/s/security_inference_stack}/frigate/exports
+        source: ${SECURITY_EXPORT_PATH:-/mnt/s/docker/security_inference_stack}/frigate/exports
         target: /media/frigate/exports
         bind:
           create_host_path: true
@@ -148,7 +148,7 @@ services:
         source: yawamf_data
         target: /data
       - type: bind
-        source: ${SECURITY_EXPORT_PATH:-/run/desktop/mnt/host/s/security_inference_stack}/YA-WAMF/captures
+        source: ${SECURITY_EXPORT_PATH:-/mnt/s/docker/security_inference_stack}/YA-WAMF/captures
         target: /data/captures
         bind:
           create_host_path: true

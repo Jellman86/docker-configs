@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-ROOT="${ROOT:-/mnt/c/Users/ServerAdmin/Documents/GitHub/docker-configs}"
+ROOT="${ROOT:-/mnt/c/Users/scott/OneDrive/Documents/GitHub/docker-configs}"
 VPN_DELAY_SECONDS="${VPN_DELAY_SECONDS:-60}"
 DOCKER_TIMEOUT_SECONDS="${DOCKER_TIMEOUT_SECONDS:-180}"
 PATH_TIMEOUT_SECONDS="${PATH_TIMEOUT_SECONDS:-180}"
@@ -9,6 +9,14 @@ DOCKHAND_TIMEOUT_SECONDS="${DOCKHAND_TIMEOUT_SECONDS:-180}"
 ENV_ID="${DOCKHAND_ENV_ID:-1}"
 ARR_STACK_NAME="${ARR_STACK_NAME:-arr_stack}"
 ARR_DEPENDENT_CONTAINERS=(qbittorrent prowlarr radarr sonarr byparr cleanuparr seerr)
+
+# The stacks bind their data to the S: drive, which WSL exposes via a 9p mount
+# (/mnt/s). 9p mounts can be slow/flaky at boot, and if the mount is missing
+# Docker silently binds to an empty stub on the WSL rootfs (a small tmpfs),
+# which fills up and breaks downloads. Gate startup on the real mount.
+DATA_MOUNT_ROOT="${DATA_MOUNT_ROOT:-/mnt/s}"
+DATA_MOUNT_TIMEOUT_SECONDS="${DATA_MOUNT_TIMEOUT_SECONDS:-300}"
+read -r -a REQUIRED_DATA_PATHS <<< "${REQUIRED_DATA_PATHS:-/mnt/s/downloads/torrents /mnt/s/media /mnt/s/docker/security_inference_stack}"
 
 log() {
   printf '[%(%Y-%m-%d %H:%M:%S %Z)T] %s\n' -1 "$*"
@@ -35,6 +43,55 @@ wait_for_path() {
     fi
     sleep 3
   done
+}
+
+is_real_mount() {
+  # True only if $1 is a genuine mountpoint, not an auto-created stub directory
+  # sitting on the WSL rootfs (which is how the tmpfs fallback manifests).
+  local path="$1"
+  if command -v findmnt >/dev/null 2>&1; then
+    findmnt --target "$path" >/dev/null 2>&1
+  elif command -v mountpoint >/dev/null 2>&1; then
+    mountpoint -q "$path"
+  else
+    awk -v p="$path" '$2 == p { found = 1 } END { exit !found }' /proc/mounts
+  fi
+}
+
+wait_for_data_mounts() {
+  local deadline=$((SECONDS + DATA_MOUNT_TIMEOUT_SECONDS))
+
+  # 1) The 9p drive itself must actually be mounted, not just present as a stub.
+  until is_real_mount "$DATA_MOUNT_ROOT"; do
+    if (( SECONDS >= deadline )); then
+      log "Data drive ${DATA_MOUNT_ROOT} is not mounted (9p mount missing) within ${DATA_MOUNT_TIMEOUT_SECONDS}s"
+      return 1
+    fi
+    log "Waiting for ${DATA_MOUNT_ROOT} 9p mount to become available..."
+    sleep 3
+  done
+
+  # 2) Each data path the stacks bind to must exist under that mount.
+  local path
+  for path in "${REQUIRED_DATA_PATHS[@]}"; do
+    until [[ -d "$path" ]]; do
+      if (( SECONDS >= deadline )); then
+        log "Required data path did not appear: $path"
+        return 1
+      fi
+      sleep 3
+    done
+  done
+
+  # 3) Confirm the drive is writable (9p can mount stale or read-only).
+  local probe="${DATA_MOUNT_ROOT}/.stack-startup-write-test.$$"
+  if ! ( : > "$probe" ) 2>/dev/null; then
+    log "Data drive ${DATA_MOUNT_ROOT} is mounted but not writable"
+    return 1
+  fi
+  rm -f "$probe" 2>/dev/null || true
+
+  log "Data mounts verified on ${DATA_MOUNT_ROOT}: ${REQUIRED_DATA_PATHS[*]}"
 }
 
 ensure_network() {
@@ -217,6 +274,9 @@ main() {
   compose_up "management" "$ROOT/management"
   wait_for_container_healthy "dockhand" 120
   wait_for_dockhand_api
+
+  log "Verifying S: data mounts are available before starting data-dependent stacks"
+  wait_for_data_mounts
 
   log "Preparing Arr stack for gluetun-first startup through Dockhand"
   stop_arr_dependents
