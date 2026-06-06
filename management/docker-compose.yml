@@ -19,6 +19,12 @@ services:
         bind:
           create_host_path: false
       - dockhand_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/api/auth/session >/dev/null || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 #-----------------------------------------------
 networks:
     general_brg:

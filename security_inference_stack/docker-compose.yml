@@ -92,7 +92,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "test -s /config/config.yaml && grep -q 'name: birdcam' /config/config.yaml && grep -q 'name: nestcam' /config/config.yaml && grep -q 'username: security_stack' /config/config.yaml && curl -f http://localhost:8080/ || exit 1"
+          "test -s /config/config.yaml && grep -q 'name: birdcam' /config/config.yaml && grep -q 'name: nestcam' /config/config.yaml && grep -q 'username: birdnet' /config/config.yaml && curl -f http://localhost:8080/ || exit 1"
         ]
       interval: 1m
       timeout: 10s
@@ -126,6 +126,12 @@ services:
       - type: volume
         source: mosquitto_log
         target: /mosquitto/log
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 1883 || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 #-----------------------------------------------
   yawamf:
     image: ghcr.io/jellman86/yawamf-monalithic:dev

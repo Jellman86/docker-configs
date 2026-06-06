@@ -29,4 +29,10 @@ services:
       devices:
         - /dev/dri:/dev/dri
       network_mode: host
+      healthcheck:
+        test: ["CMD-SHELL", "curl -fsS http://localhost:32400/identity >/dev/null || exit 1"]
+        interval: 1m
+        timeout: 10s
+        retries: 3
+        start_period: 1m
 #-----------------------------------------------

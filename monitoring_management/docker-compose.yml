@@ -40,6 +40,12 @@ services:
         target: /prometheus
         bind:
           create_host_path: false
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 #-----------------------------------------------
   snmp-exporter:
     image: prom/snmp-exporter:latest
@@ -65,6 +71,12 @@ services:
         read_only: true
         bind:
           create_host_path: false
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9116/metrics"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 #-----------------------------------------------
   unpoller:
     image: ghcr.io/unpoller/unpoller:latest
@@ -91,6 +103,12 @@ services:
       - UP_UNIFI_DEFAULT_SAVE_IDS=true
       - UP_UNIFI_DEFAULT_SAVE_DPI=${UNIFI_SAVE_DPI:-false}
       - UP_UNIFI_DEFAULT_SITE_0=${UNIFI_SITE:-all}
+    healthcheck:
+      test: ["CMD", "/usr/bin/unpoller", "--health"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 #-----------------------------------------------
   grafana:
     image: grafana/grafana-oss:latest
@@ -128,6 +146,12 @@ services:
     depends_on:
       - prometheus
       - unpoller
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/health"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 #-----------------------------------------------
 networks:
   general_brg:

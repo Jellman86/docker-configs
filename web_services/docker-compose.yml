@@ -32,12 +32,18 @@ services:
     restart: on-failure:5
     networks:
       general_brg:
-    command: tunnel run 
+    command: tunnel --metrics 127.0.0.1:60123 run
     environment: 
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "--metrics", "127.0.0.1:60123", "ready"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 #-----------------------------------------------
   tailscale:
     image: tailscale/tailscale:stable
@@ -64,6 +70,12 @@ services:
       - TS_EXTRA_ARGS=--advertise-exit-node --accept-dns=false
     volumes:
       - tailscale_state:/var/lib/tailscale
+    healthcheck:
+      test: ["CMD", "tailscale", "status", "--peers=false"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 #-----------------------------------------------
 networks:
     general_brg:

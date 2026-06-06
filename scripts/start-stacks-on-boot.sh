@@ -56,6 +56,37 @@ compose_up() {
     up -d "$@"
 }
 
+start_stack() {
+  local stack="$1"
+  local dir="$2"
+  local required="${3:-true}"
+
+  log "Starting ${stack} stack through Dockhand"
+  if dockhand_api POST "/api/stacks/${stack}/start?env=${ENV_ID}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  log "Dockhand start failed for ${stack}; trying deploy"
+  if dockhand_api POST "/api/stacks/${stack}/deploy?env=${ENV_ID}" '{"pull":false,"build":false,"forceRecreate":false}' >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [[ -f "$dir/docker-compose.yml" ]]; then
+    log "Dockhand could not start ${stack}; trying local docker compose fallback"
+    if compose_up "$stack" "$dir"; then
+      return 0
+    fi
+  fi
+
+  if [[ "$required" == "true" ]]; then
+    log "Required stack failed to start: ${stack}"
+    return 1
+  fi
+
+  log "Optional stack not started: ${stack}"
+  return 0
+}
+
 container_state() {
   local container="$1"
   docker inspect --format '{{.State.Status}}' "$container" 2>/dev/null || true
@@ -199,9 +230,14 @@ main() {
   log "Starting remaining Arr stack containers through Dockhand"
   start_arr_dependents
 
-  log "Starting web services stack through Dockhand"
-  dockhand_api POST "/api/stacks/web_services/start?env=${ENV_ID}" >/dev/null || \
-    dockhand_api POST "/api/stacks/web_services/deploy?env=${ENV_ID}" '{"pull":false,"build":false,"forceRecreate":false}' >/dev/null
+  start_stack "web_services" "$ROOT/web_services" true
+
+  log "Starting security/inference stack"
+  start_stack "security_inference_stack" "$ROOT/security_inference_stack" true
+
+  log "Starting optional monitoring/media stacks if configured"
+  start_stack "monitoring_management" "$ROOT/monitoring_management" false
+  start_stack "media_related_stack" "$ROOT/media_related_stack" false
 
   log "Startup orchestration complete"
   docker ps --format 'table {{.Names}}\t{{.Status}}'
