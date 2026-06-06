@@ -22,21 +22,25 @@ services:
         read_only: true
         bind:
           create_host_path: false
-      - type: bind
-        source: ${DOCKERCONFIGPATH}/frigate/config
+      - type: volume
+        source: frigate_config
         target: /config
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DOCKERCONFIGPATH}/frigate/media
+      - type: volume
+        source: frigate_media
         target: /media/frigate
-        bind:
-          create_host_path: false
       - type: bind
-        source: ${DOCKERCONFIGPATH}/frigate/models
-        target: /models
+        source: ${SECURITY_EXPORT_PATH:-/run/desktop/mnt/host/s/security_inference_stack}/frigate/clips
+        target: /media/frigate/clips
         bind:
-          create_host_path: false
+          create_host_path: true
+      - type: bind
+        source: ${SECURITY_EXPORT_PATH:-/run/desktop/mnt/host/s/security_inference_stack}/frigate/exports
+        target: /media/frigate/exports
+        bind:
+          create_host_path: true
+      - type: volume
+        source: frigate_models
+        target: /models
       - type: tmpfs
         target: /tmp/cache
         tmpfs:
@@ -94,16 +98,12 @@ services:
       timeout: 10s
       retries: 3
     volumes:
-      - type: bind
-        source: ${DOCKERCONFIGPATH}/birdnet-go/config
+      - type: volume
+        source: birdnet_config
         target: /config
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DOCKERCONFIGPATH}/birdnet-go/data
+      - type: volume
+        source: birdnet_data
         target: /data
-        bind:
-          create_host_path: false
 #-----------------------------------------------
   mosquitto:
     image: eclipse-mosquitto:latest
@@ -117,21 +117,15 @@ services:
     ports:
       - "1883:1883"
     volumes:
-      - type: bind
-        source: ${DOCKERCONFIGPATH}/mosquitto/config
+      - type: volume
+        source: mosquitto_config
         target: /mosquitto/config
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DOCKERCONFIGPATH}/mosquitto/data
+      - type: volume
+        source: mosquitto_data
         target: /mosquitto/data
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DOCKERCONFIGPATH}/mosquitto/log
+      - type: volume
+        source: mosquitto_log
         target: /mosquitto/log
-        bind:
-          create_host_path: false
 #-----------------------------------------------
   yawamf:
     image: ghcr.io/jellman86/yawamf-monalithic:dev
@@ -141,16 +135,17 @@ services:
     networks:
       general_brg:
     volumes:
-      - type: bind
-        source: ${DOCKERCONFIGPATH}/YA-WAMF/config
+      - type: volume
+        source: yawamf_config
         target: /config
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DOCKERCONFIGPATH}/YA-WAMF/data
+      - type: volume
+        source: yawamf_data
         target: /data
+      - type: bind
+        source: ${SECURITY_EXPORT_PATH:-/run/desktop/mnt/host/s/security_inference_stack}/YA-WAMF/captures
+        target: /data/captures
         bind:
-          create_host_path: false
+          create_host_path: true
     # NVIDIA CUDA access for Docker running inside WSL2. Requires NVIDIA
     # Container Toolkit configured in the WSL distro that runs Docker.
     deploy:
@@ -181,3 +176,15 @@ services:
 networks:
     general_brg:
       external: true
+
+volumes:
+    frigate_config:
+    frigate_media:
+    frigate_models:
+    birdnet_config:
+    birdnet_data:
+    mosquitto_config:
+    mosquitto_data:
+    mosquitto_log:
+    yawamf_config:
+    yawamf_data:

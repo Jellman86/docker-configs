@@ -5,7 +5,7 @@ services:
   gluetun:
     image: ${GLUETUN_IMAGE:-qmcgaw/gluetun:latest}
     container_name: gluetun
-    restart: always
+    restart: on-failure:5
     cap_add:
       - NET_ADMIN
     devices:
@@ -213,7 +213,7 @@ services:
   cleanuparr:
     image: ${CLEANUPARR_IMAGE:-ghcr.io/cleanuparr/cleanuparr:latest}
     container_name: cleanuparr
-    restart: unless-stopped
+    restart: on-failure:5
     networks:
       vpn_stack_brg:
     ports:

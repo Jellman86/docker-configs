@@ -5,6 +5,10 @@ ROOT="${ROOT:-/mnt/c/Users/ServerAdmin/Documents/GitHub/docker-configs}"
 VPN_DELAY_SECONDS="${VPN_DELAY_SECONDS:-60}"
 DOCKER_TIMEOUT_SECONDS="${DOCKER_TIMEOUT_SECONDS:-180}"
 PATH_TIMEOUT_SECONDS="${PATH_TIMEOUT_SECONDS:-180}"
+DOCKHAND_TIMEOUT_SECONDS="${DOCKHAND_TIMEOUT_SECONDS:-180}"
+ENV_ID="${DOCKHAND_ENV_ID:-1}"
+ARR_STACK_NAME="${ARR_STACK_NAME:-arr_stack}"
+ARR_DEPENDENT_CONTAINERS=(qbittorrent prowlarr radarr sonarr byparr cleanuparr seerr)
 
 log() {
   printf '[%(%Y-%m-%d %H:%M:%S %Z)T] %s\n' -1 "$*"
@@ -52,6 +56,96 @@ compose_up() {
     up -d "$@"
 }
 
+container_state() {
+  local container="$1"
+  docker inspect --format '{{.State.Status}}' "$container" 2>/dev/null || true
+}
+
+dockhand_api() {
+  local method="$1"
+  local path="$2"
+  local body="${3:-}"
+
+  if [[ -n "$body" ]]; then
+    docker exec dockhand curl -fsS \
+      -X "$method" \
+      -H "Accept: application/json" \
+      -H "Content-Type: application/json" \
+      -d "$body" \
+      "http://127.0.0.1:3000${path}"
+  else
+    docker exec dockhand curl -fsS \
+      -X "$method" \
+      -H "Accept: application/json" \
+      "http://127.0.0.1:3000${path}"
+  fi
+}
+
+wait_for_dockhand_api() {
+  local deadline=$((SECONDS + DOCKHAND_TIMEOUT_SECONDS))
+  until docker exec dockhand curl -fsS "http://127.0.0.1:3000/api/auth/session" >/dev/null 2>&1; do
+    if (( SECONDS >= deadline )); then
+      log "Dockhand API did not become ready within ${DOCKHAND_TIMEOUT_SECONDS}s"
+      return 1
+    fi
+    sleep 3
+  done
+}
+
+stop_arr_dependents() {
+  local container state
+
+  for container in "${ARR_DEPENDENT_CONTAINERS[@]}"; do
+    state="$(container_state "$container")"
+    case "$state" in
+      running|restarting|paused)
+        log "Stopping $container before gluetun-first startup"
+        dockhand_api POST "/api/containers/${container}/stop?env=${ENV_ID}" >/dev/null || true
+        ;;
+      "")
+        log "$container does not exist yet; it will be handled by stack startup"
+        ;;
+      *)
+        log "$container is $state"
+        ;;
+    esac
+  done
+}
+
+start_container_via_dockhand() {
+  local container="$1"
+  local state
+
+  state="$(container_state "$container")"
+  case "$state" in
+    running)
+      log "$container is already running"
+      ;;
+    "")
+      log "$container does not exist; cannot start it individually"
+      return 2
+      ;;
+    *)
+      log "Starting $container through Dockhand API"
+      dockhand_api POST "/api/containers/${container}/start?env=${ENV_ID}" >/dev/null
+      ;;
+  esac
+}
+
+start_arr_dependents() {
+  local container missing=0
+
+  for container in "${ARR_DEPENDENT_CONTAINERS[@]}"; do
+    start_container_via_dockhand "$container" || missing=1
+  done
+
+  if (( missing )); then
+    log "One or more Arr containers were missing; starting ${ARR_STACK_NAME} stack through Dockhand API"
+    dockhand_api POST "/api/stacks/${ARR_STACK_NAME}/start?env=${ENV_ID}" >/dev/null || \
+      dockhand_api POST "/api/stacks/${ARR_STACK_NAME}/deploy?env=${ENV_ID}" '{"pull":false,"build":false,"forceRecreate":false}' >/dev/null
+  fi
+}
+
 wait_for_container_healthy() {
   local container="$1"
   local timeout="${2:-120}"
@@ -75,16 +169,7 @@ main() {
   wait_for_docker
 
   log "Waiting for WSL bind-mount paths"
-  wait_for_path "$ROOT/arr_vpn_stack/docker-compose.yml"
   wait_for_path "$ROOT/management/docker-compose.yml"
-  wait_for_path "$ROOT/security_inference_stack/docker-compose.yml"
-  wait_for_path "$ROOT/web_services/docker-compose.yml"
-  wait_for_path "/home/jellman86/docker/arrstack/gluetun"
-  wait_for_path "/home/jellman86/docker/security_inference_stack/mosquitto/config/mosquitto.conf"
-  wait_for_path "/home/jellman86/docker/security_inference_stack/YA-WAMF/config/config.json"
-  wait_for_path "/home/jellman86/docker/security_inference_stack/YA-WAMF/data"
-  wait_for_path "/mnt/d/downloads/torrents"
-  wait_for_path "/mnt/d/media"
 
   ensure_network "vpn_stack_brg"
   ensure_network "general_brg"
@@ -92,23 +177,23 @@ main() {
   log "Starting management stack"
   compose_up "management" "$ROOT/management"
   wait_for_container_healthy "dockhand" 120
+  wait_for_dockhand_api
 
-  log "Starting gluetun first"
-  compose_up "arr_stack" "$ROOT/arr_vpn_stack" gluetun
+  log "Preparing Arr stack for gluetun-first startup through Dockhand"
+  stop_arr_dependents
+  start_container_via_dockhand "gluetun" || \
+    dockhand_api POST "/api/stacks/${ARR_STACK_NAME}/start?env=${ENV_ID}" >/dev/null
   wait_for_container_healthy "gluetun" 120
 
   log "Waiting ${VPN_DELAY_SECONDS}s before starting the rest of the VPN stack"
   sleep "$VPN_DELAY_SECONDS"
 
-  log "Starting remaining VPN stack services"
-  compose_up "arr_stack" "$ROOT/arr_vpn_stack" \
-    qbittorrent prowlarr radarr sonarr byparr cleanuparr seerr
+  log "Starting remaining Arr stack containers through Dockhand"
+  start_arr_dependents
 
-  log "Starting web services stack"
-  compose_up "web_services" "$ROOT/web_services"
-
-  log "Starting security inference stack"
-  compose_up "security_inference_stack" "$ROOT/security_inference_stack"
+  log "Starting web services stack through Dockhand"
+  dockhand_api POST "/api/stacks/web_services/start?env=${ENV_ID}" >/dev/null || \
+    dockhand_api POST "/api/stacks/web_services/deploy?env=${ENV_ID}" '{"pull":false,"build":false,"forceRecreate":false}' >/dev/null
 
   log "Startup orchestration complete"
   docker ps --format 'table {{.Names}}\t{{.Status}}'
