@@ -144,6 +144,14 @@ start_arr_dependents() {
     dockhand_api POST "/api/stacks/${ARR_STACK_NAME}/start?env=${ENV_ID}" >/dev/null || \
       dockhand_api POST "/api/stacks/${ARR_STACK_NAME}/deploy?env=${ENV_ID}" '{"pull":false,"build":false,"forceRecreate":false}' >/dev/null
   fi
+
+  sleep 3
+  for container in "${ARR_DEPENDENT_CONTAINERS[@]}"; do
+    if [[ "$(container_state "$container")" != "running" ]]; then
+      log "$container is still not running after initial start; retrying through Dockhand API"
+      start_container_via_dockhand "$container" || missing=1
+    fi
+  done
 }
 
 wait_for_container_healthy() {
