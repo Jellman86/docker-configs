@@ -9,20 +9,20 @@ services:
         - PUID=568
         - PGID=568
         - TZ=Europe/London
-        - PLEX_CLAIM=${plexClaim}
+        - PLEX_CLAIM=${PLEX_CLAIM:-}
       volumes:
         - type: bind
-          source: ${appsPath}/pms
+          source: ${CONFIG_PATH:-/home/jellman86/docker/media_related_stack}/pms
           target: /config
           bind:
             create_host_path: true
         - type: bind
-          source: ${mediaPath}
+          source: ${MEDIA_PATH:-/mnt/s/media}
           target: /library
           bind:
             create_host_path: false
         - type: bind
-          source: ${mediaPath}/transcode
+          source: ${MEDIA_PATH:-/mnt/s/media}/transcode
           target: /transcode
           bind:
             create_host_path: true
