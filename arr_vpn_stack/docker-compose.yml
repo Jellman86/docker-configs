@@ -66,13 +66,8 @@ services:
       - qbittorrent_config:/config
       - qbittorrent_logs:/logs
       - type: bind
-        source: ${DOWNLOADSPATH:-/mnt/s/downloads/torrents}
-        target: /downloads
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DOWNLOADSPATH:-/mnt/s/downloads/torrents}
-        target: /torrents
+        source: ${DATAPATH:-/mnt/s}
+        target: /data
         bind:
           create_host_path: false
     healthcheck:
@@ -97,18 +92,8 @@ services:
     volumes:
       - prowlarr_config:/config
       - type: bind
-        source: ${MEDIAPATH:-/mnt/s/media}
-        target: /media
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DOWNLOADSPATH:-/mnt/s/downloads/torrents}
-        target: /downloads
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DOWNLOADSPATH:-/mnt/s/downloads/torrents}
-        target: /torrents
+        source: ${DATAPATH:-/mnt/s}
+        target: /data
         bind:
           create_host_path: false
     healthcheck:
@@ -133,18 +118,8 @@ services:
     volumes:
       - radarr_config:/config
       - type: bind
-        source: ${DOWNLOADSPATH:-/mnt/s/downloads/torrents}
-        target: /downloads
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DOWNLOADSPATH:-/mnt/s/downloads/torrents}
-        target: /torrents
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${MEDIAPATH:-/mnt/s/media}/film
-        target: /film-base
+        source: ${DATAPATH:-/mnt/s}
+        target: /data
         bind:
           create_host_path: false
     healthcheck:
@@ -169,18 +144,8 @@ services:
     volumes:
       - sonarr_config:/config
       - type: bind
-        source: ${DOWNLOADSPATH:-/mnt/s/downloads/torrents}
-        target: /downloads
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DOWNLOADSPATH:-/mnt/s/downloads/torrents}
-        target: /torrents
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${MEDIAPATH:-/mnt/s/media}/tv
-        target: /tv-base
+        source: ${DATAPATH:-/mnt/s}
+        target: /data
         bind:
           create_host_path: false
     healthcheck:
@@ -221,8 +186,8 @@ services:
     volumes:
       - cleanuparr_config:/config
       - type: bind
-        source: ${DOWNLOADSPATH:-/mnt/s/downloads/torrents}
-        target: /downloads
+        source: ${DATAPATH:-/mnt/s}
+        target: /data
         bind:
           create_host_path: false
     environment:
