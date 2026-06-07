@@ -48,10 +48,10 @@ services:
     networks:
         general_brg:
     ports:
-      - "8971:8971"
-      - "8554:8554" # RTSP feeds
-      - "8555:8555/tcp" # WebRTC over tcp
-      - "8555:8555/udp" # WebRTC over udp
+      - "${DOCKER_BIND_IP:-192.168.213.101}:8971:8971"
+      - "${DOCKER_BIND_IP:-192.168.213.101}:8554:8554" # RTSP feeds
+      - "${DOCKER_BIND_IP:-192.168.213.101}:8555:8555/tcp" # WebRTC over tcp
+      - "${DOCKER_BIND_IP:-192.168.213.101}:8555:8555/udp" # WebRTC over udp
     environment:
       - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD}
       - TZ=${TZ:-UTC}
@@ -68,7 +68,7 @@ services:
     container_name: birdnet-go
     restart: on-failure:5
     ports:
-      - "${BN_WEBPORT:-8080}:8080"
+      - "${DOCKER_BIND_IP:-192.168.213.101}:${BN_WEBPORT:-8080}:8080"
     networks:
         general_brg:
     environment:
@@ -115,7 +115,7 @@ services:
     networks:
       - general_brg
     ports:
-      - "1883:1883"
+      - "${DOCKER_BIND_IP:-192.168.213.101}:1883:1883"
     volumes:
       - type: volume
         source: mosquitto_config
@@ -162,7 +162,7 @@ services:
               count: all
               capabilities: [gpu]
     ports:
-      - "9852:8080"
+      - "${DOCKER_BIND_IP:-192.168.213.101}:9852:8080"
     environment:
       - TZ=${TZ:-UTC}
       - FRIGATE__FRIGATE_URL=${FRIGATE_URL:-http://frigate:5000}

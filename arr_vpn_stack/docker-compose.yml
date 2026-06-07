@@ -13,9 +13,9 @@ services:
     networks:
       vpn_stack_brg:
     ports:
-      - "${QBITTORRENT_PORT:-5041}:5041/tcp"
-      - "${QBITTORRENT_PORT:-5041}:5041/udp"
-      - "${QBITTORRENT_WEBUI_PORT:-8081}:8081/tcp"
+      - "${DOCKER_BIND_IP:-192.168.213.101}:${QBITTORRENT_PORT:-5041}:5041/tcp"
+      - "${DOCKER_BIND_IP:-192.168.213.101}:${QBITTORRENT_PORT:-5041}:5041/udp"
+      - "${DOCKER_BIND_IP:-192.168.213.101}:${QBITTORRENT_WEBUI_PORT:-8081}:8081/tcp"
     volumes:
       - gluetun_config:/gluetun
     environment:
@@ -84,7 +84,7 @@ services:
     networks:
       vpn_stack_brg:
     ports:
-      - "${PROWLARR_PORT:-9696}:9696/tcp"
+      - "${DOCKER_BIND_IP:-192.168.213.101}:${PROWLARR_PORT:-9696}:9696/tcp"
     environment:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
@@ -110,7 +110,7 @@ services:
     networks:
       vpn_stack_brg:
     ports:
-      - "${RADARR_PORT:-7878}:7878/tcp"
+      - "${DOCKER_BIND_IP:-192.168.213.101}:${RADARR_PORT:-7878}:7878/tcp"
     environment:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
@@ -136,7 +136,7 @@ services:
     networks:
       vpn_stack_brg:
     ports:
-      - "${SONARR_PORT:-8989}:8989/tcp"
+      - "${DOCKER_BIND_IP:-192.168.213.101}:${SONARR_PORT:-8989}:8989/tcp"
     environment:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
@@ -182,7 +182,7 @@ services:
     networks:
       vpn_stack_brg:
     ports:
-      - "${CLEANUPARR_PORT:-11011}:11011/tcp"
+      - "${DOCKER_BIND_IP:-192.168.213.101}:${CLEANUPARR_PORT:-11011}:11011/tcp"
     volumes:
       - cleanuparr_config:/config
       - type: bind
@@ -214,7 +214,7 @@ services:
     networks:
       vpn_stack_brg:
     ports:
-      - 5055:5055
+      - "${DOCKER_BIND_IP:-192.168.213.101}:5055:5055"
     volumes:
       - seerr_config:/app/config
     restart: on-failure:5

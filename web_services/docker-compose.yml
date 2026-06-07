@@ -5,9 +5,9 @@ services:
     image: 'jc21/nginx-proxy-manager:latest'
     restart: on-failure:5
     ports:
-      - 80:80
-      - 81:81
-      - 443:443
+      - "${DOCKER_BIND_IP:-192.168.213.101}:80:80"
+      - "${DOCKER_BIND_IP:-192.168.213.101}:81:81"
+      - "${DOCKER_BIND_IP:-192.168.213.101}:443:443"
     networks:
       general_brg:
         aliases:

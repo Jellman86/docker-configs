@@ -5,7 +5,7 @@ services:
     container_name: dockhand
     restart: on-failure:5
     ports:
-      - 3000:3000
+      - "${DOCKER_BIND_IP:-192.168.213.101}:3000:3000"
     networks:
       general_brg:
     environment:
