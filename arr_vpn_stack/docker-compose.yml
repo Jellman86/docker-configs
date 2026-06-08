@@ -229,6 +229,20 @@ services:
     image: ${OPTIMISARR_IMAGE:-ghcr.io/jellman86/optimisarr:dev}
     container_name: optimisarr
     restart: on-failure:5
+    # NVIDIA GPU access for NVENC transcoding under Docker in WSL2. The driver is
+    # provided by Windows/WSL; "video" is required (on top of compute,utility) so
+    # ffmpeg can open the hevc_nvenc/h264_nvenc encoders. The NVIDIA Container
+    # Toolkit only mounts libcuda from the WSL driver store, not the NVENC encode
+    # library, so /usr/lib/wsl/lib is bind-mounted and put on LD_LIBRARY_PATH below
+    # to supply libnvidia-encode.so.1 (without it ffmpeg fails with
+    # "Cannot load libnvidia-encode.so.1").
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     networks:
       vpn_stack_brg:
     ports:
@@ -239,8 +253,18 @@ services:
       UMASK: ${UMASK:-002}
       TZ: ${TZ:-Europe/London}
       OPTIMISARR__LOG_LEVEL: ${OPTIMISARR_LOG_LEVEL:-info}
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,video,utility
+      LD_LIBRARY_PATH: /usr/lib/wsl/lib
     volumes:
       - optimisarr_config:/config
+      # Supplies libnvidia-encode.so.1 for NVENC (see deploy comment above).
+      - type: bind
+        source: /usr/lib/wsl/lib
+        target: /usr/lib/wsl/lib
+        read_only: true
+        bind:
+          create_host_path: false
       - type: bind
         source: ${DATAPATH:-/mnt/s}
         target: /data
