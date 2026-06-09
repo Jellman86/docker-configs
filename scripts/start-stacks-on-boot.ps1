@@ -63,7 +63,10 @@ Start-Sleep -Seconds $InitialDelaySeconds
 Write-StartupLog "Starting WSL orchestration in distro: $Distro"
 $QuotedScriptPath = Quote-BashString $WslScriptPath
 $QuotedRepoRoot = Quote-BashString $WslRepoRoot
-& wsl.exe -d $Distro -- bash -lc "chmod +x $QuotedScriptPath && ROOT=$QuotedRepoRoot $QuotedScriptPath 2>&1" 2>&1 |
+# Single boot log overwritten each run, alongside the timestamped logs in $LogDir.
+$WslLatestLog = (ConvertTo-WslPath $LogDir) + "/latest-boot.log"
+$QuotedLatestLog = Quote-BashString $WslLatestLog
+& wsl.exe -d $Distro -- bash -lc "chmod +x $QuotedScriptPath && ROOT=$QuotedRepoRoot LATEST_LOG_FILE=$QuotedLatestLog $QuotedScriptPath 2>&1" 2>&1 |
     ForEach-Object {
         $Line = $_.ToString()
         Write-Host $Line

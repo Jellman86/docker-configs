@@ -34,14 +34,29 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Users\ServerAdmin\Do
 ```
 
 The wrapper waits 30 seconds after launching Docker Desktop. The WSL script then waits for
-Docker and the bind-mounted paths, starts `gluetun`, waits 60 seconds, then starts the rest
-of the VPN stack plus the web and security stacks. Logs are written to
-`%USERPROFILE%\docker-startup-logs`.
+Docker, waits another 120 seconds, logs the currently running containers, ensures the
+existing `dockhand` container is running, and uses the Dockhand API for the rest of the
+orchestration. Before starting any network-dependent stacks it **waits for real outbound
+internet/DNS** (probed from inside the `dockhand` container), because Docker Desktop can
+restart containers before the WSL VM's networking is ready — in that window `gluetun`,
+`cloudflare-tunnel` and `tailscale` fail their startup checks and exhaust their restart
+retries, taking the Arr stack down with `gluetun`. It then stops the Arr stack containers,
+starts `gluetun`, waits 60 seconds, and starts the rest of the Arr stack plus any other
+configured stacks with containers that are not already running.
+
+After the stacks are up it runs a **port-mapping remediation pass**: the same boot race can
+leave a container "running" (and healthy, since health checks run inside the container) yet
+with no host port mapping, so it is unreachable from the host/LAN. Any such container is
+restarted through the Dockhand API to re-establish its published ports, without recreating
+it or touching its Dockhand-managed env. Finally, **Nginx Proxy Manager (`npm`) is brought
+up last** so it resolves upstream container IPs against the final running set rather than
+stale/missing ones. Logs are written to `%USERPROFILE%\docker-startup-logs`.
 
 The task is registered as `\Server Automation\Start Docker Compose Stacks`.
 
 Notes:
-- `security_inference_stack/` uses `docker_compose.yml` (underscore naming).
+- The startup script expects the `dockhand` container to already exist. It does not run
+  `docker compose up` for application stacks during boot orchestration.
 - Most stacks expect a `.env` file in the same directory as the compose file.
 
 ## Environment variables
