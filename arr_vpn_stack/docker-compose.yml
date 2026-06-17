@@ -13,11 +13,15 @@ services:
     networks:
       vpn_stack_brg:
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:${QBITTORRENT_PORT:-5041}:5041/tcp"
-      - "${DOCKER_BIND_IP:-192.168.213.101}:${QBITTORRENT_PORT:-5041}:5041/udp"
-      - "${DOCKER_BIND_IP:-192.168.213.101}:${QBITTORRENT_WEBUI_PORT:-8081}:8081/tcp"
+      - "${QBITTORRENT_PORT:-5041}:5041/tcp"
+      - "${QBITTORRENT_PORT:-5041}:5041/udp"
+      - "${QBITTORRENT_WEBUI_PORT:-8081}:8081/tcp"
     volumes:
-      - gluetun_config:/gluetun
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/gluetun
+        target: /gluetun
+        bind:
+          create_host_path: true
     environment:
       VPN_SERVICE_PROVIDER: ${VPNHOST:-nordvpn}
       VPN_TYPE: ${VPNPROTOCOL:-wireguard}
@@ -56,17 +60,25 @@ services:
         condition: service_healthy
     stop_grace_period: 60s
     environment:
-      PUID: ${PUID:-1000}
-      PGID: ${PGID:-1000}
+      PUID: ${PUID:-568}
+      PGID: ${PGID:-568}
       TZ: ${TZ:-Europe/London}
       WEBUI_PORT: 8081
       TORRENTING_PORT: 5041
       DOCKER_MODS: ${QBITTORRENT_DOCKER_MODS:-ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest}
     volumes:
-      - qbittorrent_config:/config
-      - qbittorrent_logs:/logs
       - type: bind
-        source: ${DATAPATH:-/mnt/s}
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/qbittorrent
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/qbittorrent/logs
+        target: /logs
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DATAPATH:-/mnt/tank}
         target: /data
         bind:
           create_host_path: false
@@ -84,15 +96,19 @@ services:
     networks:
       vpn_stack_brg:
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:${PROWLARR_PORT:-9696}:9696/tcp"
+      - "${PROWLARR_PORT:-9696}:9696/tcp"
     environment:
-      PUID: ${PUID:-1000}
-      PGID: ${PGID:-1000}
+      PUID: ${PUID:-568}
+      PGID: ${PGID:-568}
       TZ: ${TZ:-Europe/London}
     volumes:
-      - prowlarr_config:/config
       - type: bind
-        source: ${DATAPATH:-/mnt/s}
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/prowlarr
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DATAPATH:-/mnt/tank}
         target: /data
         bind:
           create_host_path: false
@@ -110,15 +126,19 @@ services:
     networks:
       vpn_stack_brg:
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:${RADARR_PORT:-7878}:7878/tcp"
+      - "${RADARR_PORT:-7878}:7878/tcp"
     environment:
-      PUID: ${PUID:-1000}
-      PGID: ${PGID:-1000}
+      PUID: ${PUID:-568}
+      PGID: ${PGID:-568}
       TZ: ${TZ:-Europe/London}
     volumes:
-      - radarr_config:/config
       - type: bind
-        source: ${DATAPATH:-/mnt/s}
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/radarr
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DATAPATH:-/mnt/tank}
         target: /data
         bind:
           create_host_path: false
@@ -136,15 +156,19 @@ services:
     networks:
       vpn_stack_brg:
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:${SONARR_PORT:-8989}:8989/tcp"
+      - "${SONARR_PORT:-8989}:8989/tcp"
     environment:
-      PUID: ${PUID:-1000}
-      PGID: ${PGID:-1000}
+      PUID: ${PUID:-568}
+      PGID: ${PGID:-568}
       TZ: ${TZ:-Europe/London}
     volumes:
-      - sonarr_config:/config
       - type: bind
-        source: ${DATAPATH:-/mnt/s}
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/sonarr
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DATAPATH:-/mnt/tank}
         target: /data
         bind:
           create_host_path: false
@@ -182,19 +206,23 @@ services:
     networks:
       vpn_stack_brg:
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:${CLEANUPARR_PORT:-11011}:11011/tcp"
+      - "${CLEANUPARR_PORT:-11011}:11011/tcp"
     volumes:
-      - cleanuparr_config:/config
       - type: bind
-        source: ${DATAPATH:-/mnt/s}
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/cleanuparr
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DATAPATH:-/mnt/tank}
         target: /data
         bind:
           create_host_path: false
     environment:
       PORT: 11011
       BASE_PATH: ${CLEANUPARR_BASE_PATH:-}
-      PUID: ${PUID:-1000}
-      PGID: ${PGID:-1000}
+      PUID: ${PUID:-568}
+      PGID: ${PGID:-568}
       UMASK: ${UMASK:-022}
       TZ: ${TZ:-Europe/London}
     healthcheck:
@@ -214,9 +242,13 @@ services:
     networks:
       vpn_stack_brg:
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:5055:5055"
+      - "5055:5055"
     volumes:
-      - seerr_config:/app/config
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/seerr
+        target: /app/config
+        bind:
+          create_host_path: true
     restart: on-failure:5
     healthcheck:
       test: "wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1"
@@ -224,100 +256,7 @@ services:
       interval: 15s
       timeout: 3s
       retries: 3
-#-----------------------------------------------
-  optimisarr:
-    image: ${OPTIMISARR_IMAGE:-ghcr.io/jellman86/optimisarr:dev}
-    container_name: optimisarr
-    restart: on-failure:5
-    # NVIDIA GPU access for NVENC transcoding under Docker in WSL2. The driver is
-    # provided by Windows/WSL; "video" is required (on top of compute,utility) so
-    # ffmpeg can open the hevc_nvenc/h264_nvenc encoders. The NVIDIA Container
-    # Toolkit only mounts libcuda from the WSL driver store, not the NVENC encode
-    # library, so /usr/lib/wsl/lib is bind-mounted and put on LD_LIBRARY_PATH below
-    # to supply libnvidia-encode.so.1 (without it ffmpeg fails with
-    # "Cannot load libnvidia-encode.so.1").
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    networks:
-      vpn_stack_brg:
-    ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:${OPTIMISARR_PORT:-8787}:8787/tcp"
-    environment:
-      PUID: ${PUID:-1000}
-      PGID: ${PGID:-1000}
-      UMASK: ${UMASK:-002}
-      TZ: ${TZ:-Europe/London}
-      OPTIMISARR__LOG_LEVEL: ${OPTIMISARR_LOG_LEVEL:-info}
-      NVIDIA_VISIBLE_DEVICES: all
-      NVIDIA_DRIVER_CAPABILITIES: compute,video,utility
-      LD_LIBRARY_PATH: /usr/lib/wsl/lib
-    volumes:
-      - optimisarr_config:/config
-      # Supplies libnvidia-encode.so.1 for NVENC (see deploy comment above).
-      - type: bind
-        source: /usr/lib/wsl/lib
-        target: /usr/lib/wsl/lib
-        read_only: true
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${DATAPATH:-/mnt/s}
-        target: /data
-        bind:
-          create_host_path: false
-      # /work and /trash must share the filesystem with /data so the safe
-      # replacement pipeline can use atomic moves instead of copy + delete.
-      - type: bind
-        source: ${OPTIMISARR_WORKPATH:-/mnt/s/.optimisarr/work}
-        target: /work
-        bind:
-          create_host_path: true
-      - type: bind
-        source: ${OPTIMISARR_TRASHPATH:-/mnt/s/.optimisarr/trash}
-        target: /trash
-        bind:
-          create_host_path: true
-    healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:8787/api/health || exit 1"]
-      interval: 1m
-      timeout: 10s
-      retries: 3
-      start_period: 30s
 networks:
   vpn_stack_brg:
     name: ${NETWORK:-vpn_stack_brg}
     external: true
-#-----------------------------------------------
-volumes:
-  cleanuparr_config:
-    external: true
-    name: cleanuparr_config
-  optimisarr_config:
-    external: true
-    name: optimisarr_config
-  gluetun_config:
-    external: true
-    name: gluetun_config
-  qbittorrent_config:
-    external: true
-    name: qbittorrent_config
-  qbittorrent_logs:
-    external: true
-    name: qbittorrent_logs
-  prowlarr_config:
-    external: true
-    name: prowlarr_config
-  radarr_config:
-    external: true
-    name: radarr_config
-  seerr_config:
-    external: true
-    name: seerr_config
-  sonarr_config:
-    external: true
-    name: sonarr_config

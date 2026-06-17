@@ -5,7 +5,7 @@ services:
     container_name: dockhand
     restart: on-failure:5
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:3000:3000"
+      - "3000:3000"
     networks:
       general_brg:
     environment:
@@ -18,7 +18,11 @@ services:
         target: /var/run/docker.sock
         bind:
           create_host_path: false
-      - dockhand_data:/app/data
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/dockhand
+        target: /app/data
+        bind:
+          create_host_path: true
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:3000/api/auth/session >/dev/null || exit 1"]
       interval: 1m
@@ -29,9 +33,3 @@ services:
 networks:
     general_brg:
       external: true
-
-volumes:
-    dockhand_data:
-      external: true
-      name: dockhand_data
-

@@ -6,12 +6,12 @@ machine. Captured 2026-06-14 from the live containers.
 Two compose stacks make up the "arr stack":
 
 - `arr_vpn_stack/` — gluetun (VPN) + qbittorrent, prowlarr, radarr, sonarr,
-  byparr, cleanuparr, seerr, optimisarr.
-- `media_related_stack/` — plex (and was unmanic; only plex in the compose now).
+  byparr, cleanuparr, seerr.
+- `media_related_stack/` — plex and optimisarr.
 
 > **Secrets are intentionally redacted below.** VPN keys live in
 > `arr_vpn_stack/.env` (git-ignored) and app API keys live inside each app's
-> `config.xml` (inside its named volume). Carry these across with the files,
+> `config.xml` under its bind-mounted config directory. Carry these across with the files,
 > don't retype them.
 
 ---
@@ -20,12 +20,12 @@ Two compose stacks make up the "arr stack":
 
 | Item | Value |
 |------|-------|
-| Host OS | Windows + Docker Desktop, WSL2 in **mirrored** networking mode (`.wslconfig`: `networkingMode=mirrored`, `firewall=false`) |
-| Bind IP | `DOCKER_BIND_IP=192.168.213.101` — all ports publish to this explicit host IP, **not** localhost. Per-machine; set in each `.env`. Change to the new host's LAN IP. |
+| Host OS | TrueNAS |
 | Timezone | `Europe/London` |
-| PUID/PGID | arr apps: `1000`/`1000`; plex: `568`/`568` |
-| Data root | `/mnt/s` (a Windows drive mounted into WSL). Bound into containers as `/data`. |
-| GPU | NVIDIA NVENC via WSL driver. optimisarr needs `/usr/lib/wsl/lib` bind-mounted (supplies `libnvidia-encode.so.1`) and `NVIDIA_DRIVER_CAPABILITIES=compute,video,utility`. |
+| PUID/PGID | apps: `568`/`568` |
+| Data root | `/mnt/tank`. Bound into containers as `/data`. |
+| Config root | `/mnt/apps/docker`. Each app config/state directory is bind-mounted from `${DOCKERCONFIGPATH}/applicationname`. |
+| GPU | Intel iGPU via `/dev/dri` where hardware transcoding is used. |
 
 ### External Docker networks (must exist before `compose up`)
 
@@ -34,24 +34,20 @@ docker network create vpn_stack_brg   # currently subnet 172.19.0.0/16
 docker network create general_brg     # currently subnet 172.18.0.0/16
 ```
 
-### External named volumes (must exist; hold all app config/state)
+### Bind-mounted config directories
 
 ```bash
-for v in gluetun_config qbittorrent_config qbittorrent_logs prowlarr_config \
-         radarr_config sonarr_config seerr_config cleanuparr_config optimisarr_config; do
-  docker volume create "$v"
-done
+mkdir -p /mnt/apps/docker/{gluetun,qbittorrent,qbittorrent/logs,prowlarr,radarr,sonarr,cleanuparr,seerr,optimisarr,pms}
 ```
 
-On the current host these live at `/var/lib/docker/volumes/<name>/_data`.
-**To migrate state, copy each volume's `_data` directory** (stop containers
-first) — that carries every quality profile, indexer, API key and history below.
-A clean rebuild from this doc is possible but loses watch history/queues.
+Stop containers before copying config/state into these directories. That carries
+quality profiles, indexers, API keys and history. A clean rebuild from this doc
+is possible but loses watch history/queues.
 
-### Host data directory layout (`/mnt/s` → `/data`)
+### Host data directory layout (`/mnt/tank` → `/data`)
 
 ```
-/mnt/s
+/mnt/tank
 ├── media
 │   ├── film            (radarr roots: /data/media/film/{adults,kids})
 │   ├── tv              (sonarr roots: /data/media/tv/{adult,kids})
@@ -77,7 +73,7 @@ Only qbittorrent runs inside the VPN netns (`network_mode: service:gluetun`);
 everything else sits on `vpn_stack_brg` directly. qbittorrent's WebUI/torrent
 ports are therefore published *on the gluetun container*, not on qbittorrent.
 
-| Service | Image | Host port (`192.168.213.101:`) | Notes |
+| Service | Image | Host port | Notes |
 |---------|-------|------|-------|
 | gluetun | `qmcgaw/gluetun:latest` | 5041 tcp/udp, 8081 | NordVPN, WireGuard. Publishes qbit ports. |
 | qbittorrent | `lscr.io/linuxserver/qbittorrent:latest` | (via gluetun: 8081 WebUI, 5041 torrent) | VueTorrent mod. `network_mode: service:gluetun` |
@@ -87,7 +83,7 @@ ports are therefore published *on the gluetun container*, not on qbittorrent.
 | byparr | `ghcr.io/thephaseless/byparr:latest` | (internal 8191) | FlareSolverr replacement; proxies via `http://gluetun:8888` |
 | cleanuparr | `ghcr.io/cleanuparr/cleanuparr:latest` | 11011 | stalled/orphan cleanup |
 | seerr | `ghcr.io/seerr-team/seerr:latest` | 5055 | requests (Overseerr fork) |
-| optimisarr | `ghcr.io/jellman86/optimisarr:dev` | 8787 | transcode/optimise (own repo) |
+| optimisarr | `ghcr.io/jellman86/optimisarr:dev` | 8787 | transcode/optimise (own repo, in media stack) |
 | plex | `lscr.io/linuxserver/plex:latest` | host network (32400) | `/dev/dri` for HW transcode |
 
 ### gluetun / VPN (values in `.env`, secrets redacted)
@@ -107,8 +103,8 @@ FIREWALL_OUTBOUND_SUBNETS = 192.168.211.0/24 … 192.168.215.0/24  (LAN access)
 ## 3. Indexers, download client & app links (Prowlarr)
 
 Prowlarr full-syncs indexers to Radarr & Sonarr. Indexers themselves are
-configured in the Prowlarr UI and stored in the `prowlarr_config` volume — they
-carry across with that volume, so there's nothing to re-enter by hand. (Add/curate
+configured in the Prowlarr UI and stored in `${DOCKERCONFIGPATH}/prowlarr` — they
+carry across with that directory, so there's nothing to re-enter by hand. (Add/curate
 your own indexer set on the new host as needed; none require API keys/credentials.)
 
 **Applications (full sync):** Radarr `http://radarr:7878`, Sonarr
@@ -206,9 +202,9 @@ max ~125–130; 1080p min 4 / max 130–155; 2160p min 35.
 
 ## 7. optimisarr (transcode/optimisation) — own repo
 
-Config DB: `optimisarr_config` volume → `/config/optimisarr.db` (SQLite).
+Config DB: `${DOCKERCONFIGPATH}/optimisarr/optimisarr.db` → `/config/optimisarr.db` (SQLite).
 See the `optimisarr/` repo. Reachable at `:8787`. Mounts `/data`, `/work`
-(`/mnt/s/.optimisarr/work`), `/trash` (`/mnt/s/.optimisarr/trash`) — all on the
+(`/mnt/tank/.optimisarr/work`), `/trash` (`/mnt/tank/.optimisarr/trash`) — all on the
 same fs as `/data` for atomic replacement.
 
 **Global settings (live):**
@@ -246,37 +242,27 @@ These are test libraries — recreate real Film/TV libraries pointing at
 ```
 Image:    lscr.io/linuxserver/plex:latest    network_mode: host (port 32400)
 PUID/PGID: 568/568
-/config    -> ${CONFIG_PATH}/pms   (default /home/jellman86/docker/media_related_stack/pms)
-/library   -> ${MEDIA_PATH}        (/mnt/s/media)
+/config    -> ${CONFIG_PATH}       (default /mnt/apps/docker/pms)
+/library   -> ${MEDIA_PATH}        (/mnt/tank/media)
 /transcode -> ${MEDIA_PATH}/transcode
 /dev/dri               -> hardware (QSV/VAAPI) transcoding
 PLEX_CLAIM -> get a fresh token from https://plex.tv/claim if re-claiming the server
 ```
 
-> Plex config is a **bind mount**, not a named volume — copy
-> `…/media_related_stack/pms` to keep libraries, metadata and the server identity.
+> Plex config is a bind mount. Copy `${CONFIG_PATH}` to keep libraries, metadata
+> and the server identity.
 
 ---
 
 ## 9. Rebuild checklist (new machine)
 
-1. Install Docker Desktop + WSL2 (mirrored networking, firewall off).
-2. Set the new host LAN IP in both `.env` files (`DOCKER_BIND_IP`).
-3. Mount the data drive at `/mnt/s` (or update `DATAPATH`/`MEDIA_PATH`).
-4. Create the two external networks and the named volumes (§1).
-5. **Restore state:** copy each volume's `_data` and the Plex `pms` bind dir from
-   the old host. (Or rebuild config from §3–§8.)
-6. Copy `arr_vpn_stack/.env` (VPN keys) and `media_related_stack/.env`.
-7. Confirm NVIDIA GPU works in WSL (`nvidia-smi`) for optimisarr/Plex.
-8. `cd arr_vpn_stack && docker compose up -d` (gluetun first — others depend on
+1. Confirm the TrueNAS host paths exist: `/mnt/tank` and `/mnt/apps/docker`.
+2. Create the two external networks (§1).
+3. **Restore state:** copy each app config directory into `/mnt/apps/docker`.
+   (Or rebuild config from §3–§8.)
+4. Copy `arr_vpn_stack/.env` (VPN keys) and `media_related_stack/.env`.
+5. Confirm Intel iGPU access via `/dev/dri` for Plex/optimisarr.
+6. `cd arr_vpn_stack && docker compose up -d` (gluetun first — others depend on
    its healthcheck), then `cd ../media_related_stack && docker compose up -d`.
-9. Verify gluetun has a tunnel + correct exit IP before trusting qbittorrent.
-10. Re-point seerr/Plex at the new addresses if the IP changed.
-
-### Boot-race caveat (see repo README / memory)
-
-Docker Desktop restarts containers at boot before WSL networking is ready;
-containers come up "healthy" but with no host port mapping, and gluetun can
-exhaust retries. The repo's `scripts/start-stacks-on-boot.*` handles ordering,
-waits for real internet, then runs a port-mapping remediation pass and brings
-NPM up last. Reuse it on the new host.
+7. Verify gluetun has a tunnel + correct exit IP before trusting qbittorrent.
+8. Re-point seerr/Plex at the new addresses if the IP changed.

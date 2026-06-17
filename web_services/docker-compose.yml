@@ -5,9 +5,9 @@ services:
     image: 'jc21/nginx-proxy-manager:latest'
     restart: on-failure:5
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:80:80"
-      - "${DOCKER_BIND_IP:-192.168.213.101}:81:81"
-      - "${DOCKER_BIND_IP:-192.168.213.101}:443:443"
+      - "80:80"
+      - "81:81"
+      - "443:443"
     networks:
       general_brg:
         aliases:
@@ -18,22 +18,30 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
     volumes:
-      - npm_data:/data
-      - npm_letsencrypt:/etc/letsencrypt
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/nginx-proxy-manager/data
+        target: /data
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/nginx-proxy-manager/letsencrypt
+        target: /etc/letsencrypt
+        bind:
+          create_host_path: true
     healthcheck:
       test: ["CMD", "/usr/bin/check-health"]
       interval: 120s
       timeout: 3s
       retries: 3
 #-----------------------------------------------
-  cloudflared: 
-    image: cloudflare/cloudflared 
+  cloudflared:
+    image: cloudflare/cloudflared
     container_name: cloudflare-tunnel
     restart: on-failure:5
     networks:
       general_brg:
     command: tunnel --metrics 127.0.0.1:60123 run
-    environment: 
+    environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
@@ -69,7 +77,11 @@ services:
       - TS_ROUTES=${TAILSCALE_ADVERTISE_ROUTES}
       - TS_EXTRA_ARGS=--advertise-exit-node --accept-dns=false
     volumes:
-      - tailscale_state:/var/lib/tailscale
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/tailscale
+        target: /var/lib/tailscale
+        bind:
+          create_host_path: true
     healthcheck:
       test: ["CMD", "tailscale", "status", "--peers=false"]
       interval: 1m
@@ -82,14 +94,3 @@ networks:
       external: true
     vpn_stack_brg:
       external: true
-
-volumes:
-    npm_data:
-      external: true
-      name: npm_data
-    npm_letsencrypt:
-      external: true
-      name: npm_letsencrypt
-    tailscale_state:
-      name: tailscale_state
-    

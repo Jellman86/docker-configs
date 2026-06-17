@@ -6,23 +6,23 @@ services:
       container_name: plex
       restart: always
       environment:
-        - PUID=568
-        - PGID=568
-        - TZ=Europe/London
+        - PUID=${PUID:-568}
+        - PGID=${PGID:-568}
+        - TZ=${TZ:-Europe/London}
         - PLEX_CLAIM=${PLEX_CLAIM:-}
       volumes:
         - type: bind
-          source: ${CONFIG_PATH:-/home/jellman86/docker/media_related_stack}/pms
+          source: ${CONFIG_PATH:-/mnt/apps/docker/pms}
           target: /config
           bind:
             create_host_path: true
         - type: bind
-          source: ${MEDIA_PATH:-/mnt/s/media}
+          source: ${MEDIA_PATH:-/mnt/tank/media}
           target: /library
           bind:
             create_host_path: false
         - type: bind
-          source: ${MEDIA_PATH:-/mnt/s/media}/transcode
+          source: ${MEDIA_PATH:-/mnt/tank/media}/transcode
           target: /transcode
           bind:
             create_host_path: true
@@ -36,3 +36,47 @@ services:
         retries: 3
         start_period: 1m
 #-----------------------------------------------
+    optimisarr:
+      image: ${OPTIMISARR_IMAGE:-ghcr.io/jellman86/optimisarr:dev}
+      container_name: optimisarr
+      restart: on-failure:5
+      devices:
+        - /dev/dri:/dev/dri
+      ports:
+        - "${OPTIMISARR_PORT:-8787}:8787/tcp"
+      environment:
+        PUID: ${PUID:-568}
+        PGID: ${PGID:-568}
+        UMASK: ${UMASK:-002}
+        TZ: ${TZ:-Europe/London}
+        OPTIMISARR__LOG_LEVEL: ${OPTIMISARR_LOG_LEVEL:-info}
+        LIBVA_DRIVER_NAME: ${LIBVA_DRIVER_NAME:-iHD}
+      volumes:
+        - type: bind
+          source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/optimisarr
+          target: /config
+          bind:
+            create_host_path: true
+        - type: bind
+          source: ${DATAPATH:-/mnt/tank}
+          target: /data
+          bind:
+            create_host_path: false
+        # /work and /trash must share the filesystem with /data so the safe
+        # replacement pipeline can use atomic moves instead of copy + delete.
+        - type: bind
+          source: ${OPTIMISARR_WORKPATH:-/mnt/tank/.optimisarr/work}
+          target: /work
+          bind:
+            create_host_path: true
+        - type: bind
+          source: ${OPTIMISARR_TRASHPATH:-/mnt/tank/.optimisarr/trash}
+          target: /trash
+          bind:
+            create_host_path: true
+      healthcheck:
+        test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:8787/api/health || exit 1"]
+        interval: 1m
+        timeout: 10s
+        retries: 3
+        start_period: 30s

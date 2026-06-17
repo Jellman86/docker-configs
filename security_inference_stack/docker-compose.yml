@@ -4,17 +4,10 @@ services:
     container_name: frigate
     restart: on-failure:5
     stop_grace_period: 30s # allow enough time to shut down the various services
-    image: ghcr.io/blakeblackshear/frigate:stable-tensorrt
+    image: ghcr.io/blakeblackshear/frigate:stable
     shm_size: "1024mb" # update for your cameras based on calculation above
-    # NVIDIA GPU access for Docker running inside WSL2. The NVIDIA driver is
-    # provided by Windows/WSL; do not mount Intel /dev/dri devices here.
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    devices:
+      - /dev/dri:/dev/dri
     volumes:
       - type: bind
         source: /etc/localtime
@@ -22,25 +15,31 @@ services:
         read_only: true
         bind:
           create_host_path: false
-      - type: volume
-        source: frigate_config
-        target: /config
-      - type: volume
-        source: frigate_media
-        target: /media/frigate
       - type: bind
-        source: ${SECURITY_EXPORT_PATH:-/mnt/s/docker/security_inference_stack}/frigate/clips
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/frigate/config
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/frigate/media
+        target: /media/frigate
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${SECURITY_EXPORT_PATH:-/mnt/tank/security_inference_stack}/frigate/clips
         target: /media/frigate/clips
         bind:
           create_host_path: true
       - type: bind
-        source: ${SECURITY_EXPORT_PATH:-/mnt/s/docker/security_inference_stack}/frigate/exports
+        source: ${SECURITY_EXPORT_PATH:-/mnt/tank/security_inference_stack}/frigate/exports
         target: /media/frigate/exports
         bind:
           create_host_path: true
-      - type: volume
-        source: frigate_models
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/frigate/models
         target: /models
+        bind:
+          create_host_path: true
       - type: tmpfs
         target: /tmp/cache
         tmpfs:
@@ -48,15 +47,14 @@ services:
     networks:
         general_brg:
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:8971:8971"
-      - "${DOCKER_BIND_IP:-192.168.213.101}:8554:8554" # RTSP feeds
-      - "${DOCKER_BIND_IP:-192.168.213.101}:8555:8555/tcp" # WebRTC over tcp
-      - "${DOCKER_BIND_IP:-192.168.213.101}:8555:8555/udp" # WebRTC over udp
+      - "8971:8971"
+      - "8554:8554" # RTSP feeds
+      - "8555:8555/tcp" # WebRTC over tcp
+      - "8555:8555/udp" # WebRTC over udp
     environment:
       - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD}
       - TZ=${TZ:-UTC}
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+      - LIBVA_DRIVER_NAME=${LIBVA_DRIVER_NAME:-iHD}
     healthcheck:
       test: "curl -f http://localhost:5000/api/version || exit 1"
       interval: 1m
@@ -68,13 +66,13 @@ services:
     container_name: birdnet-go
     restart: on-failure:5
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:${BN_WEBPORT:-8080}:8080"
+      - "${BN_WEBPORT:-8080}:8080"
     networks:
         general_brg:
     environment:
       - TZ=${TZ:-UTC}
-      - BIRDNET_UID=${SECURITY_STACK_UID:-1000}
-      - BIRDNET_GID=${SECURITY_STACK_GID:-1000}
+      - BIRDNET_UID=${SECURITY_STACK_UID:-568}
+      - BIRDNET_GID=${SECURITY_STACK_GID:-568}
       # BirdNET Configuration
       - BIRDNET_LOCALE=en-uk                      # Locale code (2-10 chars, e.g., "en" or "en-us")
       - BIRDNET_LATITUDE=${BN_LAT}                 # Valid range: -90.0 to 90.0
@@ -85,7 +83,7 @@ services:
       - BIRDNET_THREADS=2                         # 0 = auto (use all CPUs), or specify number of threads
       - BIRDNET_DEBUG=false                       # Enable debug logging (true/false)
       - BIRDNET_USEXNNPACK=true                   # Use XNNPACK acceleration (true/false)
-      # Range Filter Configuration               
+      # Range Filter Configuration
       - BIRDNET_RANGEFILTER_MODEL=latest
       - BIRDNET_RANGEFILTER_THRESHOLD=0.01
     healthcheck:
@@ -98,34 +96,44 @@ services:
       timeout: 10s
       retries: 3
     volumes:
-      - type: volume
-        source: birdnet_config
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/birdnet-go/config
         target: /config
-      - type: volume
-        source: birdnet_data
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/birdnet-go/data
         target: /data
+        bind:
+          create_host_path: true
 #-----------------------------------------------
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     restart: on-failure:5
-    user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}
+    user: ${SECURITY_STACK_UID:-568}:${SECURITY_STACK_GID:-568}
     environment:
       - TZ=${TZ:-UTC}
     networks:
       - general_brg
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:1883:1883"
+      - "1883:1883"
     volumes:
-      - type: volume
-        source: mosquitto_config
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/mosquitto/config
         target: /mosquitto/config
-      - type: volume
-        source: mosquitto_data
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/mosquitto/data
         target: /mosquitto/data
-      - type: volume
-        source: mosquitto_log
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/mosquitto/log
         target: /mosquitto/log
+        bind:
+          create_host_path: true
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 1883 || exit 1"]
       interval: 1m
@@ -137,32 +145,29 @@ services:
     image: ghcr.io/jellman86/yawamf-monalithic:dev
     container_name: yawamf-monalithic
     restart: on-failure:5
-    user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}
+    user: ${SECURITY_STACK_UID:-568}:${SECURITY_STACK_GID:-568}
+    devices:
+      - /dev/dri:/dev/dri
     networks:
       general_brg:
     volumes:
-      - type: volume
-        source: yawamf_config
-        target: /config
-      - type: volume
-        source: yawamf_data
-        target: /data
       - type: bind
-        source: ${SECURITY_EXPORT_PATH:-/mnt/s/docker/security_inference_stack}/YA-WAMF/captures
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/yawamf/config
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/yawamf/data
+        target: /data
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${SECURITY_EXPORT_PATH:-/mnt/tank/security_inference_stack}/YA-WAMF/captures
         target: /data/captures
         bind:
           create_host_path: true
-    # NVIDIA CUDA access for Docker running inside WSL2. Requires NVIDIA
-    # Container Toolkit configured in the WSL distro that runs Docker.
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:9852:8080"
+      - "9852:8080"
     environment:
       - TZ=${TZ:-UTC}
       - FRIGATE__FRIGATE_URL=${FRIGATE_URL:-http://frigate:5000}
@@ -171,8 +176,7 @@ services:
       - FRIGATE__MQTT_PORT=${MQTT_PORT:-1883}
       - FRIGATE__AUDIO_TOPIC=${YAWAMF_AUDIO_TOPIC:-birdnet}
       - SYSTEM__DEBUG_UI_ENABLED=${DEBUG_UI_ENABLED:-true}
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - LIBVA_DRIVER_NAME=${LIBVA_DRIVER_NAME:-iHD}
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
       interval: 30s
@@ -182,15 +186,3 @@ services:
 networks:
     general_brg:
       external: true
-
-volumes:
-    frigate_config:
-    frigate_media:
-    frigate_models:
-    birdnet_config:
-    birdnet_data:
-    mosquitto_config:
-    mosquitto_data:
-    mosquitto_log:
-    yawamf_config:
-    yawamf_data:

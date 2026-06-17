@@ -15,7 +15,7 @@ services:
     networks:
       general_brg:
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:${PROMETHEUS_WEB_PORT:-9090}:9090"
+      - "${PROMETHEUS_WEB_PORT:-9090}:9090"
     volumes:
       - type: bind
         source: ${CONFIG_PATH}/prometheus/prometheus.yml
@@ -55,7 +55,7 @@ services:
     networks:
       general_brg:
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:${SNMP_EXPORTER_WEB_PORT:-9116}:9116"
+      - "${SNMP_EXPORTER_WEB_PORT:-9116}:9116"
     command:
       - --config.file=/etc/snmp_exporter/snmp.yml
       - --config.expand-environment-variables
@@ -86,7 +86,7 @@ services:
     networks:
       general_brg:
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:${UNPOLLER_WEB_PORT:-9130}:9130"
+      - "${UNPOLLER_WEB_PORT:-9130}:9130"
     environment:
       - TZ=${TZ:-UTC}
       - UP_INFLUXDB_DISABLE=true
@@ -118,7 +118,7 @@ services:
     networks:
       general_brg:
     ports:
-      - "${DOCKER_BIND_IP:-192.168.213.101}:${GRAFANA_WEB_PORT:-3000}:3000"
+      - "${GRAFANA_WEB_PORT:-3000}:3000"
     environment:
       - TZ=${TZ:-UTC}
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
