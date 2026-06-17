@@ -259,5 +259,5 @@ services:
       retries: 3
 networks:
   vpn_stack_brg:
-    name: ${NETWORK:-vpn_stack_brg}
+    name: ${NETWORK:-arr_stack_brg}
     external: true

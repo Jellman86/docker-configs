@@ -6,7 +6,7 @@ Personal Docker Compose stacks used on TrueNAS Scale. Most stacks expect externa
 - `media_related_stack/` - Plex and Optimisarr.
 - `monitoring_management/` - Prometheus, Grafana, SNMP exporter, and SNMP trap receiver.
 - `security_inference_stack/` - Frigate, BirdNET-Go, Matter Server, Mosquitto, and YA-WAMF.
-- `web_services/` - Nginx Proxy Manager, Cloudflare Tunnel, and Overseerr.
+- `web_services/` - Nginx Proxy Manager, Cloudflare Tunnel, and Tailscale.
 
 ## Usage
 Run a stack by pointing Docker Compose at the folder's compose file:
@@ -31,7 +31,11 @@ Docker's environment file handling is documented here:
 ## Networking assumptions
 These stacks reference external networks that must already exist on the host:
 - `general_brg`
-- `vpn_stack_brg`
+- `arr_stack_brg`
+
+The compose files may use the internal service network key `vpn_stack_brg`, but
+it resolves to the external Docker network `arr_stack_brg` by default. Override
+with `NETWORK` only if the host uses a different external network name.
 
 Some deployments may also use additional external networks such as `dmz_mac_vlan` or `service_mac_vlan`, but they are not required by the active compose files in this repo.
 

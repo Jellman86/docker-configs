@@ -93,4 +93,5 @@ networks:
     general_brg:
       external: true
     vpn_stack_brg:
+      name: ${NETWORK:-arr_stack_brg}
       external: true

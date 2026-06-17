@@ -30,8 +30,8 @@ Two compose stacks make up the "arr stack":
 ### External Docker networks (must exist before `compose up`)
 
 ```bash
-docker network create vpn_stack_brg   # currently subnet 172.19.0.0/16
-docker network create general_brg     # currently subnet 172.18.0.0/16
+docker network create arr_stack_brg   # currently subnet 172.16.2.0/24
+docker network create general_brg     # currently subnet 172.16.4.0/24
 ```
 
 ### Bind-mounted config directories
@@ -70,7 +70,7 @@ optimisarr `/work` and `/trash` (atomic moves).
 ## 2. Services, images & published ports
 
 Only qbittorrent runs inside the VPN netns (`network_mode: service:gluetun`);
-everything else sits on `vpn_stack_brg` directly. qbittorrent's WebUI/torrent
+everything else sits on `arr_stack_brg` directly. qbittorrent's WebUI/torrent
 ports are therefore published *on the gluetun container*, not on qbittorrent.
 
 | Service | Image | Host port | Notes |
