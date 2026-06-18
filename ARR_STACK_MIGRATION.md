@@ -81,7 +81,7 @@ ports are therefore published *on the gluetun container*, not on qbittorrent.
 | radarr | `lscr.io/linuxserver/radarr:latest` | 7878 | movies |
 | sonarr | `lscr.io/linuxserver/sonarr:latest` | 8989 | tv |
 | byparr | `ghcr.io/thephaseless/byparr:latest` | (internal 8191) | FlareSolverr replacement; proxies via `http://gluetun:8888` |
-| cleanuparr | `ghcr.io/cleanuparr/cleanuparr:latest` | 11011 | stalled/orphan cleanup |
+| cleanuparr | `ghcr.io/cleanuparr/cleanuparr:latest` | 11011 | stalled queue cleanup, malware blocking, qbit blacklist sync, completed download cleanup |
 | seerr | `ghcr.io/seerr-team/seerr:latest` | 5055 | requests (Overseerr fork) |
 | optimisarr | `ghcr.io/jellman86/optimisarr:dev` | 8787 | transcode/optimise (own repo, in media stack) |
 | plex | `lscr.io/linuxserver/plex:latest` | host network (32400) | `/dev/dri` for HW transcode |
@@ -97,6 +97,14 @@ DNS over TLS via Cloudflare; HTTP proxy ON at :8888 (used by byparr)
 FIREWALL_INPUT_PORTS    = 5041,8081,9696,7878,8989,8191
 FIREWALL_OUTBOUND_SUBNETS = 192.168.211.0/24 … 192.168.215.0/24  (LAN access)
 ```
+
+Prowlarr and Byparr should share the same outbound origin IP:
+- Prowlarr host proxy: enabled, type `http`, host `gluetun`, port `8888`.
+- Prowlarr proxy bypass: local Docker service names only
+  (`radarr`, `sonarr`, `prowlarr`, `gluetun`, `byparr`, `qbittorrent`,
+  `cleanuparr`, etc.).
+- Byparr environment: `PROXY_SERVER=http://gluetun:8888`.
+- Prowlarr FlareSolverr/Byparr indexer proxy: `http://byparr:8191`.
 
 ---
 
@@ -119,6 +127,25 @@ your own indexer set on the new host as needed; none require API keys/credential
 > App API keys (carry across in each `config.xml`): radarr/sonarr/prowlarr each
 > have a 32-char key in `<volume>/config.xml`. Auth = Forms, disabled for local
 > addresses.
+
+**Prowlarr app sync prerequisite for Cleanuparr:** enable
+`Sync Reject Blocklisted Torrent Hashes While Grabbing` on both the Radarr and
+Sonarr Prowlarr app entries. This prevents Cleanuparr-blocked torrents from
+being grabbed again by synced indexers.
+
+**Cleanuparr runtime settings carried in `${DOCKERCONFIGPATH}/cleanuparr`:**
+- Malware Blocker enabled for Radarr and Sonarr.
+- Radarr/Sonarr blocklist path:
+  `https://cleanuparr.pages.dev/static/blacklist`.
+- qBittorrent Blacklist Synchronizer enabled with the same blacklist URL.
+- Download Cleaner enabled hourly.
+- qBittorrent seeding rules:
+  - `radarr`: public torrents, max ratio `2.0`, min seed time `720` hours,
+    max seed time `10080` hours, delete source files.
+  - `tv-sonarr`: public torrents, max ratio `1.5`, min seed time `480` hours,
+    max seed time `7200` hours, delete source files.
+- Private torrents are ignored by Malware Blocker and are not matched by the
+  current qBittorrent seeding rules.
 
 ---
 
