@@ -13,6 +13,7 @@ services:
         aliases:
           - nginx-rp
       vpn_stack_brg:
+      media_stack_default:
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -94,4 +95,6 @@ networks:
       external: true
     vpn_stack_brg:
       name: ${NETWORK:-arr_stack_brg}
+      external: true
+    media_stack_default:
       external: true
