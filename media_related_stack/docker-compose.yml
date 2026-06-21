@@ -42,6 +42,11 @@ services:
       restart: on-failure:5
       devices:
         - /dev/dri:/dev/dri
+      # TrueNAS SCALE assigns /dev/dri/renderD128 to the render group (GID 107 on
+      # this host). The app runs as PUID/PGID, so it needs that supplementary group
+      # to use Intel QSV or VA-API rather than falling back to CPU encoding.
+      group_add:
+        - "${RENDER_GID:-107}"
       ports:
         - "${OPTIMISARR_PORT:-8787}:8787/tcp"
       environment:
