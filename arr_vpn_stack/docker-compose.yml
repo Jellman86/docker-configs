@@ -5,7 +5,7 @@ services:
   gluetun:
     image: ${GLUETUN_IMAGE:-qmcgaw/gluetun:latest}
     container_name: gluetun
-    restart: on-failure:5
+    restart: unless-stopped
     cap_add:
       - NET_ADMIN
     devices:
@@ -53,7 +53,7 @@ services:
   qbittorrent:
     image: ${QBITTORRENT_IMAGE:-lscr.io/linuxserver/qbittorrent:latest}
     container_name: qbittorrent
-    restart: on-failure:5
+    restart: unless-stopped
     network_mode: "service:gluetun"
     depends_on:
       gluetun:
@@ -92,7 +92,7 @@ services:
   prowlarr:
     image: ${PROWLARR_IMAGE:-lscr.io/linuxserver/prowlarr:latest}
     container_name: prowlarr
-    restart: on-failure:5
+    restart: unless-stopped
     networks:
       vpn_stack_brg:
     ports:
@@ -122,7 +122,7 @@ services:
   radarr:
     image: ${RADARR_IMAGE:-lscr.io/linuxserver/radarr:latest}
     container_name: radarr
-    restart: on-failure:5
+    restart: unless-stopped
     networks:
       vpn_stack_brg:
     ports:
@@ -152,7 +152,7 @@ services:
   sonarr:
     image: ${SONARR_IMAGE:-lscr.io/linuxserver/sonarr:latest}
     container_name: sonarr
-    restart: on-failure:5
+    restart: unless-stopped
     networks:
       vpn_stack_brg:
     ports:
@@ -182,7 +182,7 @@ services:
   byparr:
     image: ${BYPARR_IMAGE:-ghcr.io/thephaseless/byparr:latest}
     container_name: byparr
-    restart: on-failure:5
+    restart: unless-stopped
     networks:
       vpn_stack_brg:
     depends_on:
@@ -202,7 +202,7 @@ services:
   cleanuparr:
     image: ${CLEANUPARR_IMAGE:-ghcr.io/cleanuparr/cleanuparr:latest}
     container_name: cleanuparr
-    restart: on-failure:5
+    restart: unless-stopped
     networks:
       vpn_stack_brg:
     ports:
@@ -250,7 +250,7 @@ services:
         target: /app/config
         bind:
           create_host_path: true
-    restart: on-failure:5
+    restart: unless-stopped
     healthcheck:
       test: "wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1"
       start_period: 20s

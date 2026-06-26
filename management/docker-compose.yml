@@ -3,7 +3,7 @@ services:
   dockhand:
     image: fnsys/dockhand:latest
     container_name: dockhand
-    restart: on-failure:5
+    restart: unless-stopped
     ports:
       - "3000:3000"
     networks:

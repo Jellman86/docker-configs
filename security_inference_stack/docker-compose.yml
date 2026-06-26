@@ -2,7 +2,7 @@ services:
 #-----------------------------------------------
   frigate:
     container_name: frigate
-    restart: on-failure:5
+    restart: unless-stopped
     stop_grace_period: 30s # allow enough time to shut down the various services
     image: ghcr.io/blakeblackshear/frigate:stable
     shm_size: "1024mb" # update for your cameras based on calculation above
@@ -64,7 +64,7 @@ services:
   birdnet-go:
     image: ghcr.io/tphakala/birdnet-go:nightly
     container_name: birdnet-go
-    restart: on-failure:5
+    restart: unless-stopped
     ports:
       - "${BN_WEBPORT:-8080}:8080"
     networks:
@@ -110,7 +110,7 @@ services:
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
-    restart: on-failure:5
+    restart: unless-stopped
     user: ${SECURITY_STACK_UID:-568}:${SECURITY_STACK_GID:-568}
     environment:
       - TZ=${TZ:-UTC}
@@ -144,7 +144,7 @@ services:
   yawamf:
     image: ghcr.io/jellman86/yawamf-monalithic:dev
     container_name: yawamf-monalithic
-    restart: on-failure:5
+    restart: unless-stopped
     user: ${SECURITY_STACK_UID:-568}:${SECURITY_STACK_GID:-568}
     devices:
       - /dev/dri:/dev/dri

@@ -3,7 +3,7 @@ services:
   npm:
     container_name: npm
     image: 'jc21/nginx-proxy-manager:latest'
-    restart: on-failure:5
+    restart: unless-stopped
     ports:
       - "80:80"
       - "81:81"
@@ -38,7 +38,7 @@ services:
   cloudflared:
     image: cloudflare/cloudflared
     container_name: cloudflare-tunnel
-    restart: on-failure:5
+    restart: unless-stopped
     networks:
       general_brg:
     command: tunnel --metrics 127.0.0.1:60123 run
@@ -58,7 +58,7 @@ services:
     image: tailscale/tailscale:stable
     container_name: tailscale-exit-node
     hostname: ${TAILSCALE_HOSTNAME}
-    restart: on-failure:5
+    restart: unless-stopped
     cap_add:
       - NET_ADMIN
       - NET_RAW

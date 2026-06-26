@@ -39,7 +39,14 @@ services:
     optimisarr:
       image: ${OPTIMISARR_IMAGE:-ghcr.io/jellman86/optimisarr:dev}
       container_name: optimisarr
-      restart: on-failure:5
+      restart: unless-stopped
+      # Attach to the arr apps' external network so Radarr/Sonarr resolve by container
+      # name (radarr:7878, sonarr:8989) with no reverse-proxy/DNS hairpin. Keep the
+      # project default network too, so NPM still proxies optimisarr.pownet.uk ->
+      # optimisarr:8787 and the published host port keeps working.
+      networks:
+        default:
+        arr_stack_brg:
       devices:
         - /dev/dri:/dev/dri
       # TrueNAS SCALE assigns /dev/dri/renderD128 to the render group (GID 107 on
@@ -85,3 +92,10 @@ services:
         timeout: 10s
         retries: 3
         start_period: 30s
+#-----------------------------------------------
+networks:
+  # The arr stack (arr_vpn_stack) owns this network; reference it as external so
+  # Optimisarr joins it without trying to create or manage it.
+  arr_stack_brg:
+    name: ${ARR_NETWORK:-arr_stack_brg}
+    external: true
