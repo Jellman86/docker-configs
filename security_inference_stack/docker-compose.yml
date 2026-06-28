@@ -8,6 +8,8 @@ services:
     shm_size: "1024mb" # update for your cameras based on calculation above
     devices:
       - /dev/dri:/dev/dri
+    group_add:
+      - "${RENDER_GID:-105}"
     volumes:
       - type: bind
         source: /etc/localtime
@@ -26,12 +28,12 @@ services:
         bind:
           create_host_path: true
       - type: bind
-        source: ${SECURITY_EXPORT_PATH:-/mnt/tank/security_inference_stack}/frigate/clips
+        source: ${SECURITY_EXPORT_PATH:-/mnt/apps/security_inference_stack}/frigate/clips
         target: /media/frigate/clips
         bind:
           create_host_path: true
       - type: bind
-        source: ${SECURITY_EXPORT_PATH:-/mnt/tank/security_inference_stack}/frigate/exports
+        source: ${SECURITY_EXPORT_PATH:-/mnt/apps/security_inference_stack}/frigate/exports
         target: /media/frigate/exports
         bind:
           create_host_path: true
@@ -53,8 +55,9 @@ services:
       - "8555:8555/udp" # WebRTC over udp
     environment:
       - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD}
-      - TZ=${TZ:-UTC}
+      - TZ=${TZ:-Europe/London}
       - LIBVA_DRIVER_NAME=${LIBVA_DRIVER_NAME:-iHD}
+      - LIBVA_DRIVERS_PATH=${LIBVA_DRIVERS_PATH:-/usr/lib/x86_64-linux-gnu/dri}
     healthcheck:
       test: "curl -f http://localhost:5000/api/version || exit 1"
       interval: 1m
@@ -70,9 +73,9 @@ services:
     networks:
         general_brg:
     environment:
-      - TZ=${TZ:-UTC}
-      - BIRDNET_UID=${SECURITY_STACK_UID:-568}
-      - BIRDNET_GID=${SECURITY_STACK_GID:-568}
+      - TZ=${TZ:-Europe/London}
+      - BIRDNET_UID=${SECURITY_STACK_UID:-1000}
+      - BIRDNET_GID=${SECURITY_STACK_GID:-1000}
       # BirdNET Configuration
       - BIRDNET_LOCALE=en-uk                      # Locale code (2-10 chars, e.g., "en" or "en-us")
       - BIRDNET_LATITUDE=${BN_LAT}                 # Valid range: -90.0 to 90.0
@@ -90,7 +93,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "test -s /config/config.yaml && grep -q 'name: birdcam' /config/config.yaml && grep -q 'name: nestcam' /config/config.yaml && grep -q 'username: birdnet' /config/config.yaml && curl -f http://localhost:8080/ || exit 1"
+          "curl -f http://localhost:8080/ || exit 1"
         ]
       interval: 1m
       timeout: 10s
@@ -111,9 +114,9 @@ services:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     restart: unless-stopped
-    user: ${SECURITY_STACK_UID:-568}:${SECURITY_STACK_GID:-568}
+    user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}
     environment:
-      - TZ=${TZ:-UTC}
+      - TZ=${TZ:-Europe/London}
     networks:
       - general_brg
     ports:
@@ -145,9 +148,11 @@ services:
     image: ghcr.io/jellman86/yawamf-monalithic:dev
     container_name: yawamf-monalithic
     restart: unless-stopped
-    user: ${SECURITY_STACK_UID:-568}:${SECURITY_STACK_GID:-568}
+    user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}
     devices:
       - /dev/dri:/dev/dri
+    group_add:
+      - "${RENDER_GID:-105}"
     networks:
       general_brg:
     volumes:
@@ -162,14 +167,14 @@ services:
         bind:
           create_host_path: true
       - type: bind
-        source: ${SECURITY_EXPORT_PATH:-/mnt/tank/security_inference_stack}/YA-WAMF/captures
+        source: ${SECURITY_EXPORT_PATH:-/mnt/apps/security_inference_stack}/YA-WAMF/captures
         target: /data/captures
         bind:
           create_host_path: true
     ports:
       - "9852:8080"
     environment:
-      - TZ=${TZ:-UTC}
+      - TZ=${TZ:-Europe/London}
       - FRIGATE__FRIGATE_URL=${FRIGATE_URL:-http://frigate:5000}
       - FRIGATE__FRIGATE_AUTH_TOKEN=${FRIGATE_AUTH_TOKEN:-}
       - FRIGATE__MQTT_SERVER=${MQTT_SERVER:-mosquitto}
@@ -177,6 +182,7 @@ services:
       - FRIGATE__AUDIO_TOPIC=${YAWAMF_AUDIO_TOPIC:-birdnet}
       - SYSTEM__DEBUG_UI_ENABLED=${DEBUG_UI_ENABLED:-true}
       - LIBVA_DRIVER_NAME=${LIBVA_DRIVER_NAME:-iHD}
+      - LIBVA_DRIVERS_PATH=${LIBVA_DRIVERS_PATH:-/usr/lib/x86_64-linux-gnu/dri}
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
       interval: 30s

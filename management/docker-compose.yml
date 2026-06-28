@@ -5,13 +5,13 @@ services:
     container_name: dockhand
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${DOCKHAND_PORT:-3000}:3000"
     networks:
       general_brg:
     environment:
-      - PUID=1001
-      - PGID=1001
-      - TZ=${TZ}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-Europe/London}
     volumes:
       - type: bind
         source: /var/run/docker.sock
