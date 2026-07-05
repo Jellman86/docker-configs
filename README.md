@@ -47,6 +47,10 @@ docker compose up -d
 
 Notes:
 - Most stacks expect a `.env` file in the same directory as the compose file.
+- On the Fedora compute host (`quark.pownet.uk` / `dell-compute`), use
+  `DOCKERCONFIGPATH=/mnt/apps/docker`. The host's Docker engine data lives
+  separately at `/mnt/apps/docker-engine`; do not use that path for app config
+  bind mounts.
 
 ## Environment variables
 Common keys used across stacks include:
@@ -58,15 +62,30 @@ Docker's environment file handling is documented here:
 - https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/
 
 ## Networking assumptions
-These stacks reference external networks that must already exist on the host:
+
+The default cross-host network is:
+
 - `general_brg`
-- `arr_stack_brg`
 
-The compose files may use the internal service network key `vpn_stack_brg`, but
-it resolves to the external Docker network `arr_stack_brg` by default. Override
-with `NETWORK` only if the host uses a different external network name.
+Stacks should only require host-specific networks when the host actually runs
+the related services. The security inference stack and the default web services
+stack run on `general_brg` only, which keeps Quark independent from the NAS
+media/ARR networks.
 
-Some deployments may also use additional external networks such as `dmz_mac_vlan` or `service_mac_vlan`, but they are not required by the active compose files in this repo.
+On Riker, where Nginx Proxy Manager and Tailscale need to reach ARR/media
+containers directly, run the web services stack with the Riker override:
+
+```bash
+cd web_services
+docker compose -f docker-compose.yml -f docker-compose.riker.yml up -d
+```
+
+That override attaches services to:
+
+- `arr_stack_brg` through the internal compose key `vpn_stack_brg`
+- `media_stack_default`
+
+Override `NETWORK` only if the host uses a different ARR external network name.
 
 ## Configuration Notes
 

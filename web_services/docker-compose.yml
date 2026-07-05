@@ -12,8 +12,6 @@ services:
       general_brg:
         aliases:
           - nginx-rp
-      vpn_stack_brg:
-      media_stack_default:
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -69,7 +67,6 @@ services:
       - net.ipv6.conf.all.forwarding=1
     networks:
       general_brg:
-      vpn_stack_brg:
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
       - TS_HOSTNAME=${TAILSCALE_HOSTNAME}
@@ -92,9 +89,4 @@ services:
 #-----------------------------------------------
 networks:
     general_brg:
-      external: true
-    vpn_stack_brg:
-      name: ${NETWORK:-arr_stack_brg}
-      external: true
-    media_stack_default:
       external: true

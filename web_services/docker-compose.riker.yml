@@ -1,0 +1,16 @@
+services:
+  npm:
+    networks:
+      vpn_stack_brg:
+      media_stack_default:
+
+  tailscale:
+    networks:
+      vpn_stack_brg:
+
+networks:
+  vpn_stack_brg:
+    name: ${NETWORK:-arr_stack_brg}
+    external: true
+  media_stack_default:
+    external: true
