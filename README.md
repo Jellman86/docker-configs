@@ -69,25 +69,26 @@ The default cross-host network is:
 
 Stacks should only require host-specific networks when the host actually runs
 the related services. The security inference stack and the Quark web services
-override run on `general_brg` only, which keeps Quark independent from the NAS
+file run on `general_brg` only, which keeps Quark independent from the NAS
 media/ARR networks.
 
-On Quark, run the web services stack with the Quark override:
+Dockhand deploys one compose file per Git stack. Use the host-specific complete
+compose file, not a multi-file override chain.
 
-```bash
-cd web_services
-docker compose -f docker-compose.yml -f docker-compose.quark.yml up -d
+On Quark, set the web services Git stack compose path to:
+
+```text
+web_services/docker-compose.quark.yml
 ```
 
 On Riker, where Nginx Proxy Manager and Tailscale need to reach ARR/media
-containers directly, run the web services stack with the Riker override:
+containers directly, use the base web services compose file:
 
-```bash
-cd web_services
-docker compose -f docker-compose.yml -f docker-compose.riker.yml up -d
+```text
+web_services/docker-compose.yml
 ```
 
-That override attaches services to:
+The Riker file attaches services to:
 
 - `arr_stack_brg` through the internal compose key `vpn_stack_brg`
 - `media_stack_default`

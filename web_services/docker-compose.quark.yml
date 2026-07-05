@@ -1,18 +1,92 @@
 services:
+#-----------------------------------------------
   npm:
+    container_name: npm
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
     networks:
       general_brg:
         aliases:
           - nginx-rp
-
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/nginx-proxy-manager/data
+        target: /data
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/nginx-proxy-manager/letsencrypt
+        target: /etc/letsencrypt
+        bind:
+          create_host_path: true
+    healthcheck:
+      test: ["CMD", "/usr/bin/check-health"]
+      interval: 120s
+      timeout: 3s
+      retries: 3
+#-----------------------------------------------
   cloudflared:
+    image: cloudflare/cloudflared
+    container_name: cloudflare-tunnel
+    restart: unless-stopped
     networks:
       general_brg:
-
+    command: tunnel --metrics 127.0.0.1:60123 run
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "--metrics", "127.0.0.1:60123", "ready"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+#-----------------------------------------------
   tailscale:
+    image: tailscale/tailscale:stable
+    container_name: tailscale-exit-node
+    hostname: ${TAILSCALE_HOSTNAME}
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv6.conf.all.forwarding=1
     networks:
       general_brg:
-
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=${TAILSCALE_HOSTNAME}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_ROUTES=${TAILSCALE_ADVERTISE_ROUTES}
+      - TS_EXTRA_ARGS=--advertise-exit-node --accept-dns=false
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/tailscale
+        target: /var/lib/tailscale
+        bind:
+          create_host_path: true
+    healthcheck:
+      test: ["CMD", "tailscale", "status", "--peers=false"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+#-----------------------------------------------
 networks:
-  general_brg:
-    external: true
+    general_brg:
+      external: true
