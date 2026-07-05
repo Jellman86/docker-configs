@@ -119,8 +119,6 @@ services:
       - TZ=${TZ:-Europe/London}
     networks:
       - general_brg
-    ports:
-      - "1883:1883"
     volumes:
       - type: bind
         source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/mosquitto/config
@@ -179,6 +177,11 @@ services:
       - FRIGATE__FRIGATE_AUTH_TOKEN=${FRIGATE_AUTH_TOKEN:-}
       - FRIGATE__MQTT_SERVER=${MQTT_SERVER:-mosquitto}
       - FRIGATE__MQTT_PORT=${MQTT_PORT:-1883}
+      - FRIGATE__MQTT_AUTH=${MQTT_AUTH:-true}
+      - FRIGATE__MQTT_USERNAME=${MQTT_USERNAME:-}
+      - FRIGATE__MQTT_PASSWORD=${MQTT_PASSWORD:-}
+      - FRIGATE__BIRDNET_URL=${BIRDNET_URL:-http://birdnet-go:8080}
+      - FRIGATE__BIRDNET_EXTERNAL_URL=${BIRDNET_EXTERNAL_URL:-}
       - FRIGATE__AUDIO_TOPIC=${YAWAMF_AUDIO_TOPIC:-birdnet}
       - SYSTEM__DEBUG_UI_ENABLED=${DEBUG_UI_ENABLED:-true}
       - LIBVA_DRIVER_NAME=${LIBVA_DRIVER_NAME:-iHD}
