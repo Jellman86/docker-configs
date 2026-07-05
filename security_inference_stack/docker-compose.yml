@@ -7,7 +7,8 @@ services:
     image: ghcr.io/blakeblackshear/frigate:stable
     shm_size: "1024mb" # update for your cameras based on calculation above
     devices:
-      - /dev/dri:/dev/dri
+      - /dev/dri:/dev/dri            # Intel iGPU (VAAPI decode + OpenVINO GPU fallback)
+      - /dev/accel/accel0:/dev/accel/accel0  # Intel AI Boost NPU (OpenVINO object detection)
     cap_add:
       - CAP_PERFMON
       - SYS_ADMIN
@@ -83,15 +84,15 @@ services:
       - BIRDNET_LOCALE=en-uk                      # Locale code (2-10 chars, e.g., "en" or "en-us")
       - BIRDNET_LATITUDE=${BN_LAT}                 # Valid range: -90.0 to 90.0
       - BIRDNET_LONGITUDE=${BN_LONG}              # Valid range: -180.0 to 180.0
-      - BIRDNET_SENSITIVITY=1.0                   # Valid range: 0.1 to 1.5 (higher = more sensitive)
-      - BIRDNET_THRESHOLD=0.7                     # Valid range: 0.0 to 1.0 (confidence threshold)
-      - BIRDNET_OVERLAP=1.5                       # Valid range: 0.0 to 2.9 seconds (audio chunk overlap)
-      - BIRDNET_THREADS=2                         # 0 = auto (use all CPUs), or specify number of threads
+      - BIRDNET_SENSITIVITY=${BIRDNET_SENSITIVITY:-1.0}          # 0.1-1.5 (higher = more sensitive)
+      - BIRDNET_THRESHOLD=${BIRDNET_THRESHOLD:-0.7}              # 0.0-1.0 confidence threshold
+      - BIRDNET_OVERLAP=${BIRDNET_OVERLAP:-2.7}                  # 0.0-2.9s chunk overlap; 2.7 = high recall for continuous camera mic
+      - BIRDNET_THREADS=${BIRDNET_THREADS:-4}                    # 0 = all CPUs; 4 keeps up at overlap 2.7 across 2 streams
       - BIRDNET_DEBUG=false                       # Enable debug logging (true/false)
       - BIRDNET_USEXNNPACK=true                   # Use XNNPACK acceleration (true/false)
       # Range Filter Configuration
       - BIRDNET_RANGEFILTER_MODEL=latest
-      - BIRDNET_RANGEFILTER_THRESHOLD=0.01
+      - BIRDNET_RANGEFILTER_THRESHOLD=${BIRDNET_RANGEFILTER_THRESHOLD:-0.03}  # 0.03 restricts to locally-plausible species (fewer false positives from noisy 16kHz camera mic)
     healthcheck:
       test:
         [
