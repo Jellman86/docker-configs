@@ -59,6 +59,8 @@ services:
       - "8555:8555/udp" # WebRTC over udp
     environment:
       - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD}
+      - MQTT_USERNAME=${MQTT_USERNAME:?MQTT_USERNAME is required}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:?MQTT_PASSWORD is required}
       - TZ=${TZ:-Europe/London}
       - LIBVA_DRIVER_NAME=${LIBVA_DRIVER_NAME:-iHD}
       - LIBVA_DRIVERS_PATH=${LIBVA_DRIVERS_PATH:-/usr/lib/x86_64-linux-gnu/dri}
@@ -90,6 +92,8 @@ services:
       - BIRDNET_THREADS=${BIRDNET_THREADS:-4}                    # 0 = all CPUs; 4 keeps up at overlap 2.7 across 2 streams
       - BIRDNET_DEBUG=false                       # Enable debug logging (true/false)
       - BIRDNET_USEXNNPACK=true                   # Use XNNPACK acceleration (true/false)
+      - MQTT_USERNAME=${MQTT_USERNAME:?MQTT_USERNAME is required}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:?MQTT_PASSWORD is required}
       # Range Filter Configuration
       - BIRDNET_RANGEFILTER_MODEL=latest
       - BIRDNET_RANGEFILTER_THRESHOLD=${BIRDNET_RANGEFILTER_THRESHOLD:-0.03}  # 0.03 restricts to locally-plausible species (fewer false positives from noisy 16kHz camera mic)
@@ -119,8 +123,27 @@ services:
     container_name: mosquitto
     restart: unless-stopped
     user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}
+    command:
+      - sh
+      - -c
+      - |
+        : "$${MQTT_USERNAME:?MQTT_USERNAME is required}"
+        : "$${MQTT_PASSWORD:?MQTT_PASSWORD is required}"
+        mosquitto_passwd -b -c /mosquitto/config/password_file "$${MQTT_USERNAME}" "$${MQTT_PASSWORD}"
+        cat > /mosquitto/config/mosquitto.conf <<'EOF'
+        listener 1883 0.0.0.0
+        allow_anonymous false
+        password_file /mosquitto/config/password_file
+        persistence true
+        persistence_location /mosquitto/data/
+        log_dest stdout
+        log_dest file /mosquitto/log/mosquitto.log
+        EOF
+        exec mosquitto -c /mosquitto/config/mosquitto.conf
     environment:
       - TZ=${TZ:-Europe/London}
+      - MQTT_USERNAME=${MQTT_USERNAME:?MQTT_USERNAME is required}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:?MQTT_PASSWORD is required}
     networks:
       - general_brg
     volumes:
@@ -140,7 +163,7 @@ services:
         bind:
           create_host_path: true
     healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 1883 || exit 1"]
+      test: ["CMD-SHELL", "mosquitto_pub -h 127.0.0.1 -p 1883 -u \"$${MQTT_USERNAME}\" -P \"$${MQTT_PASSWORD}\" -t dockhand/healthcheck -m ok || exit 1"]
       interval: 1m
       timeout: 10s
       retries: 3
