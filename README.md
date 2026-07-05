@@ -7,7 +7,7 @@ values provided via a local `.env` file.
 - `arr_vpn_stack/` - Gluetun VPN stack with qBittorrent, Prowlarr, Radarr, Sonarr, and FlareSolverr.
 - `media_related_stack/` - Plex and Optimisarr.
 - `monitoring_management/` - Prometheus, Grafana, SNMP exporter, and SNMP trap receiver.
-- `security_inference_stack/` - Frigate, BirdNET-Go, Matter Server, Mosquitto, and YA-WAMF.
+- `security_inference_stack/` - Frigate, BirdNET-Go, Mosquitto, YA-WAMF, and Home Assistant.
 - `web_services/` - Nginx Proxy Manager, Cloudflare Tunnel, and Tailscale.
 
 ## Current host layout
@@ -26,6 +26,14 @@ PUID=1000
 PGID=1000
 RENDER_GID=105
 LIBVA_DRIVER_NAME=iHD
+```
+
+Home Assistant in the security inference stack stores config under
+`/mnt/apps/docker/homeassistant/config`, uses host networking for discovery,
+and is available on Quark at:
+
+```text
+http://quark.pownet.uk:8123
 ```
 
 Keep container config/state local to the host running the container. Use NAS

@@ -197,6 +197,33 @@ services:
       timeout: 10s
       retries: 3
 #-----------------------------------------------
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+    environment:
+      - TZ=${TZ:-Europe/London}
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/homeassistant/config
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /run/dbus
+        target: /run/dbus
+        read_only: true
+        bind:
+          create_host_path: false
+#-----------------------------------------------
 networks:
     general_brg:
       external: true
