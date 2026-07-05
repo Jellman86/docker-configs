@@ -152,7 +152,8 @@ services:
     restart: unless-stopped
     user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}
     devices:
-      - /dev/dri:/dev/dri
+      - /dev/dri:/dev/dri                    # Intel iGPU (OpenVINO intel_gpu)
+      - /dev/accel/accel0:/dev/accel/accel0  # Intel AI Boost NPU (OpenVINO intel_npu)
     group_add:
       - "${RENDER_GID:-105}"
     networks:
