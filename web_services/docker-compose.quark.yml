@@ -1,0 +1,18 @@
+services:
+  npm:
+    networks:
+      general_brg:
+        aliases:
+          - nginx-rp
+
+  cloudflared:
+    networks:
+      general_brg:
+
+  tailscale:
+    networks:
+      general_brg:
+
+networks:
+  general_brg:
+    external: true
