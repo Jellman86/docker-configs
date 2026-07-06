@@ -66,6 +66,8 @@ services:
         # netfilter tables for subnet router / exit-node mode.
         ln -sf /usr/sbin/iptables-nft /usr/sbin/iptables
         ln -sf /usr/sbin/ip6tables-nft /usr/sbin/ip6tables
+        apk add --no-cache ethtool
+        ethtool -K eth0 rx-udp-gro-forwarding on rx-gro-list off || true
         exec /usr/local/bin/containerboot
     cap_add:
       - NET_ADMIN
