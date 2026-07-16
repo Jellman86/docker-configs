@@ -45,16 +45,35 @@ Intel GPU acceleration on the Fedora compute host is exposed through
 `LIBVA_DRIVER_NAME=iHD`, and include the host render group with
 `RENDER_GID=105`.
 
-## Usage
-Run a stack by pointing Docker Compose at the folder's compose file:
+## Deployment
 
-```bash
-cd <stack>
-docker compose up -d
-```
+Every Compose project is a Git-backed Dockhand stack. Git is the source of truth, and all image
+pulls and container recreations must be performed through the Dockhand API on the server that owns
+the stack. Do not run `docker pull`, `docker compose pull`, or `docker compose up` on a host.
+
+The deployment sequence is:
+
+1. Push the application and Compose commits and wait for CI, image smoke tests, and registry
+   publication to succeed.
+2. Discover the target through `GET /api/git/stacks`; verify its repository, branch, compose path,
+   and `repullImages: true` setting.
+3. `POST /api/git/stacks/{id}/sync`, then verify `lastCommit`, `syncStatus`, and `syncError` through
+   `GET /api/git/stacks/{id}`.
+4. `POST /api/git/stacks/{id}/deploy` with `Accept: application/json` and wait for `success: true`.
+5. Verify the expected image and health through `GET /api/containers?env={environmentId}` and the
+   application's health endpoint.
+
+On Dockhand 1.0.35, the Git deploy endpoint performs a second safety sync. With `repullImages`
+enabled it applies pull policy `always`, producing the API-owned equivalent of an
+`up -d --remove-orphans --pull always`. A long request is expected when a service is draining under
+`stop_grace_period`; do not retry or bypass it.
 
 Notes:
-- Most stacks expect a `.env` file in the same directory as the compose file.
+- Most stacks expect environment overrides in Dockhand's stack configuration.
+- Store secrets in Dockhand's encrypted secret variables. Never edit generated `.env.dockhand`
+  files or the generated stack copy on a host.
+- Docker CLI logs and inspection may be used for read-only diagnosis, but all lifecycle and image
+  mutations go through Dockhand.
 - On the Fedora compute host (`quark.pownet.uk` / `dell-compute`), use
   `DOCKERCONFIGPATH=/mnt/apps/docker`. The host's Docker engine data lives
   separately at `/mnt/apps/docker-engine`; do not use that path for app config
