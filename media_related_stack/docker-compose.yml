@@ -40,6 +40,9 @@ services:
       image: ${OPTIMISARR_IMAGE:-ghcr.io/jellman86/optimisarr:dev}
       container_name: optimisarr
       restart: unless-stopped
+      # Optimisarr drains active encodes for up to two hours during shutdown. Give the
+      # application slightly longer than its own deadline before Docker sends SIGKILL.
+      stop_grace_period: 2h5m
       # Attach to the arr apps' external network so Radarr/Sonarr resolve by container
       # name (radarr:7878, sonarr:8989) with no reverse-proxy/DNS hairpin. Keep the
       # project default network too, so NPM still proxies optimisarr.pownet.uk ->
@@ -61,7 +64,9 @@ services:
         PGID: ${PGID:-568}
         UMASK: ${UMASK:-002}
         TZ: ${TZ:-Europe/London}
-        OPTIMISARR__LOG_LEVEL: ${OPTIMISARR_LOG_LEVEL:-info}
+        Logging__LogLevel__Default: ${OPTIMISARR_LOG_LEVEL:-Information}
+        Logging__LogLevel__System.Net.Http.HttpClient: ${OPTIMISARR_HTTP_LOG_LEVEL:-Warning}
+        OPTIMISARR_ADMIN_TOKEN: ${OPTIMISARR_ADMIN_TOKEN:?Set OPTIMISARR_ADMIN_TOKEN in the Dockhand stack environment}
         LIBVA_DRIVER_NAME: ${LIBVA_DRIVER_NAME:-iHD}
       volumes:
         - type: bind
@@ -92,6 +97,11 @@ services:
         timeout: 10s
         retries: 3
         start_period: 30s
+      logging:
+        driver: json-file
+        options:
+          max-size: ${OPTIMISARR_LOG_MAX_SIZE:-10m}
+          max-file: ${OPTIMISARR_LOG_MAX_FILES:-3}
 #-----------------------------------------------
 networks:
   # The arr stack (arr_vpn_stack) owns this network; reference it as external so
