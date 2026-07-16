@@ -37,7 +37,7 @@ services:
         start_period: 1m
 #-----------------------------------------------
     optimisarr:
-      image: ${OPTIMISARR_IMAGE:-ghcr.io/jellman86/optimisarr:dev}
+      image: ${OPTIMISARR_IMAGE:-ghcr.io/jellman86/optimisarr:0.2.4}
       container_name: optimisarr
       restart: unless-stopped
       # Optimisarr drains active encodes for up to two hours during shutdown. Give the
