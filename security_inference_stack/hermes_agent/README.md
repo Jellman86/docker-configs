@@ -4,12 +4,12 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 
 ## Design
 
-- Official Hermes image pinned to a released tag and multi-architecture manifest digest.
+- Derived Hermes image built from the official release tag and manifest digest, with the SHA-256-pinned Honcho SDK installed into the otherwise immutable application environment.
 - Persistent state under `/mnt/apps/docker/hermes`.
 - Dashboard available through Nginx Proxy Manager at `https://hermes.pownet.uk`, with a loopback-only port 9119 fallback and Hermes basic authentication.
 - Host command execution through the supported Hermes SSH backend.
 - Container lifecycle through Dockhand rather than direct Docker mutations.
-- Honcho selected as the external memory provider; its API key remains optional until configured.
+- Honcho selected as the external memory provider and installed at image-build time; its API key remains optional until configured.
 - A read-only `quark-operations` skill and managed policy are supplied from Git.
 
 ## Host preparation
@@ -56,7 +56,7 @@ Create a Git stack with:
 - Compose path: `security_inference_stack/hermes_agent/docker-compose.yml`
 - Context directory: the Compose file's directory/default
 - Re-pull images: enabled
-- Build images: disabled
+- Build images: enabled
 - Force recreation: enabled for deliberate upgrades
 
 Copy every required value from the ignored `.env` into the stack-variable panel. Mark dashboard credentials, provider keys, messaging tokens, Home Assistant token, Honcho key, and the sudo password as secrets.
