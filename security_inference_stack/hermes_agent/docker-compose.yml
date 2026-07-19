@@ -11,6 +11,10 @@ services:
     pids_limit: 512
     security_opt:
       - no-new-privileges:true
+    networks:
+      general_brg:
+        aliases:
+          - hermes-agent
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -27,6 +31,7 @@ services:
       HERMES_DASHBOARD: "1"
       HERMES_DASHBOARD_HOST: 0.0.0.0
       HERMES_DASHBOARD_PORT: "9119"
+      HERMES_DASHBOARD_PUBLIC_URL: "${HERMES_DASHBOARD_PUBLIC_URL:-https://hermes.pownet.uk}"
       HERMES_DASHBOARD_BASIC_AUTH_USERNAME: "${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:?dashboard username is required}"
       HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: "${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:?dashboard password is required}"
       HERMES_DASHBOARD_BASIC_AUTH_SECRET: "${HERMES_DASHBOARD_BASIC_AUTH_SECRET:?dashboard session secret is required}"
@@ -37,7 +42,7 @@ services:
       TERMINAL_SSH_PORT: "${TERMINAL_SSH_PORT:-22}"
       TERMINAL_SSH_KEY: /opt/data/host-control/id_ed25519
       TERMINAL_SSH_PERSISTENT: "true"
-      HERMES_HOST_WORKDIR: "${HERMES_HOST_WORKDIR:-/home/hermesops}"
+      HERMES_HOST_WORKDIR: "${HERMES_HOST_WORKDIR:-/home/jellman86}"
       SUDO_PASSWORD: "${HERMES_HOST_SUDO_PASSWORD:-}"
       HONCHO_API_KEY: "${HONCHO_API_KEY:-}"
       HASS_URL: "${HASS_URL:-http://host.docker.internal:8123}"
@@ -81,5 +86,5 @@ services:
         max-file: "5"
 
 networks:
-  default:
-    name: hermes_agent_brg
+  general_brg:
+    external: true
