@@ -6,7 +6,7 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 
 - Official Hermes image pinned to a released tag and multi-architecture manifest digest.
 - Persistent state under `/mnt/apps/docker/hermes`.
-- Dashboard available through Nginx Proxy Manager at `https://hermies.pownet.uk`, with a loopback-only port 9119 fallback and Hermes basic authentication.
+- Dashboard available through Nginx Proxy Manager at `https://hermes.pownet.uk`, with a loopback-only port 9119 fallback and Hermes basic authentication.
 - Host command execution through the supported Hermes SSH backend.
 - Container lifecycle through Dockhand rather than direct Docker mutations.
 - Honcho selected as the external memory provider; its API key remains optional until configured.
@@ -74,9 +74,9 @@ Honcho can use cloud OAuth/API-key mode or a self-hosted base URL. The managed c
 
 ## Access
 
-Nginx Proxy Manager routes `https://hermies.pownet.uk` to `hermes-agent:9119` over the external `general_brg` network. The same proxy host retains `hermes.pownet.uk` as an alias. It uses the existing `*.pownet.uk` certificate, Force SSL, HTTP/2, WebSocket support, and Block Common Exploits.
+Nginx Proxy Manager routes `https://hermes.pownet.uk` to `hermes-agent:9119` over the external `general_brg` network. The proxy host uses the existing `*.pownet.uk` certificate, Force SSL, HTTP/2, WebSocket support, and Block Common Exploits.
 
-The trusted-network DNS server must resolve `hermies.pownet.uk` to Quark/NPM at `192.168.213.102`. The optional `hermes.pownet.uk` alias requires its own DNS record.
+The trusted-network DNS server must resolve `hermes.pownet.uk` to Quark/NPM at `192.168.213.102`.
 
 The published host port remains loopback-only as a recovery path. To use it from another machine:
 
@@ -90,7 +90,7 @@ Then open `http://127.0.0.1:9119`. Keep the NPM route and DNS record private to 
 
 1. Confirm `hermes-agent` is running and healthy in Dockhand.
 2. Confirm the image contains the pinned release digest.
-3. Open `https://hermies.pownet.uk` and authenticate; use the SSH tunnel only as a recovery path.
+3. Open `https://hermes.pownet.uk` and authenticate; use the SSH tunnel only as a recovery path.
 4. Run `hermes doctor` and `hermes memory status` in the Dockhand terminal.
 5. Ask Hermes for read-only Quark status and verify it connects through SSH.
 6. Ask for a Dockhand stack listing and confirm no direct Docker mutation occurs.
