@@ -61,18 +61,10 @@ services:
         target: /opt/data
         bind:
           create_host_path: true
-      - type: bind
-        source: ./managed
-        target: /etc/hermes
-        read_only: true
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ./skills
-        target: /opt/managed-skills
-        read_only: true
-        bind:
-          create_host_path: false
+      # Dockhand 1.0.35 translates relative bind sources to its host-side
+      # stack path only when Compose short syntax is used.
+      - ./managed:/etc/hermes:ro
+      - ./skills:/opt/managed-skills:ro
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9119/api/healthcheck"]
       interval: 30s
