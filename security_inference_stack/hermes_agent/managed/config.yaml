@@ -38,9 +38,6 @@ tool_loop_guardrails:
     same_tool_failure: 8
     idempotent_no_progress: 5
 
-memory:
-  provider: honcho
-
 skills:
   external_dirs:
     - /opt/managed-skills

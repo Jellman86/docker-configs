@@ -1,8 +1,6 @@
 services:
   hermes-agent:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: nousresearch/hermes-agent:v2026.7.7.2@sha256:9c841866021c54c4596849f6135717e8a4d52ba510b7f52c50aef1de1a283973
     container_name: hermes-agent
     restart: unless-stopped
     command: ["gateway", "run"]
@@ -46,7 +44,6 @@ services:
       TERMINAL_SSH_PERSISTENT: "true"
       HERMES_HOST_WORKDIR: "${HERMES_HOST_WORKDIR:-/home/jellman86}"
       SUDO_PASSWORD: "${HERMES_HOST_SUDO_PASSWORD:-}"
-      HONCHO_API_KEY: "${HONCHO_API_KEY:-}"
       HASS_URL: "${HASS_URL:-http://host.docker.internal:8123}"
       HASS_TOKEN: "${HASS_TOKEN:-}"
       OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"

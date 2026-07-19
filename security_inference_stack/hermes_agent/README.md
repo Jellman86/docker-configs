@@ -4,12 +4,12 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 
 ## Design
 
-- Derived Hermes image built from the official release tag and manifest digest, with the SHA-256-pinned Honcho SDK installed into the otherwise immutable application environment.
+- Official Hermes image pinned to a released tag and multi-architecture manifest digest.
 - Persistent state under `/mnt/apps/docker/hermes`.
 - Dashboard available through Nginx Proxy Manager at `https://hermes.pownet.uk`, with a loopback-only port 9119 fallback and Hermes basic authentication.
 - Host command execution through the supported Hermes SSH backend.
 - Container lifecycle through Dockhand rather than direct Docker mutations.
-- Honcho selected as the external memory provider and installed at image-build time; its API key remains optional until configured.
+- Hermes built-in `MEMORY.md` and `USER.md` memory remains active; no external memory provider is selected.
 - A read-only `quark-operations` skill and managed policy are supplied from Git.
 
 ## Host preparation
@@ -56,21 +56,20 @@ Create a Git stack with:
 - Compose path: `security_inference_stack/hermes_agent/docker-compose.yml`
 - Context directory: the Compose file's directory/default
 - Re-pull images: enabled
-- Build images: enabled
+- Build images: disabled
 - Force recreation: enabled for deliberate upgrades
 
-Copy every required value from the ignored `.env` into the stack-variable panel. Mark dashboard credentials, provider keys, messaging tokens, Home Assistant token, Honcho key, and the sudo password as secrets.
+Copy every required value from the ignored `.env` into the stack-variable panel. Mark dashboard credentials, provider keys, messaging tokens, Home Assistant token, and the sudo password as secrets.
 
 Deploy only through Dockhand. After deployment, use Dockhand's container terminal for initial setup:
 
 ```bash
 hermes doctor
 hermes model
-hermes memory setup honcho
 hermes memory status
 ```
 
-Honcho can use cloud OAuth/API-key mode or a self-hosted base URL. The managed configuration pins Honcho as the selected provider but leaves credentials and identity setup to the wizard.
+The managed configuration leaves external memory providers disabled. Hermes's built-in memory remains active without additional services or credentials.
 
 ## Access
 
@@ -91,7 +90,7 @@ Then open `http://127.0.0.1:9119`. Keep the NPM route and DNS record private to 
 1. Confirm `hermes-agent` is running and healthy in Dockhand.
 2. Confirm the image contains the pinned release digest.
 3. Open `https://hermes.pownet.uk` and authenticate; use the SSH tunnel only as a recovery path.
-4. Run `hermes doctor` and `hermes memory status` in the Dockhand terminal.
+4. Run `hermes doctor` and `hermes memory status` in the Dockhand terminal; confirm built-in memory is active and no external provider is selected.
 5. Ask Hermes for read-only Quark status and verify it connects through SSH.
 6. Ask for a Dockhand stack listing and confirm no direct Docker mutation occurs.
 7. Test Home Assistant with an entity read before allowing service calls.
