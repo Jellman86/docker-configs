@@ -66,7 +66,12 @@ services:
       - ./managed:/etc/hermes:ro
       - ./skills:/opt/managed-skills:ro
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9119/api/healthcheck"]
+      test:
+        - CMD-SHELL
+        - >-
+          curl -fsS
+          --user "$${HERMES_DASHBOARD_BASIC_AUTH_USERNAME}:$${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD}"
+          http://127.0.0.1:9119/api/healthcheck
       interval: 30s
       timeout: 10s
       retries: 5
