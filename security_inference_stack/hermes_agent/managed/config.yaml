@@ -1,0 +1,56 @@
+terminal:
+  backend: ssh
+  cwd: ${HERMES_HOST_WORKDIR}
+  timeout: 180
+  persistent_shell: true
+  file_sync_enabled: true
+  file_sync_max_mb: 100
+
+approvals:
+  mode: manual
+  timeout: 300
+  cron_mode: deny
+  mcp_reload_confirm: true
+  destructive_slash_confirm: true
+  deny:
+    - "docker run*"
+    - "docker pull*"
+    - "docker compose pull*"
+    - "docker compose up*"
+    - "docker start*"
+    - "docker stop*"
+    - "docker restart*"
+    - "docker rm*"
+    - "docker container start*"
+    - "docker container stop*"
+    - "docker container restart*"
+    - "docker container rm*"
+
+tool_loop_guardrails:
+  warnings_enabled: true
+  hard_stop_enabled: true
+  warn_after:
+    exact_failure: 2
+    same_tool_failure: 3
+    idempotent_no_progress: 2
+  hard_stop_after:
+    exact_failure: 5
+    same_tool_failure: 8
+    idempotent_no_progress: 5
+
+memory:
+  provider: honcho
+
+skills:
+  external_dirs:
+    - /opt/managed-skills
+  write_approval: true
+
+security:
+  redact_secrets: true
+
+browser:
+  inactivity_timeout: 120
+  command_timeout: 30
+  allow_private_urls: false
+  auto_local_for_private_urls: true

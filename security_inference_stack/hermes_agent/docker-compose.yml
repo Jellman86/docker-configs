@@ -1,0 +1,85 @@
+services:
+  hermes-agent:
+    image: nousresearch/hermes-agent:v2026.7.7.2@sha256:9c841866021c54c4596849f6135717e8a4d52ba510b7f52c50aef1de1a283973
+    container_name: hermes-agent
+    restart: unless-stopped
+    command: ["gateway", "run"]
+    shm_size: "1gb"
+    stop_grace_period: 60s
+    cpus: "${HERMES_CPUS:-2.0}"
+    mem_limit: "${HERMES_MEMORY_LIMIT:-4g}"
+    pids_limit: 512
+    security_opt:
+      - no-new-privileges:true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - name: dashboard
+        target: 9119
+        published: "${HERMES_DASHBOARD_PORT:-9119}"
+        host_ip: "${HERMES_DASHBOARD_BIND:-127.0.0.1}"
+        protocol: tcp
+    environment:
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      TZ: "${TZ:-Europe/London}"
+      HERMES_MANAGED_DIR: /etc/hermes
+      HERMES_DASHBOARD: "1"
+      HERMES_DASHBOARD_HOST: 0.0.0.0
+      HERMES_DASHBOARD_PORT: "9119"
+      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: "${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:?dashboard username is required}"
+      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: "${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:?dashboard password is required}"
+      HERMES_DASHBOARD_BASIC_AUTH_SECRET: "${HERMES_DASHBOARD_BASIC_AUTH_SECRET:?dashboard session secret is required}"
+      API_SERVER_ENABLED: "false"
+      TERMINAL_ENV: ssh
+      TERMINAL_SSH_HOST: "${TERMINAL_SSH_HOST:-host.docker.internal}"
+      TERMINAL_SSH_USER: "${TERMINAL_SSH_USER:?host SSH user is required}"
+      TERMINAL_SSH_PORT: "${TERMINAL_SSH_PORT:-22}"
+      TERMINAL_SSH_KEY: /opt/data/host-control/id_ed25519
+      TERMINAL_SSH_PERSISTENT: "true"
+      HERMES_HOST_WORKDIR: "${HERMES_HOST_WORKDIR:-/home/hermesops}"
+      SUDO_PASSWORD: "${HERMES_HOST_SUDO_PASSWORD:-}"
+      HONCHO_API_KEY: "${HONCHO_API_KEY:-}"
+      HASS_URL: "${HASS_URL:-http://host.docker.internal:8123}"
+      HASS_TOKEN: "${HASS_TOKEN:-}"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
+      TELEGRAM_ALLOWED_USERS: "${TELEGRAM_ALLOWED_USERS:-}"
+      DISCORD_BOT_TOKEN: "${DISCORD_BOT_TOKEN:-}"
+      DISCORD_ALLOWED_USERS: "${DISCORD_ALLOWED_USERS:-}"
+      GATEWAY_ALLOWED_USERS: "${GATEWAY_ALLOWED_USERS:-}"
+    volumes:
+      - type: bind
+        source: "${DOCKERCONFIGPATH:-/mnt/apps/docker}/hermes"
+        target: /opt/data
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./managed
+        target: /etc/hermes
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./skills
+        target: /opt/managed-skills
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9119/api/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  default:
+    name: hermes_agent_brg

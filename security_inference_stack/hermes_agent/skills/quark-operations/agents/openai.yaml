@@ -1,0 +1,4 @@
+interface:
+  display_name: "Quark Operations"
+  short_description: "Operate Quark safely through Dockhand and SSH"
+  default_prompt: "Use $quark-operations to inspect or manage services on Quark safely."
