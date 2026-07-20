@@ -170,7 +170,7 @@ services:
       start_period: 10s
 #-----------------------------------------------
   yawamf:
-    image: ghcr.io/jellman86/yawamf-monalithic:dev
+    image: ghcr.io/jellman86/yawamf-monalithic:dev-intel
     container_name: yawamf-monalithic
     restart: unless-stopped
     user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}

@@ -45,6 +45,11 @@ Intel GPU acceleration on the Fedora compute host is exposed through
 `LIBVA_DRIVER_NAME=iHD`, and include the host render group with
 `RENDER_GID=105`.
 
+YA-WAMF uses its `dev-intel` runtime image on Quark. The security stack passes
+both `/dev/dri` and `/dev/accel/accel0` through to the container so OpenVINO can
+validate Intel GPU and NPU providers while keeping the same persistent
+`/config` and `/data` mounts when runtime image families are switched.
+
 ## Deployment
 
 Every Compose project is a Git-backed Dockhand stack. Git is the source of truth, and all image
