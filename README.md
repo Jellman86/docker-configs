@@ -48,7 +48,9 @@ Intel GPU acceleration on the Fedora compute host is exposed through
 YA-WAMF uses its `dev-intel` runtime image on Quark. The security stack passes
 both `/dev/dri` and `/dev/accel/accel0` through to the container so OpenVINO can
 validate Intel GPU and NPU providers while keeping the same persistent
-`/config` and `/data` mounts when runtime image families are switched.
+`/config` and `/data` mounts when runtime image families are switched. Quark
+defaults `YAWAMF_INFERENCE_PROVIDER` to `intel_npu` for validation; set that
+Dockhand stack variable to another supported provider when comparing runtimes.
 
 ## Deployment
 
