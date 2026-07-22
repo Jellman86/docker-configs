@@ -10,7 +10,7 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 - Host command execution through the supported Hermes SSH backend.
 - Container lifecycle through Dockhand rather than direct Docker mutations.
 - Hermes built-in `MEMORY.md` and `USER.md` memory remains active; no external memory provider is selected.
-- Read-only `quark-operations` and `icloud-mail` skills and managed policy are supplied from Git.
+- The read-only `quark-operations` skill and managed policy are supplied from Git.
 - An opt-in, IMAP-only Himalaya sidecar is isolated on its own egress network and exposes no ports.
 
 ## Host preparation

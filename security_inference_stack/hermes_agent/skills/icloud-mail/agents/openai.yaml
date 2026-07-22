@@ -1,4 +1,0 @@
-interface:
-  display_name: "iCloud Mail"
-  short_description: "Read and search iCloud Mail safely via Himalaya"
-  default_prompt: "Use $icloud-mail to inspect iCloud Mail with non-mutating operations by default."
