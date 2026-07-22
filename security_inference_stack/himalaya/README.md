@@ -14,7 +14,6 @@ Before enabling the profile, add these variables to the Git-backed
 | `COMPOSE_PROFILES=mail` | No | Enables the opt-in mail service |
 | `ICLOUD_EMAIL` | Yes | Full iCloud Mail address |
 | `ICLOUD_IMAP_LOGIN` | Yes | Usually the address portion before `@icloud.com`; use the full address if required |
-| `ICLOUD_DISPLAY_NAME` | Yes | Display name associated with the account |
 | `ICLOUD_APP_PASSWORD` | Yes | Apple app-specific password; never commit it to Git |
 
 Dockhand injects `ICLOUD_APP_PASSWORD` into the Compose process. Compose mounts

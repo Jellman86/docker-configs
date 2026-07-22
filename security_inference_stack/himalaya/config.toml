@@ -1,7 +1,6 @@
 [accounts.icloud]
 default = true
 email = "${ICLOUD_EMAIL}"
-display-name = "${ICLOUD_DISPLAY_NAME}"
 
 backend.type = "imap"
 backend.host = "imap.mail.me.com"

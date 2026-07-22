@@ -279,7 +279,6 @@ services:
       HIMALAYA_CONFIG: /etc/himalaya/config.toml
       ICLOUD_EMAIL: ${ICLOUD_EMAIL:-}
       ICLOUD_IMAP_LOGIN: ${ICLOUD_IMAP_LOGIN:-}
-      ICLOUD_DISPLAY_NAME: ${ICLOUD_DISPLAY_NAME:-}
     secrets:
       - icloud_app_password
     tmpfs:
