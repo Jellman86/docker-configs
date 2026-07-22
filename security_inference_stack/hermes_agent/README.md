@@ -10,7 +10,8 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 - Host command execution through the supported Hermes SSH backend.
 - Container lifecycle through Dockhand rather than direct Docker mutations.
 - Hermes built-in `MEMORY.md` and `USER.md` memory remains active; no external memory provider is selected.
-- A read-only `quark-operations` skill and managed policy are supplied from Git.
+- Read-only `quark-operations` and `icloud-mail` skills and managed policy are supplied from Git.
+- An opt-in, IMAP-only Himalaya sidecar is isolated on its own egress network and exposes no ports.
 
 ## Host preparation
 
@@ -56,10 +57,10 @@ Create a Git stack with:
 - Compose path: `security_inference_stack/hermes_agent/docker-compose.yml`
 - Context directory: the Compose file's directory/default
 - Re-pull images: enabled
-- Build images: disabled
+- Build images: enabled (required for the pinned Himalaya sidecar)
 - Force recreation: enabled for deliberate upgrades
 
-Copy every required value from the ignored `.env` into the stack-variable panel. Mark dashboard credentials, provider keys, messaging tokens, Home Assistant token, and the sudo password as secrets.
+Copy every required value from the ignored `.env` into the stack-variable panel. Mark dashboard credentials, provider keys, messaging tokens, Home Assistant token, sudo password, `ICLOUD_EMAIL`, `ICLOUD_IMAP_LOGIN`, and `ICLOUD_APP_PASSWORD` as secrets. Set `COMPOSE_PROFILES=mail` to enable the optional mail sidecar.
 
 Deploy only through Dockhand. After deployment, use Dockhand's container terminal for initial setup:
 
@@ -94,3 +95,4 @@ Then open `http://127.0.0.1:9119`. Keep the NPM route and DNS record private to 
 5. Ask Hermes for read-only Quark status and verify it connects through SSH.
 6. Ask for a Dockhand stack listing and confirm no direct Docker mutation occurs.
 7. Test Home Assistant with an entity read before allowing service calls.
+8. Confirm `himalaya-mail` is healthy, then run `docker exec himalaya-mail himalaya folder list`; do not mutate mail without explicit authorization.

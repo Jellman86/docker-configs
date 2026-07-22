@@ -1,13 +1,13 @@
 # Himalaya iCloud Mail client
 
 This directory builds a pinned Himalaya v1.2.0 command-line mail client for the
-`security_inference_stack`. The service is intentionally placed behind the
+`hermes_agent` Dockhand stack. The service is intentionally placed behind the
 `mail` Compose profile and configures IMAP only; SMTP sending is not enabled.
 
 ## Dockhand variables
 
 Before enabling the profile, add these variables to the Git-backed
-`security_inference_stack` in Dockhand:
+`hermes_agent` stack in Dockhand:
 
 | Variable | Secret | Purpose |
 | --- | --- | --- |

@@ -76,6 +76,54 @@ services:
         max-size: "10m"
         max-file: "5"
 
+  himalaya-mail:
+    profiles:
+      - mail
+    build:
+      context: ./himalaya
+      args:
+        HIMALAYA_VERSION: "1.2.0"
+        HIMALAYA_SHA256: e04e6382e3e664ef34b01afa1a2216113194a2975d2859727647b22d9b36d4e4
+    container_name: himalaya-mail
+    restart: unless-stopped
+    init: true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.50
+    user: "${PUID:-1000}:${PGID:-1000}"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      HIMALAYA_CONFIG: /etc/himalaya/config.toml
+      ICLOUD_EMAIL: ${ICLOUD_EMAIL:-}
+      ICLOUD_IMAP_LOGIN: ${ICLOUD_IMAP_LOGIN:-}
+    secrets:
+      - icloud_app_password
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777
+    networks:
+      - himalaya_mail_egress
+    healthcheck:
+      test: ["CMD-SHELL", "himalaya folder list >/dev/null 2>&1 || exit 1"]
+      interval: 5m
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 networks:
   general_brg:
     external: true
+  himalaya_mail_egress:
+    driver: bridge
+
+secrets:
+  icloud_app_password:
+    environment: ICLOUD_APP_PASSWORD

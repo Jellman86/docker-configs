@@ -7,7 +7,7 @@ values provided via a local `.env` file.
 - `arr_vpn_stack/` - Gluetun VPN stack with qBittorrent, Prowlarr, Radarr, Sonarr, and FlareSolverr.
 - `media_related_stack/` - Plex and Optimisarr.
 - `monitoring_management/` - Prometheus, Grafana, SNMP exporter, and SNMP trap receiver.
-- `security_inference_stack/` - Frigate, BirdNET-Go, Mosquitto, YA-WAMF, Home Assistant, and the opt-in Himalaya iCloud Mail client.
+- `security_inference_stack/` - Frigate, BirdNET-Go, Mosquitto, YA-WAMF, and Home Assistant; its standalone `hermes_agent` stack includes an opt-in Himalaya iCloud Mail sidecar.
 - `web_services/` - Nginx Proxy Manager, Cloudflare Tunnel, and Tailscale.
 
 ## Current host layout
