@@ -16,10 +16,11 @@ Before enabling the profile, add these variables to the Git-backed
 | `ICLOUD_IMAP_LOGIN` | Yes | Usually the address portion before `@icloud.com`; use the full address if required |
 | `ICLOUD_APP_PASSWORD` | Yes | Apple app-specific password; never commit it to Git |
 
-Dockhand injects `ICLOUD_APP_PASSWORD` into the Compose process. Compose mounts
-it into the container as `/run/secrets/icloud_app_password`, so the password is
-not placed in the container environment. The container refuses to start when the
-secret, email address, or IMAP login is empty.
+Keep `ICLOUD_APP_PASSWORD` masked as a secret variable in Dockhand. Compose
+passes it into the container as an environment variable so Himalaya can obtain it
+through its password command. The container refuses to start when the password,
+email address, or IMAP login is empty. Anyone with Docker API access can inspect
+container environment variables, so Docker access must remain privileged.
 
 The Git stack must have **Build images** enabled because no official Himalaya
 container image is published. Dockhand builds the image from the pinned release

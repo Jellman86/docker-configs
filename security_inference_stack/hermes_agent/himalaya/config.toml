@@ -8,7 +8,7 @@ backend.port = 993
 backend.encryption.type = "tls"
 backend.login = "${ICLOUD_IMAP_LOGIN}"
 backend.auth.type = "password"
-backend.auth.cmd = "cat /run/secrets/icloud_app_password"
+backend.auth.cmd = "printenv ICLOUD_APP_PASSWORD"
 
 folder.aliases.inbox = "INBOX"
 folder.aliases.sent = "Sent Messages"

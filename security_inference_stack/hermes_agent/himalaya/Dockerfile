@@ -21,4 +21,4 @@ COPY config.toml /etc/himalaya/config.toml
 ENV HIMALAYA_CONFIG=/etc/himalaya/config.toml \
     HOME=/tmp
 
-CMD ["sh", "-ec", "test -s /run/secrets/icloud_app_password; test -n \"$ICLOUD_EMAIL\"; test -n \"$ICLOUD_IMAP_LOGIN\"; exec tail -f /dev/null"]
+CMD ["sh", "-ec", "test -n \"$ICLOUD_EMAIL\"; test -n \"$ICLOUD_IMAP_LOGIN\"; test -n \"$ICLOUD_APP_PASSWORD\"; exec tail -f /dev/null"]
