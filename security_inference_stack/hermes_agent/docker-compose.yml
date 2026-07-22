@@ -100,8 +100,7 @@ services:
       HIMALAYA_CONFIG: /etc/himalaya/config.toml
       ICLOUD_EMAIL: ${ICLOUD_EMAIL:-}
       ICLOUD_IMAP_LOGIN: ${ICLOUD_IMAP_LOGIN:-}
-    secrets:
-      - icloud_app_password
+      ICLOUD_APP_PASSWORD: ${ICLOUD_APP_PASSWORD:-}
     tmpfs:
       - /tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777
     networks:
@@ -123,7 +122,3 @@ networks:
     external: true
   himalaya_mail_egress:
     driver: bridge
-
-secrets:
-  icloud_app_password:
-    environment: ICLOUD_APP_PASSWORD
