@@ -266,6 +266,9 @@ services:
     container_name: himalaya-mail
     restart: unless-stopped
     init: true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.50
     user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}
     read_only: true
     cap_drop:
@@ -289,6 +292,11 @@ services:
       timeout: 30s
       retries: 3
       start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 #-----------------------------------------------
 networks:
     general_brg:

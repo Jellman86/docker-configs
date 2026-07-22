@@ -39,3 +39,7 @@ docker exec himalaya-mail himalaya envelope list --page 1 --page-size 20
 The service exposes no ports, runs without Linux capabilities, uses a read-only
 root filesystem, and has no access to the Docker socket or other application
 data. Mail remains in iCloud and is accessed over TLS IMAP.
+
+IMAP-only does **not** mean read-only: the iCloud credential can still move, delete,
+copy, append, or flag messages. Treat Docker-exec access to this container as mailbox
+write access, and do not perform mutating commands without explicit authorization.
