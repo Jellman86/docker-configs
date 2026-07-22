@@ -59,6 +59,8 @@ services:
       - "8555:8555/udp" # WebRTC over udp
     environment:
       - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD}
+      - FRIGATE_CAMERA_USER=${FRIGATE_CAMERA_USER:-admin}
+      - FRIGATE_CAMERA_PASSWORD=${FRIGATE_CAMERA_PASSWORD:?FRIGATE_CAMERA_PASSWORD is required}
       - MQTT_USERNAME=${MQTT_USERNAME:?MQTT_USERNAME is required}
       - MQTT_PASSWORD=${MQTT_PASSWORD:?MQTT_PASSWORD is required}
       - TZ=${TZ:-Europe/London}
