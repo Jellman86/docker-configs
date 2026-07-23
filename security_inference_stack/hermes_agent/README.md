@@ -131,6 +131,21 @@ sent to OpenViking. Each client uses its own USER key; never configure a client
 with `OPENVIKING_ROOT_API_KEY`. OpenViking and Ollama retain no host-published
 ports.
 
+Register the endpoint with Codex using an environment-backed bearer token:
+
+```bash
+codex mcp add openviking \
+  --url https://hermes.pownet.uk/mcp \
+  --bearer-token-env-var OPENVIKING_CODEX_API_KEY
+```
+
+Supply `OPENVIKING_CODEX_API_KEY` to Codex from the client operating system's
+secret store; do not put the key directly in `~/.codex/config.toml`. Restart
+Codex after adding the server or changing its credential. This native MCP
+connection exposes OpenViking's tools on demand. Automatic prompt recall and
+turn capture require the separate official OpenViking Codex memory plugin and
+its reviewed lifecycle hooks.
+
 The published host port remains loopback-only as a recovery path. To use it from another machine:
 
 ```bash
