@@ -132,6 +132,22 @@ The managed configuration selects the native `openviking` provider. Existing
 Hermes profile memory and session history remain on `/opt/data`; OpenViking is
 additive and does not migrate or delete them.
 
+### Hermes v2026.7.7.2 dashboard login workaround
+
+The pinned Hermes release incorrectly sends its sole password-only dashboard
+provider through the OAuth auto-SSO route. That route raises an exception
+instead of rendering the username/password form. Upstream fixed the defect in
+commit `3e24b16`; the stack mounts
+`patches/03-dashboard-basic-auth-fix.py` as an s6 startup hook to apply that
+exact provider-capability check before the dashboard starts.
+
+The hook is idempotent and refuses to modify an unexpected upstream source
+shape. Remove the hook, its Compose mount, and its tests when a pinned Hermes
+release contains the upstream fix. Until then, verify that an unauthenticated
+dashboard request redirects to `/login`, that `/login` returns the password
+form, and that the container logs contain no `BasicAuthProvider` OAuth-flow
+exception.
+
 ## Playwright MCP
 
 The stack runs Microsoft's official `mcr.microsoft.com/playwright/mcp` image,

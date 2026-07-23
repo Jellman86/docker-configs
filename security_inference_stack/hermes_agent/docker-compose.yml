@@ -82,6 +82,8 @@ services:
       # stack path only when Compose short syntax is used.
       - ./managed:/etc/hermes:ro
       - ./skills:/opt/managed-skills:ro
+      # Remove after the pinned Hermes image contains upstream commit 3e24b16.
+      - ./patches/03-dashboard-basic-auth-fix.py:/etc/cont-init.d/03-dashboard-basic-auth-fix.py:ro
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9119/api/status"]
       interval: 30s
