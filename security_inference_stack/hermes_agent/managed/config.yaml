@@ -51,3 +51,19 @@ browser:
   command_timeout: 30
   allow_private_urls: false
   auto_local_for_private_urls: true
+
+mcp_servers:
+  rusty_imap:
+    url: http://rusty-imap-mcp:8080/mcp
+    timeout: 120
+    connect_timeout: 60
+    supports_parallel_tool_calls: false
+    tools:
+      include:
+        - list_folders
+        - search
+        - fetch_message
+        - list_attachments
+        - list_labels
+      resources: false
+      prompts: false
