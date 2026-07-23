@@ -1,3 +1,51 @@
+# Managed model routing. Credentials remain in Dockhand secrets/the persistent
+# Hermes auth store and are never committed here.
+model:
+  provider: openai-codex
+  default: gpt-5.6-sol
+
+# High is the best always-on quality/latency trade-off; xhigh/max remain
+# available as per-session overrides for exceptional work.
+agent:
+  reasoning_effort: high
+
+# Same-provider degradation path for Sol-specific failures. A genuinely
+# independent fallback still requires separate Anthropic/OpenRouter credentials.
+fallback_providers:
+  - provider: openai-codex
+    model: gpt-5.6-terra
+
+# Delegated research and coding use the balanced Terra model.
+delegation:
+  provider: openai-codex
+  model: gpt-5.6-terra
+  reasoning_effort: medium
+
+# Keep correctness-sensitive side tasks on Sol. Route only routine,
+# low-risk auxiliary work to Luna.
+auxiliary:
+  compression:
+    provider: openai-codex
+    model: gpt-5.6-sol
+  vision:
+    provider: openai-codex
+    model: gpt-5.6-sol
+  mcp:
+    provider: openai-codex
+    model: gpt-5.6-sol
+  approval:
+    provider: openai-codex
+    model: gpt-5.6-sol
+  web_extract:
+    provider: openai-codex
+    model: gpt-5.6-luna
+  title_generation:
+    provider: openai-codex
+    model: gpt-5.6-luna
+  skills_hub:
+    provider: openai-codex
+    model: gpt-5.6-luna
+
 terminal:
   backend: ssh
   cwd: ${HERMES_HOST_WORKDIR}
