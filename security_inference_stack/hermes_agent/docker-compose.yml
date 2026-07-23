@@ -24,8 +24,8 @@ services:
     depends_on:
       rusty-imap-mcp:
         condition: service_healthy
-      openviking:
-        condition: service_healthy
+      openviking-bootstrap:
+        condition: service_completed_successfully
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -62,7 +62,7 @@ services:
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
       OPENVIKING_ENDPOINT: http://openviking:1933
-      OPENVIKING_API_KEY: "${OPENVIKING_ROOT_API_KEY:?OpenViking root API key is required}"
+      OPENVIKING_API_KEY: "${OPENVIKING_API_KEY:?dedicated OpenViking Hermes user API key is required}"
       OPENVIKING_AGENT: hermes
       TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
       TELEGRAM_ALLOWED_USERS: "${TELEGRAM_ALLOWED_USERS:-}"
@@ -136,7 +136,7 @@ services:
       openviking-ollama-model:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:1933/health"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:1933/ready"]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -146,6 +146,41 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+
+  openviking-bootstrap:
+    platform: linux/amd64
+    image: ghcr.io/volcengine/openviking:v0.4.11@sha256:6bca0c71301a918b6cb6a614677d0a15556ce2d62ba3e491e3be78c490008bbe
+    container_name: openviking-bootstrap
+    restart: "no"
+    user: "${PUID:-1000}:${PGID:-1000}"
+    read_only: true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.25
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    entrypoint: ["python", "/opt/openviking-managed/bootstrap_tenant.py"]
+    environment:
+      OPENVIKING_ENDPOINT: http://openviking:1933
+      OPENVIKING_ROOT_API_KEY: "${OPENVIKING_ROOT_API_KEY:?OpenViking root API key is required}"
+      OPENVIKING_HERMES_KEY_SEED: "${OPENVIKING_HERMES_KEY_SEED:?OpenViking Hermes user key seed is required}"
+      OPENVIKING_API_KEY: "${OPENVIKING_API_KEY:?dedicated OpenViking Hermes user API key is required}"
+    volumes:
+      - ./openviking:/opt/openviking-managed:ro
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=16m,mode=1777
+    networks:
+      - openviking_private
+    depends_on:
+      openviking:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
 
   openviking-ollama:
     platform: linux/amd64

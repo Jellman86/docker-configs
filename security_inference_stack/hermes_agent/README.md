@@ -10,7 +10,8 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 - Host command execution through the supported Hermes SSH backend.
 - Container lifecycle through Dockhand rather than direct Docker mutations.
 - Hermes built-in `MEMORY.md`, `USER.md`, SQLite session history, and skills remain persistent; OpenViking adds automatic hierarchical recall, session extraction, and resource ingestion.
-- OpenViking v0.4.11 runs as a non-root private sidecar with no published port, an API key, encrypted persistent data, and isolated Codex OAuth credentials.
+- OpenViking v0.4.11 runs as a non-root private sidecar with no published port, hashed API keys, encrypted persistent data, and isolated Codex OAuth credentials.
+- A non-root one-shot provisioner creates a least-privileged `hermes/hermes` USER key; Hermes never receives OpenViking's root credential.
 - A private Ollama v0.32.1 sidecar supplies `nomic-embed-text` embeddings without a separately billed embedding API.
 - The read-only `quark-operations` skill and managed policy are supplied from Git.
 - A read-only Rusty IMAP MCP sidecar is isolated on a private Compose network and exposes no host ports.
@@ -74,7 +75,19 @@ Create a Git stack with:
 - Build images: enabled (required for the pinned Rusty IMAP MCP sidecar)
 - Force recreation: enabled for deliberate upgrades
 
-Copy every required value from the ignored `.env` into the stack-variable panel. Mark dashboard credentials, provider keys, messaging tokens, Home Assistant token, sudo password, `RUSTY_IMAP_MCP_IMAP_PASSWORD`, and `OPENVIKING_ROOT_API_KEY` as secrets. The OpenViking key should be 64 random hexadecimal characters and must never be committed.
+Copy every required value from the ignored `.env` into the stack-variable panel. Mark dashboard credentials, provider keys, messaging tokens, Home Assistant token, sudo password, `RUSTY_IMAP_MCP_IMAP_PASSWORD`, `OPENVIKING_ROOT_API_KEY`, `OPENVIKING_HERMES_KEY_SEED`, and `OPENVIKING_API_KEY` as secrets. The OpenViking root key and tenant-key seed must each be independent 64-character random hexadecimal values and must never be committed.
+
+Derive the tenant key locally from `OPENVIKING_HERMES_KEY_SEED` using the same documented v0.4.11 key codec. Do not print it into shell history; write it directly to the ignored `.env` or Dockhand secret input. The one-shot `openviking-bootstrap` service independently creates or repairs the `hermes/hermes` USER identity and fails closed unless OpenViking returns exactly this derived value:
+
+```python
+import base64, hashlib
+b64 = lambda s: base64.urlsafe_b64encode(s.encode()).decode().rstrip("=")
+seed = "<OPENVIKING_HERMES_KEY_SEED>"
+secret = hashlib.sha256(f"hermes\0{seed}".encode()).hexdigest()
+print(f"{b64('hermes')}.{b64('hermes')}.{b64(secret)}")
+```
+
+The root key is available only to OpenViking and the short-lived bootstrap container. The bootstrap also verifies that Dockhand's `OPENVIKING_API_KEY` matches both the seed-derived value and OpenViking's returned value before Hermes may start. Hermes receives only the tenant-bound USER key. OpenViking stores the tenant key as an Argon2id hash.
 
 OpenViking uses a separate ChatGPT/Codex device login. Place the resulting OpenViking-owned token store at:
 
@@ -115,7 +128,7 @@ Then open `http://127.0.0.1:9119`. Keep the NPM route and DNS record private to 
 1. Confirm `hermes-agent` is running and healthy in Dockhand.
 2. Confirm all runtime images match their pinned release digests.
 3. Open `https://hermes.pownet.uk` and authenticate; use the SSH tunnel only as a recovery path.
-4. Confirm `openviking` and `openviking-ollama` are healthy and `openviking-ollama-model` exited successfully after pulling `nomic-embed-text`.
+4. Confirm `openviking` and `openviking-ollama` are healthy, and both `openviking-ollama-model` and `openviking-bootstrap` exited successfully.
 5. Run `hermes doctor` and `hermes memory status` in the Dockhand terminal; confirm the `openviking` provider is active.
 6. From Hermes, store a unique test fact with `viking_remember`, retrieve it with `viking_search`, recreate the OpenViking service through Dockhand, and retrieve it again.
 7. Confirm `openviking` runs as UID 1000, has a read-only root filesystem, and exposes no host port.
