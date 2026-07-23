@@ -24,6 +24,8 @@ class RenderConfigTests(unittest.TestCase):
                 "OPENVIKING_CONFIG_FILE": str(output),
                 "OPENVIKING_ROOT_API_KEY": "a" * 64,
             }
+            environment.pop("OPENVIKING_VLM_MODEL", None)
+            environment.pop("OPENVIKING_VLM_REASONING_EFFORT", None)
             if model is not None:
                 environment["OPENVIKING_VLM_MODEL"] = model
             subprocess.run(
@@ -36,7 +38,9 @@ class RenderConfigTests(unittest.TestCase):
             return json.loads(output.read_text())
 
     def test_supported_default_model(self) -> None:
-        self.assertEqual(self.render()["vlm"]["model"], "gpt-5.4-mini")
+        config = self.render()
+        self.assertEqual(config["vlm"]["model"], "gpt-5.6-luna")
+        self.assertEqual(config["vlm"]["reasoning_effort"], "low")
 
     def test_model_can_be_overridden_without_editing_the_renderer(self) -> None:
         self.assertEqual(
@@ -62,6 +66,25 @@ class RenderConfigTests(unittest.TestCase):
             )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("valid model identifier", result.stderr)
+
+    def test_invalid_reasoning_effort_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            environment = {
+                **os.environ,
+                "OPENVIKING_CONFIG_FILE": str(
+                    Path(temporary_directory) / "ov.conf"
+                ),
+                "OPENVIKING_ROOT_API_KEY": "a" * 64,
+                "OPENVIKING_VLM_REASONING_EFFORT": "maximum",
+            }
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT)],
+                env=environment,
+                capture_output=True,
+                text=True,
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("OPENVIKING_VLM_REASONING_EFFORT", result.stderr)
 
 
 if __name__ == "__main__":

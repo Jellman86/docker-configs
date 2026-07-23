@@ -113,8 +113,11 @@ OpenViking uses a separate ChatGPT/Codex device login. Place the resulting OpenV
 The local embedding model is pulled automatically by the one-shot `openviking-ollama-model` service before OpenViking starts. Neither port 1933 nor 11434 is published to the host.
 OpenViking uses the ChatGPT-backed Codex model selected by
 `OPENVIKING_VLM_MODEL` for memory extraction. The default is
-`gpt-5.4-mini`, which is intentionally lower-cost than the interactive agent
-models but must remain present in the authenticated Codex model catalogue.
+`gpt-5.6-luna` with `OPENVIKING_VLM_REASONING_EFFORT=low`. Luna is the
+extraction-oriented, token-efficient GPT-5.6 tier; the model must remain
+present in the authenticated Codex model catalogue. Use Terra only when
+representative memory-extraction checks show that Luna misses important facts
+or relationships.
 
 Deploy only through Dockhand. After deployment, use Dockhand's container terminal for initial setup:
 
