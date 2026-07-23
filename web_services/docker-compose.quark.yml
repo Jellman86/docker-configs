@@ -12,6 +12,7 @@ services:
       general_brg:
         aliases:
           - nginx-rp
+      npm_proxy_backends:
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -101,4 +102,6 @@ services:
 #-----------------------------------------------
 networks:
     general_brg:
+      external: true
+    npm_proxy_backends:
       external: true
