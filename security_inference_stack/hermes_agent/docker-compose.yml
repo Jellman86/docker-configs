@@ -132,6 +132,9 @@ services:
       openviking_private:
         aliases:
           - openviking
+      npm_proxy_backends:
+        aliases:
+          - openviking
     depends_on:
       openviking-ollama-model:
         condition: service_completed_successfully
@@ -152,6 +155,10 @@ services:
     image: ghcr.io/volcengine/openviking:v0.4.11@sha256:6bca0c71301a918b6cb6a614677d0a15556ce2d62ba3e491e3be78c490008bbe
     container_name: openviking-bootstrap
     restart: "no"
+    # The server image's inherited healthcheck is inappropriate for this
+    # successful one-shot tenant bootstrap job.
+    healthcheck:
+      disable: true
     user: "${PUID:-1000}:${PGID:-1000}"
     read_only: true
     pids_limit: 64
@@ -314,6 +321,8 @@ services:
 
 networks:
   general_brg:
+    external: true
+  npm_proxy_backends:
     external: true
   rusty_imap_mcp:
     driver: bridge

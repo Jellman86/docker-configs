@@ -12,6 +12,7 @@ services:
       general_brg:
         aliases:
           - nginx-rp
+      npm_proxy_backends:
       vpn_stack_brg:
       media_stack_default:
     environment:
@@ -92,6 +93,8 @@ services:
 #-----------------------------------------------
 networks:
     general_brg:
+      external: true
+    npm_proxy_backends:
       external: true
     vpn_stack_brg:
       name: ${NETWORK:-arr_stack_brg}
