@@ -38,6 +38,7 @@ services:
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-1000}"
       TZ: "${TZ:-Europe/London}"
+      HERMES_TIMEZONE: "${HERMES_TIMEZONE:-Europe/London}"
       HERMES_MANAGED_DIR: /etc/hermes
       HERMES_DASHBOARD: "1"
       HERMES_DASHBOARD_HOST: 0.0.0.0
@@ -174,6 +175,8 @@ services:
       OPENVIKING_ROOT_API_KEY: "${OPENVIKING_ROOT_API_KEY:?OpenViking root API key is required}"
       OPENVIKING_HERMES_KEY_SEED: "${OPENVIKING_HERMES_KEY_SEED:?OpenViking Hermes user key seed is required}"
       OPENVIKING_API_KEY: "${OPENVIKING_API_KEY:?dedicated OpenViking Hermes user API key is required}"
+      OPENVIKING_CODEX_KEY_SEED: "${OPENVIKING_CODEX_KEY_SEED:?OpenViking Codex user key seed is required}"
+      OPENVIKING_CODEX_API_KEY: "${OPENVIKING_CODEX_API_KEY:?dedicated OpenViking Codex user API key is required}"
     volumes:
       - ./openviking:/opt/openviking-managed:ro
     tmpfs:

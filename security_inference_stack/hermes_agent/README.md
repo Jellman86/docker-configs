@@ -10,8 +10,9 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 - Host command execution through the supported Hermes SSH backend.
 - Container lifecycle through Dockhand rather than direct Docker mutations.
 - Hermes built-in `MEMORY.md`, `USER.md`, SQLite session history, and skills remain persistent; OpenViking adds automatic hierarchical recall, session extraction, and resource ingestion.
-- OpenViking v0.4.11 runs as a non-root private sidecar with no published port, hashed API keys, encrypted persistent data, and isolated Codex OAuth credentials.
-- A non-root one-shot provisioner creates a least-privileged `hermes/hermes` USER key; Hermes never receives OpenViking's root credential.
+- OpenViking v0.4.11 runs as a non-root sidecar with no published host port, hashed API keys, encrypted persistent data, and isolated Codex OAuth credentials.
+- Its authenticated MCP endpoint is routed through Quark's LAN-only Nginx Proxy Manager; internal storage and Ollama remain private.
+- A non-root one-shot provisioner creates separate least-privileged `hermes/hermes` and `hermes/codex` USER keys; neither client receives OpenViking's root credential or the other client's key.
 - A private Ollama v0.32.1 sidecar supplies `nomic-embed-text` embeddings without a separately billed embedding API.
 - The read-only `quark-operations` skill and managed policy are supplied from Git.
 - A read-only Rusty IMAP MCP sidecar is isolated on a private Compose network and exposes no host ports.
@@ -75,19 +76,22 @@ Create a Git stack with:
 - Build images: enabled (required for the pinned Rusty IMAP MCP sidecar)
 - Force recreation: enabled for deliberate upgrades
 
-Copy every required value from the ignored `.env` into the stack-variable panel. Mark dashboard credentials, provider keys, messaging tokens, Home Assistant token, sudo password, `RUSTY_IMAP_MCP_IMAP_PASSWORD`, `OPENVIKING_ROOT_API_KEY`, `OPENVIKING_HERMES_KEY_SEED`, and `OPENVIKING_API_KEY` as secrets. The OpenViking root key and tenant-key seed must each be independent 64-character random hexadecimal values and must never be committed.
+Copy every required value from the ignored `.env` into the stack-variable panel. Mark dashboard credentials, provider keys, messaging tokens, Home Assistant token, sudo password, `RUSTY_IMAP_MCP_IMAP_PASSWORD`, `OPENVIKING_ROOT_API_KEY`, `OPENVIKING_HERMES_KEY_SEED`, `OPENVIKING_API_KEY`, `OPENVIKING_CODEX_KEY_SEED`, and `OPENVIKING_CODEX_API_KEY` as secrets. The OpenViking root key and both tenant-key seeds must each be independent 64-character random hexadecimal values and must never be committed.
 
-Derive the tenant key locally from `OPENVIKING_HERMES_KEY_SEED` using the same documented v0.4.11 key codec. Do not print it into shell history; write it directly to the ignored `.env` or Dockhand secret input. The one-shot `openviking-bootstrap` service independently creates or repairs the `hermes/hermes` USER identity and fails closed unless OpenViking returns exactly this derived value:
+Derive each tenant key locally from its dedicated seed using the same documented v0.4.11 key codec. Do not print keys into shell history; write them directly to the ignored `.env` or Dockhand secret input. The one-shot `openviking-bootstrap` service independently creates or repairs both USER identities and fails closed unless OpenViking returns exactly the derived values:
 
 ```python
 import base64, hashlib
 b64 = lambda s: base64.urlsafe_b64encode(s.encode()).decode().rstrip("=")
-seed = "<OPENVIKING_HERMES_KEY_SEED>"
-secret = hashlib.sha256(f"hermes\0{seed}".encode()).hexdigest()
-print(f"{b64('hermes')}.{b64('hermes')}.{b64(secret)}")
+def user_key(user, seed):
+    secret = hashlib.sha256(f"{user}\0{seed}".encode()).hexdigest()
+    return f"{b64('hermes')}.{b64(user)}.{b64(secret)}"
+
+hermes_key = user_key("hermes", "<OPENVIKING_HERMES_KEY_SEED>")
+codex_key = user_key("codex", "<OPENVIKING_CODEX_KEY_SEED>")
 ```
 
-The root key is available only to OpenViking and the short-lived bootstrap container. The bootstrap also verifies that Dockhand's `OPENVIKING_API_KEY` matches both the seed-derived value and OpenViking's returned value before Hermes may start. Hermes receives only the tenant-bound USER key. OpenViking stores the tenant key as an Argon2id hash.
+The root key is available only to OpenViking and the short-lived bootstrap container. The bootstrap verifies that both configured USER keys match their seed-derived and server-returned values before Hermes may start. Hermes receives only its own tenant-bound USER key. OpenViking stores tenant keys as Argon2id hashes.
 
 OpenViking uses a separate ChatGPT/Codex device login. Place the resulting OpenViking-owned token store at:
 
@@ -115,6 +119,18 @@ Nginx Proxy Manager routes `https://hermes.pownet.uk` to `hermes-agent:9119` ove
 
 The trusted-network DNS server must resolve `hermes.pownet.uk` to Quark/NPM at `192.168.213.102`.
 
+Nginx Proxy Manager routes the exact `/mcp` location on the existing
+LAN-only Hermes host to `openviking:1933` over `npm_proxy_backends`:
+
+```text
+https://hermes.pownet.uk/mcp
+```
+
+The main Hermes dashboard route remains `hermes-agent:9119`; only `/mcp` is
+sent to OpenViking. Each client uses its own USER key; never configure a client
+with `OPENVIKING_ROOT_API_KEY`. OpenViking and Ollama retain no host-published
+ports.
+
 The published host port remains loopback-only as a recovery path. To use it from another machine:
 
 ```bash
@@ -129,11 +145,13 @@ Then open `http://127.0.0.1:9119`. Keep the NPM route and DNS record private to 
 2. Confirm all runtime images match their pinned release digests.
 3. Open `https://hermes.pownet.uk` and authenticate; use the SSH tunnel only as a recovery path.
 4. Confirm `openviking` and `openviking-ollama` are healthy, and both `openviking-ollama-model` and `openviking-bootstrap` exited successfully.
-5. Run `hermes doctor` and `hermes memory status` in the Dockhand terminal; confirm the `openviking` provider is active.
-6. From Hermes, store a unique test fact with `viking_remember`, retrieve it with `viking_search`, recreate the OpenViking service through Dockhand, and retrieve it again.
-7. Confirm `openviking` runs as UID 1000, has a read-only root filesystem, and exposes no host port.
-8. Ask Hermes for read-only Quark status and verify it connects through SSH.
-9. Ask for a Dockhand stack listing and confirm no direct Docker mutation occurs.
-10. Test Home Assistant with an entity read before allowing service calls.
-11. Confirm `rusty-imap-mcp` is healthy and Hermes registers only `mcp_rusty_imap_{list_folders,search,fetch_message,list_attachments,list_labels}`.
-12. Confirm a body fetch leaves the message's `\\Seen` flag unchanged. Rusty uses read-only `EXAMINE` plus `BODY.PEEK[]`; the runtime check verifies the provider preserves that behavior.
+5. From the trusted LAN, confirm `https://hermes.pownet.uk/mcp` rejects an unauthenticated request.
+6. Connect Codex with the dedicated `hermes/codex` USER key and verify the native MCP memory tools without exposing the root or Hermes key.
+7. Run `hermes doctor` and `hermes memory status` in the Dockhand terminal; confirm the `openviking` provider is active.
+8. From Hermes, store a unique test fact with `viking_remember`, retrieve it with `viking_search`, recreate the OpenViking service through Dockhand, and retrieve it again.
+9. Confirm `openviking` runs as UID 1000, has a read-only root filesystem, and publishes no host port.
+10. Ask Hermes for read-only Quark status and verify it connects through SSH.
+11. Ask for a Dockhand stack listing and confirm no direct Docker mutation occurs.
+12. Test Home Assistant with an entity read before allowing service calls.
+13. Confirm `rusty-imap-mcp` is healthy and Hermes registers only `mcp_rusty_imap_{list_folders,search,fetch_message,list_attachments,list_labels}`.
+14. Confirm a body fetch leaves the message's `\\Seen` flag unchanged. Rusty uses read-only `EXAMINE` plus `BODY.PEEK[]`; the runtime check verifies the provider preserves that behavior.

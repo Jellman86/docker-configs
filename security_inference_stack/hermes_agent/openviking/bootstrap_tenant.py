@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Provision the least-privileged OpenViking tenant key used by Hermes."""
+"""Provision least-privileged OpenViking tenant keys for approved clients."""
 
 from __future__ import annotations
 
@@ -12,18 +12,22 @@ import re
 import sys
 import urllib.error
 import urllib.request
+from typing import NoReturn
 
 ACCOUNT_ID = "hermes"
-USER_ID = "hermes"
 BOOTSTRAP_ADMIN_ID = "bootstrap-admin"
 DEFAULT_ENDPOINT = "http://openviking:1933"
+USER_SPECS = (
+    ("hermes", "OPENVIKING_HERMES_KEY_SEED", "OPENVIKING_API_KEY"),
+    ("codex", "OPENVIKING_CODEX_KEY_SEED", "OPENVIKING_CODEX_API_KEY"),
+)
 PUBLISHED_PLACEHOLDERS = {
     "replace-with-64-random-hex-characters",
     "replace-with-a-random-64-character-hex-key",
 }
 
 
-def fail(message: str) -> "NoReturn":
+def fail(message: str) -> NoReturn:
     print(f"OpenViking tenant bootstrap failed: {message}", file=sys.stderr)
     raise SystemExit(1)
 
@@ -39,9 +43,9 @@ def b64url(value: str) -> str:
     return base64.urlsafe_b64encode(value.encode("utf-8")).decode("ascii").rstrip("=")
 
 
-def derive_user_key(seed: str) -> str:
-    secret = hashlib.sha256(f"{USER_ID}\0{seed}".encode("utf-8")).hexdigest()
-    return f"{b64url(ACCOUNT_ID)}.{b64url(USER_ID)}.{b64url(secret)}"
+def derive_user_key(user_id: str, seed: str) -> str:
+    secret = hashlib.sha256(f"{user_id}\0{seed}".encode("utf-8")).hexdigest()
+    return f"{b64url(ACCOUNT_ID)}.{b64url(user_id)}.{b64url(secret)}"
 
 
 def request_json(endpoint: str, root_key: str, method: str, path: str, body: dict | None = None) -> dict:
@@ -73,32 +77,14 @@ def request_json(endpoint: str, root_key: str, method: str, path: str, body: dic
     return result
 
 
-def main() -> None:
-    root_key = required_hex_secret("OPENVIKING_ROOT_API_KEY")
-    seed = required_hex_secret("OPENVIKING_HERMES_KEY_SEED")
-    endpoint = os.environ.get("OPENVIKING_ENDPOINT", DEFAULT_ENDPOINT).rstrip("/")
-    if endpoint != DEFAULT_ENDPOINT:
-        fail(f"OPENVIKING_ENDPOINT must remain {DEFAULT_ENDPOINT}")
-
-    expected_key = derive_user_key(seed)
-    configured_key = os.environ.get("OPENVIKING_API_KEY", "").strip()
-    if not configured_key or not hmac.compare_digest(configured_key, expected_key):
-        fail("OPENVIKING_API_KEY does not match OPENVIKING_HERMES_KEY_SEED")
-
-    try:
-        request_json(
-            endpoint,
-            root_key,
-            "POST",
-            "/api/v1/admin/accounts",
-            {"account_id": ACCOUNT_ID, "admin_user_id": BOOTSTRAP_ADMIN_ID, "seed": seed},
-        )
-        account_created = True
-    except RuntimeError as exc:
-        if str(exc) != "HTTP 409":
-            fail(f"could not create account ({exc})")
-        account_created = False
-
+def provision_user(
+    endpoint: str,
+    root_key: str,
+    user_id: str,
+    seed: str,
+    expected_key: str,
+    account_created: bool,
+) -> None:
     if account_created:
         try:
             result = request_json(
@@ -106,45 +92,82 @@ def main() -> None:
                 root_key,
                 "POST",
                 f"/api/v1/admin/accounts/{ACCOUNT_ID}/users",
-                {"user_id": USER_ID, "role": "user", "seed": seed},
+                {"user_id": user_id, "role": "user", "seed": seed},
             )
         except RuntimeError as exc:
-            fail(f"could not register Hermes user ({exc})")
+            fail(f"could not register {user_id} user ({exc})")
     else:
         try:
             request_json(
                 endpoint,
                 root_key,
                 "PUT",
-                f"/api/v1/admin/accounts/{ACCOUNT_ID}/users/{USER_ID}/role",
+                f"/api/v1/admin/accounts/{ACCOUNT_ID}/users/{user_id}/role",
                 {"role": "user"},
             )
             result = request_json(
                 endpoint,
                 root_key,
                 "POST",
-                f"/api/v1/admin/accounts/{ACCOUNT_ID}/users/{USER_ID}/key",
+                f"/api/v1/admin/accounts/{ACCOUNT_ID}/users/{user_id}/key",
                 {"seed": seed},
             )
         except RuntimeError as exc:
             if str(exc) != "HTTP 404":
-                fail(f"could not reset Hermes user key ({exc})")
+                fail(f"could not reset {user_id} user key ({exc})")
             try:
                 result = request_json(
                     endpoint,
                     root_key,
                     "POST",
                     f"/api/v1/admin/accounts/{ACCOUNT_ID}/users",
-                    {"user_id": USER_ID, "role": "user", "seed": seed},
+                    {"user_id": user_id, "role": "user", "seed": seed},
                 )
             except RuntimeError as register_exc:
-                fail(f"could not recover Hermes user ({register_exc})")
+                fail(f"could not recover {user_id} user ({register_exc})")
 
     returned_key = result.get("user_key")
     if not isinstance(returned_key, str) or not hmac.compare_digest(returned_key, expected_key):
-        fail("server returned a tenant key that does not match the configured seed")
+        fail(f"server returned an unexpected tenant key for {user_id}")
 
-    print("OpenViking tenant bootstrap complete for hermes/hermes (role=user)")
+
+def main() -> None:
+    root_key = required_hex_secret("OPENVIKING_ROOT_API_KEY")
+    endpoint = os.environ.get("OPENVIKING_ENDPOINT", DEFAULT_ENDPOINT).rstrip("/")
+    if endpoint != DEFAULT_ENDPOINT:
+        fail(f"OPENVIKING_ENDPOINT must remain {DEFAULT_ENDPOINT}")
+
+    credentials: list[tuple[str, str, str]] = []
+    for user_id, seed_name, key_name in USER_SPECS:
+        seed = required_hex_secret(seed_name)
+        expected_key = derive_user_key(user_id, seed)
+        configured_key = os.environ.get(key_name, "").strip()
+        if not configured_key or not hmac.compare_digest(configured_key, expected_key):
+            fail(f"{key_name} does not match {seed_name}")
+        credentials.append((user_id, seed, expected_key))
+
+    try:
+        request_json(
+            endpoint,
+            root_key,
+            "POST",
+            "/api/v1/admin/accounts",
+            {
+                "account_id": ACCOUNT_ID,
+                "admin_user_id": BOOTSTRAP_ADMIN_ID,
+                "seed": credentials[0][1],
+            },
+        )
+        account_created = True
+    except RuntimeError as exc:
+        if str(exc) != "HTTP 409":
+            fail(f"could not create account ({exc})")
+        account_created = False
+
+    for user_id, seed, expected_key in credentials:
+        provision_user(endpoint, root_key, user_id, seed, expected_key, account_created)
+
+    print("OpenViking tenant bootstrap complete for hermes/hermes and hermes/codex (role=user)")
 
 
 if __name__ == "__main__":
