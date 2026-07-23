@@ -35,7 +35,8 @@ RUN curl --fail --location --silent --show-error --retry 3 \
     && tar -xzf rusty-imap-mcp.tar.gz --strip-components=1 -C rusty-imap-mcp \
     && install -m 0755 rusty-imap-mcp/rusty-imap-mcp /out-rusty-imap-mcp
 
-FROM python:3.13.13-slim-bookworm@sha256:355bfa66770995d7e9a0da4b3473b44d0cb451f6b56f5615ad9c39e3c4eca03f
+# The upstream x86-64 release is built on Ubuntu 24.04 and requires GLIBC_2.38.
+FROM python:3.13.13-slim-trixie@sha256:aa938a849bcb82dce8f49480f056ab82bf5c1c3ebc294f0430f37b6820e7f286
 
 LABEL org.opencontainers.image.title="Rusty IMAP MCP for Hermes" \
       org.opencontainers.image.description="Pinned rusty-imap-mcp behind a pinned Streamable HTTP MCP proxy" \
@@ -50,7 +51,8 @@ ENV HOME=/tmp \
 COPY --from=builder /opt/mcp-proxy /opt/mcp-proxy
 COPY --from=builder /out-rusty-imap-mcp /usr/local/bin/rusty-imap-mcp
 
-RUN mkdir -p /var/lib/rusty-imap-mcp \
+RUN rusty-imap-mcp --version \
+    && mkdir -p /var/lib/rusty-imap-mcp \
     && chown -R 65532:65532 /var/lib/rusty-imap-mcp
 
 USER 65532:65532
