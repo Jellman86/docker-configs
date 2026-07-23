@@ -42,6 +42,7 @@ services:
       TERMINAL_SSH_PORT: "${TERMINAL_SSH_PORT:-22}"
       TERMINAL_SSH_KEY: /opt/data/host-control/id_ed25519
       TERMINAL_SSH_PERSISTENT: "true"
+      HERMES_WRITE_SAFE_ROOT: "${HERMES_WRITE_SAFE_ROOT:-/opt/data}"
       HERMES_HOST_WORKDIR: "${HERMES_HOST_WORKDIR:-/home/jellman86}"
       SUDO_PASSWORD: "${HERMES_HOST_SUDO_PASSWORD:-}"
       HASS_URL: "${HASS_URL:-http://host.docker.internal:8123}"
