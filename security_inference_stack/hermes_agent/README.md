@@ -14,6 +14,7 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 - Its authenticated MCP endpoint is routed through Quark's LAN-only Nginx Proxy Manager; internal storage and Ollama remain private.
 - A non-root one-shot provisioner creates separate least-privileged `hermes/hermes` and `hermes/codex` USER keys; neither client receives OpenViking's root credential or the other client's key.
 - A private Ollama v0.32.1 sidecar supplies `nomic-embed-text` embeddings without a separately billed embedding API.
+- The official Microsoft Playwright MCP v0.0.78 image supplies shared headless Chromium automation over private Docker HTTP transport.
 - The read-only `quark-operations` skill and managed policy are supplied from Git.
 - A read-only Rusty IMAP MCP sidecar is isolated on a private Compose network and exposes no host ports.
 
@@ -113,6 +114,30 @@ The managed configuration selects the native `openviking` provider. Existing
 Hermes profile memory and session history remain on `/opt/data`; OpenViking is
 additive and does not migrate or delete them.
 
+## Playwright MCP
+
+The stack runs Microsoft's official `mcr.microsoft.com/playwright/mcp` image,
+pinned to release v0.0.78 and its immutable multi-architecture digest. Hermes
+connects through its native Streamable HTTP MCP client at:
+
+```text
+http://playwright-mcp:8931/mcp
+```
+
+The endpoint is available to containers attached to the external
+`general_brg` network. Port 8931 is exposed only as Docker metadata and is not
+published on the host. Other MCP clients on that network can use the same URL.
+
+Each HTTP client receives an isolated, ephemeral headless Chromium context.
+The service runs as the image's unprivileged `node` user with a read-only root
+filesystem, dropped capabilities, no-new-privileges, and bounded tmpfs storage.
+Service workers are disabled and no host workspace, browser profile, or Docker
+socket is mounted. The MCP endpoint is intentionally not routed through NPM.
+
+Playwright MCP is not an authentication or network security boundary. Treat
+membership of `general_brg` as permission to control a browser, and do not
+publish port 8931 without adding an authenticated gateway.
+
 ## Access
 
 Nginx Proxy Manager routes `https://hermes.pownet.uk` to `hermes-agent:9119` over the external `general_brg` network. The proxy host uses the existing `*.pownet.uk` certificate, Force SSL, HTTP/2, WebSocket support, and Block Common Exploits.
@@ -169,4 +194,6 @@ Then open `http://127.0.0.1:9119`. Keep the NPM route and DNS record private to 
 11. Ask for a Dockhand stack listing and confirm no direct Docker mutation occurs.
 12. Test Home Assistant with an entity read before allowing service calls.
 13. Confirm `rusty-imap-mcp` is healthy and Hermes registers only `mcp_rusty_imap_{list_folders,search,fetch_message,list_attachments,list_labels}`.
-14. Confirm a body fetch leaves the message's `\\Seen` flag unchanged. Rusty uses read-only `EXAMINE` plus `BODY.PEEK[]`; the runtime check verifies the provider preserves that behavior.
+14. Confirm `playwright-mcp` is healthy, has no published port, and Hermes discovers `mcp_playwright_*` browser tools from `http://playwright-mcp:8931/mcp`.
+15. Use Playwright MCP to navigate to a harmless public page, inspect its title, and close the browser context.
+16. Confirm a body fetch leaves the message's `\\Seen` flag unchanged. Rusty uses read-only `EXAMINE` plus `BODY.PEEK[]`; the runtime check verifies the provider preserves that behavior.

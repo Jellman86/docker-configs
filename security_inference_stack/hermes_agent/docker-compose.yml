@@ -24,6 +24,8 @@ services:
     depends_on:
       rusty-imap-mcp:
         condition: service_healthy
+      playwright-mcp:
+        condition: service_healthy
       openviking-bootstrap:
         condition: service_completed_successfully
     extra_hosts:
@@ -91,6 +93,48 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+
+  playwright-mcp:
+    image: mcr.microsoft.com/playwright/mcp:v0.0.78@sha256:3d871c22ea2d4cca0966e2cfb1860e1cb03eb7353725a3d6cffd133296fb04eb
+    container_name: playwright-mcp
+    restart: unless-stopped
+    init: true
+    read_only: true
+    shm_size: "1gb"
+    pids_limit: 512
+    mem_limit: "${PLAYWRIGHT_MCP_MEMORY_LIMIT:-2g}"
+    cpus: "${PLAYWRIGHT_MCP_CPUS:-1.5}"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command:
+      - --host=0.0.0.0
+      - --port=8931
+      - --allowed-hosts=playwright-mcp,playwright-mcp:8931
+      - --isolated
+      - --block-service-workers
+      - --output-mode=stdout
+    tmpfs:
+      - /home/node:rw,nosuid,nodev,noexec,size=256m,mode=0700,uid=1000,gid=1000
+      - /tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777
+    expose:
+      - "8931"
+    networks:
+      general_brg:
+        aliases:
+          - playwright-mcp
+    healthcheck:
+      test: ["CMD", "node", "-e", "const s=require('net').createConnection({host:'127.0.0.1',port:8931},()=>{s.end();process.exit(0)});s.setTimeout(3000,()=>{s.destroy();process.exit(1)});s.on('error',()=>process.exit(1));"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   openviking:
     platform: linux/amd64

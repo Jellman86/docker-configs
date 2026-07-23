@@ -70,3 +70,13 @@ mcp_servers:
         - list_labels
       resources: false
       prompts: false
+  playwright:
+    url: http://playwright-mcp:8931/mcp
+    timeout: 180
+    connect_timeout: 60
+    supports_parallel_tool_calls: false
+    sampling:
+      enabled: false
+    tools:
+      resources: false
+      prompts: false
