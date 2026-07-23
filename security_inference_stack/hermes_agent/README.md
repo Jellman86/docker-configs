@@ -128,15 +128,28 @@ The endpoint is available to containers attached to the external
 `general_brg` network. Port 8931 is exposed only as Docker metadata and is not
 published on the host. Other MCP clients on that network can use the same URL.
 
+Codex on the trusted LAN connects through the authenticated TLS proxy at:
+
+```text
+https://quark.pownet.uk/mcp
+```
+
+Nginx Proxy Manager authenticates this dedicated proxy host before forwarding
+to `playwright-mcp:8931`; the backend remains unpublished and explicitly allows
+only its internal service names plus `quark.pownet.uk`. Codex reads the Basic
+authorization header from `PLAYWRIGHT_MCP_AUTHORIZATION` through
+`env_http_headers`; the value must come from the client operating system's
+secret store rather than `~/.codex/config.toml`.
+
 Each HTTP client receives an isolated, ephemeral headless Chromium context.
 The service runs as the image's unprivileged `node` user with a read-only root
 filesystem, dropped capabilities, no-new-privileges, and bounded tmpfs storage.
 Service workers are disabled and no host workspace, browser profile, or Docker
-socket is mounted. The MCP endpoint is intentionally not routed through NPM.
+socket is mounted.
 
 Playwright MCP is not an authentication or network security boundary. Treat
-membership of `general_brg` as permission to control a browser, and do not
-publish port 8931 without adding an authenticated gateway.
+membership of `general_brg` and access to the dedicated NPM credential as
+permission to control a browser. Do not publish port 8931.
 
 ## Access
 

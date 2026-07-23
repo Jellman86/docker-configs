@@ -111,7 +111,7 @@ services:
     command:
       - --host=0.0.0.0
       - --port=8931
-      - --allowed-hosts=playwright-mcp,playwright-mcp:8931
+      - --allowed-hosts=playwright-mcp,playwright-mcp:8931,quark.pownet.uk
       - --isolated
       - --block-service-workers
       - --output-mode=stdout
