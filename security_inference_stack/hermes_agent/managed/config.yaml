@@ -43,6 +43,9 @@ skills:
     - /opt/managed-skills
   write_approval: true
 
+memory:
+  provider: openviking
+
 security:
   redact_secrets: true
 
