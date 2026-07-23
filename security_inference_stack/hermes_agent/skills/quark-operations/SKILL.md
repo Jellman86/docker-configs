@@ -43,7 +43,11 @@ For a Git-backed stack:
 
 Do not retry a deployment while the first request is running. A long request can be a normal graceful drain.
 
-If Dockhand authentication is later enabled, stop and require a dedicated host-side credential mechanism before proceeding. Hermes v2026.7.7.2 does not forward container environment variables into SSH commands. Never place a token in a URL, command history, skill, or repository file.
+If Dockhand authentication is later enabled, stop and require a dedicated
+host-side credential mechanism before proceeding. Do not treat the managed SSH
+backend as a secret transport or assume that container environment variables
+are forwarded into SSH commands. Never place a token in a URL, command history,
+skill, or repository file.
 
 ## Rollback
 

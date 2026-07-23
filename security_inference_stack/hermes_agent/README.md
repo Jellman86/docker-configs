@@ -4,7 +4,8 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 
 ## Design
 
-- Official Hermes image pinned to a released tag and multi-architecture manifest digest.
+- Official Hermes image kept on the latest stable release tag and pinned to its
+  immutable multi-architecture manifest digest.
 - Persistent state under `/mnt/apps/docker/hermes`.
 - Dashboard available through Nginx Proxy Manager at `https://hermes.pownet.uk`, with a loopback-only port 9119 fallback and Hermes basic authentication.
 - Host command execution through the supported Hermes SSH backend.
@@ -131,22 +132,6 @@ hermes memory status
 The managed configuration selects the native `openviking` provider. Existing
 Hermes profile memory and session history remain on `/opt/data`; OpenViking is
 additive and does not migrate or delete them.
-
-### Hermes v2026.7.7.2 dashboard login workaround
-
-The pinned Hermes release incorrectly sends its sole password-only dashboard
-provider through the OAuth auto-SSO route. That route raises an exception
-instead of rendering the username/password form. Upstream fixed the defect in
-commit `3e24b16`; the stack mounts
-`patches/03-dashboard-basic-auth-fix.py` as an s6 startup hook to apply that
-exact provider-capability check before the dashboard starts.
-
-The hook is idempotent and refuses to modify an unexpected upstream source
-shape. Remove the hook, its Compose mount, and its tests when a pinned Hermes
-release contains the upstream fix. Until then, verify that an unauthenticated
-dashboard request redirects to `/login`, that `/login` returns the password
-form, and that the container logs contain no `BasicAuthProvider` OAuth-flow
-exception.
 
 ## Playwright MCP
 
