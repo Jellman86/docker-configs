@@ -12,7 +12,11 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 - Hermes built-in `MEMORY.md`, `USER.md`, SQLite session history, and skills remain persistent; OpenViking adds automatic hierarchical recall, session extraction, and resource ingestion.
 - OpenViking v0.4.11 runs as a non-root sidecar with no published host port, hashed API keys, encrypted persistent data, and isolated Codex OAuth credentials.
 - Its authenticated MCP endpoint is routed through Quark's LAN-only Nginx Proxy Manager; internal storage and Ollama remain private.
-- A non-root one-shot provisioner creates separate least-privileged `hermes/hermes` and `hermes/codex` USER keys; neither client receives OpenViking's root credential or the other client's key.
+- A non-root one-shot provisioner creates least-privileged `hermes/hermes` and
+  recovery `hermes/codex` USER keys. Approved agents share the `hermes/hermes`
+  identity and `hermes` agent scope so they read and write the same user and
+  agent memories; the root credential remains confined to OpenViking and the
+  bootstrap job.
 - A private Ollama v0.32.1 sidecar supplies `nomic-embed-text` embeddings without a separately billed embedding API.
 - The official Microsoft Playwright MCP v0.0.78 image supplies shared headless Chromium automation over private Docker HTTP transport.
 - The read-only `quark-operations` skill and managed policy are supplied from Git.
@@ -92,7 +96,13 @@ hermes_key = user_key("hermes", "<OPENVIKING_HERMES_KEY_SEED>")
 codex_key = user_key("codex", "<OPENVIKING_CODEX_KEY_SEED>")
 ```
 
-The root key is available only to OpenViking and the short-lived bootstrap container. The bootstrap verifies that both configured USER keys match their seed-derived and server-returned values before Hermes may start. Hermes receives only its own tenant-bound USER key. OpenViking stores tenant keys as Argon2id hashes.
+The root key is available only to OpenViking and the short-lived bootstrap
+container. The bootstrap verifies that both configured USER keys match their
+seed-derived and server-returned values before Hermes may start. Hermes uses
+the `hermes/hermes` USER key. Approved Codex clients may receive that same USER
+key from their operating system's secret store when shared memory is required;
+the `hermes/codex` key remains an isolated recovery identity. OpenViking stores
+tenant keys as Argon2id hashes.
 
 OpenViking uses a separate ChatGPT/Codex device login. Place the resulting OpenViking-owned token store at:
 
@@ -101,6 +111,10 @@ OpenViking uses a separate ChatGPT/Codex device login. Place the resulting OpenV
 ```
 
 The local embedding model is pulled automatically by the one-shot `openviking-ollama-model` service before OpenViking starts. Neither port 1933 nor 11434 is published to the host.
+OpenViking uses the ChatGPT-backed Codex model selected by
+`OPENVIKING_VLM_MODEL` for memory extraction. The default is
+`gpt-5.4-mini`, which is intentionally lower-cost than the interactive agent
+models but must remain present in the authenticated Codex model catalogue.
 
 Deploy only through Dockhand. After deployment, use Dockhand's container terminal for initial setup:
 
@@ -165,24 +179,36 @@ https://hermes.pownet.uk/mcp
 ```
 
 The main Hermes dashboard route remains `hermes-agent:9119`; only `/mcp` is
-sent to OpenViking. Each client uses its own USER key; never configure a client
-with `OPENVIKING_ROOT_API_KEY`. OpenViking and Ollama retain no host-published
-ports.
+sent to OpenViking. Approved agents that require identical memories use the
+same `hermes/hermes` USER key and the `hermes` agent scope. Never configure a
+client with `OPENVIKING_ROOT_API_KEY`. OpenViking and Ollama retain no
+host-published ports.
 
 Register the endpoint with Codex using an environment-backed bearer token:
 
 ```bash
 codex mcp add openviking \
   --url https://hermes.pownet.uk/mcp \
-  --bearer-token-env-var OPENVIKING_CODEX_API_KEY
+  --bearer-token-env-var OPENVIKING_SHARED_API_KEY
 ```
 
-Supply `OPENVIKING_CODEX_API_KEY` to Codex from the client operating system's
-secret store; do not put the key directly in `~/.codex/config.toml`. Restart
-Codex after adding the server or changing its credential. This native MCP
-connection exposes OpenViking's tools on demand. Automatic prompt recall and
-turn capture require the separate official OpenViking Codex memory plugin and
-its reviewed lifecycle hooks.
+Supply `OPENVIKING_SHARED_API_KEY` with the same value as the Dockhand secret
+`OPENVIKING_API_KEY` from the client operating system's secret store; do not
+put the key directly in `~/.codex/config.toml`. Add the non-secret agent header
+to the server entry so Codex shares Hermes's agent memory as well as its user
+memory:
+
+```toml
+[mcp_servers.openviking]
+url = "https://hermes.pownet.uk/mcp"
+bearer_token_env_var = "OPENVIKING_SHARED_API_KEY"
+http_headers = { "X-OpenViking-Agent" = "hermes" }
+```
+
+Restart Codex after adding the server or changing its credential. This native
+MCP connection exposes OpenViking's tools on demand. Automatic prompt recall
+and turn capture require the separate official OpenViking Codex memory plugin
+and its reviewed lifecycle hooks.
 
 The published host port remains loopback-only as a recovery path. To use it from another machine:
 
@@ -199,9 +225,13 @@ Then open `http://127.0.0.1:9119`. Keep the NPM route and DNS record private to 
 3. Open `https://hermes.pownet.uk` and authenticate; use the SSH tunnel only as a recovery path.
 4. Confirm `openviking` and `openviking-ollama` are healthy, and both `openviking-ollama-model` and `openviking-bootstrap` exited successfully.
 5. From the trusted LAN, confirm `https://hermes.pownet.uk/mcp` rejects an unauthenticated request.
-6. Connect Codex with the dedicated `hermes/codex` USER key and verify the native MCP memory tools without exposing the root or Hermes key.
+6. Connect Codex with the shared `hermes/hermes` USER key and `hermes` agent
+   scope. Verify that both clients list the same user and peer memory URIs
+   without exposing the key or OpenViking root credential.
 7. Run `hermes doctor` and `hermes memory status` in the Dockhand terminal; confirm the `openviking` provider is active.
 8. From Hermes, store a unique test fact with `viking_remember`, retrieve it with `viking_search`, recreate the OpenViking service through Dockhand, and retrieve it again.
+   Treat an accepted store request as incomplete until OpenViking logs confirm
+   extraction succeeded and the other client retrieves the resulting memory.
 9. Confirm `openviking` runs as UID 1000, has a read-only root filesystem, and publishes no host port.
 10. Ask Hermes for read-only Quark status and verify it connects through SSH.
 11. Ask for a Dockhand stack listing and confirm no direct Docker mutation occurs.

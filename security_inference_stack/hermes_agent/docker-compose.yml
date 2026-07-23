@@ -161,6 +161,7 @@ services:
       OPENVIKING_CLI_CONFIG_FILE: /app/.openviking/ovcli.conf
       OPENVIKING_CODEX_AUTH_PATH: /app/.openviking/codex_auth.json
       OPENVIKING_ROOT_API_KEY: "${OPENVIKING_ROOT_API_KEY:?OpenViking root API key is required}"
+      OPENVIKING_VLM_MODEL: "${OPENVIKING_VLM_MODEL:-gpt-5.4-mini}"
       OPENVIKING_WITH_BOT: "0"
     volumes:
       - type: bind

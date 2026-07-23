@@ -12,10 +12,13 @@ from pathlib import Path
 
 CONFIG_PATH = Path(os.environ.get("OPENVIKING_CONFIG_FILE", "/app/.openviking/ov.conf"))
 ROOT_API_KEY = os.environ.get("OPENVIKING_ROOT_API_KEY", "").strip()
+VLM_MODEL = os.environ.get("OPENVIKING_VLM_MODEL", "gpt-5.4-mini").strip()
 
 PLACEHOLDER_API_KEY = "replace-with-64-random-hex-characters"
 if ROOT_API_KEY == PLACEHOLDER_API_KEY or re.fullmatch(r"[0-9a-fA-F]{64}", ROOT_API_KEY) is None:
     raise SystemExit("OPENVIKING_ROOT_API_KEY must contain exactly 64 hexadecimal characters")
+if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}", VLM_MODEL) is None:
+    raise SystemExit("OPENVIKING_VLM_MODEL must contain a valid model identifier")
 
 config = {
     "server": {
@@ -49,7 +52,7 @@ config = {
     },
     "vlm": {
         "provider": "openai-codex",
-        "model": "gpt-5.3-codex",
+        "model": VLM_MODEL,
         "api_base": "https://chatgpt.com/backend-api/codex",
         "temperature": 0.0,
         "max_retries": 2,
