@@ -1,0 +1,46 @@
+[imap]
+host = "imap.mail.me.com"
+port = 993
+username = "scott.powdrill@icloud.com"
+encryption = "tls"
+command_timeout_seconds = 30
+connect_timeout_seconds = 15
+
+[security]
+posture = "readonly"
+protected_folders = ["INBOX", "Sent Messages", "Drafts", "Deleted Messages", "Junk", "Archive"]
+expunge_folders = []
+
+[security.tools]
+download_attachment = "deny"
+export_messages = "deny"
+"search.advanced_query" = "deny"
+"fetch_message.include_html" = "deny"
+
+[security.lookalike]
+enabled = true
+known_domains = ["icloud.com", "apple.com"]
+warn_on_any_non_ascii_domain = true
+
+[limits]
+max_search_results = 100
+max_search_results_cap = 250
+max_fetch_body_bytes = 5242880
+max_attachment_bytes = 10485760
+max_append_bytes = 10485760
+commands_per_second = 5
+drafts_per_minute = 1
+sends_per_minute = 1
+circuit_breaker_error_threshold = 5
+circuit_breaker_window_seconds = 30
+
+[audit]
+path = "/var/lib/rusty-imap-mcp/audit.jsonl"
+rotate_bytes = 5242880
+rotate_keep = 3
+provenance_window_seconds = 60
+fail_open = false
+allowed_base_dir = "/var/lib/rusty-imap-mcp"
+
+[attachments]
+download_dir = ""

@@ -15,6 +15,12 @@ services:
       general_brg:
         aliases:
           - hermes-agent
+      rusty_imap_mcp:
+        aliases:
+          - hermes-agent
+    depends_on:
+      rusty-imap-mcp:
+        condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -77,41 +83,53 @@ services:
         max-size: "10m"
         max-file: "5"
 
-  himalaya-mail:
-    profiles:
-      - mail
+  rusty-imap-mcp:
+    platform: linux/amd64
     build:
-      context: ./himalaya
+      context: ./rusty-imap-mcp
       args:
-        HIMALAYA_VERSION: "1.2.0"
-        HIMALAYA_SHA256: e04e6382e3e664ef34b01afa1a2216113194a2975d2859727647b22d9b36d4e4
-    container_name: himalaya-mail
+        MCP_PROXY_COMMIT: f1ae01420086011ae53e6d895b1cd02838b34f42
+        MCP_PROXY_SHA256: e8b2c07638826e168e24083e684f4308256caa96de49f5f580f07ce41c92d65a
+        RUSTY_IMAP_MCP_VERSION: "0.1.0"
+        RUSTY_IMAP_MCP_SHA256: 784ab5b5295ff2412555c4a8a883e2f440c780dad588003162e7e311291c5c21
+    container_name: rusty-imap-mcp
     restart: unless-stopped
     init: true
     pids_limit: 64
-    mem_limit: 256m
+    mem_limit: 384m
     cpus: 0.50
-    user: "${PUID:-1000}:${PGID:-1000}"
+    user: "65532:65532"
     read_only: true
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges:true
     environment:
-      HIMALAYA_CONFIG: /etc/himalaya/config.toml
-      ICLOUD_EMAIL: ${ICLOUD_EMAIL:-}
-      ICLOUD_IMAP_LOGIN: ${ICLOUD_IMAP_LOGIN:-}
-      ICLOUD_APP_PASSWORD: ${ICLOUD_APP_PASSWORD:-}
+      RUSTY_IMAP_MCP_CONFIG: /etc/rusty-imap-mcp/config.toml
+      RUSTY_IMAP_MCP_IMAP_PASSWORD: ${RUSTY_IMAP_MCP_IMAP_PASSWORD:?iCloud app-specific password is required}
+    command:
+      - --host=0.0.0.0
+      - --port=8080
+      - --pass-environment
+      - --
+      - /usr/local/bin/rusty-imap-mcp
+      - --config
+      - /etc/rusty-imap-mcp/config.toml
+    volumes:
+      - ./rusty-imap-mcp/config.toml:/etc/rusty-imap-mcp/config.toml:ro
     tmpfs:
       - /tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777
+      - /var/lib/rusty-imap-mcp:rw,nosuid,nodev,noexec,size=32m,mode=0700,uid=65532,gid=65532
     networks:
-      - himalaya_mail_egress
+      rusty_imap_mcp:
+        aliases:
+          - rusty-imap-mcp
     healthcheck:
-      test: ["CMD-SHELL", "himalaya folder list >/dev/null 2>&1 || exit 1"]
-      interval: 5m
-      timeout: 30s
-      retries: 3
-      start_period: 30s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/status', timeout=5).read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
     logging:
       driver: json-file
       options:
@@ -121,5 +139,5 @@ services:
 networks:
   general_brg:
     external: true
-  himalaya_mail_egress:
+  rusty_imap_mcp:
     driver: bridge
