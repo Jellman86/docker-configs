@@ -20,6 +20,8 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
   bootstrap job.
 - A private Ollama v0.32.1 sidecar supplies `nomic-embed-text` embeddings without a separately billed embedding API.
 - The official Microsoft Playwright MCP v0.0.78 image supplies shared headless Chromium automation over private Docker HTTP transport.
+- Long-session context compression uses `gpt-5.6-terra` at medium reasoning
+  effort; interactive work remains on the main Sol/high profile.
 - The read-only `quark-operations` skill and managed policy are supplied from Git.
 - A read-only Rusty IMAP MCP sidecar is isolated on a private Compose network and exposes no host ports.
 

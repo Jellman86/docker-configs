@@ -21,12 +21,15 @@ delegation:
   model: gpt-5.6-terra
   reasoning_effort: medium
 
-# Keep correctness-sensitive side tasks on Sol. Route only routine,
+# Context compression uses balanced Terra at medium effort: summaries must
+# preserve long-session state, but do not need Sol's latency and token cost.
+# Keep other correctness-sensitive side tasks on Sol and route only routine,
 # low-risk auxiliary work to Luna.
 auxiliary:
   compression:
     provider: openai-codex
-    model: gpt-5.6-sol
+    model: gpt-5.6-terra
+    reasoning_effort: medium
   vision:
     provider: openai-codex
     model: gpt-5.6-sol
