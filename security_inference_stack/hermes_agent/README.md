@@ -19,7 +19,9 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
   agent memories; the root credential remains confined to OpenViking and the
   bootstrap job.
 - A private Ollama v0.32.1 sidecar supplies `nomic-embed-text` embeddings without a separately billed embedding API.
-- The official Microsoft Playwright MCP v0.0.78 image supplies shared headless Chromium automation over private Docker HTTP transport.
+- The official Microsoft Playwright MCP v0.0.78 image supplies interactive browser automation in its own isolated browser trust domain.
+- A private SearXNG instance supplies ordinary search, while a pinned and hardened Spider MCP supplies bounded scrape, link-map, and recursive-crawl tools.
+- SearXNG, Spider, and Chromium have no direct external route: all public-web traffic crosses a non-caching Squid policy gateway that denies private, loopback, link-local, metadata, multicast, reserved, and Docker-internal destinations after DNS resolution.
 - Long-session context compression uses `gpt-5.6-terra` at medium reasoning
   effort; interactive work remains on the main Sol/high profile.
 - The read-only `quark-operations` skill and managed policy are supplied from Git.
@@ -81,10 +83,10 @@ Create a Git stack with:
 - Compose path: `security_inference_stack/hermes_agent/docker-compose.yml`
 - Context directory: the Compose file's directory/default
 - Re-pull images: enabled
-- Build images: enabled (required for the pinned Rusty IMAP MCP sidecar)
+- Build images: enabled (required for the pinned Rusty IMAP and Spider MCP sidecars)
 - Force recreation: enabled for deliberate upgrades
 
-Copy every required value from the ignored `.env` into the stack-variable panel. Mark dashboard credentials, provider keys, messaging tokens, Home Assistant token, sudo password, `RUSTY_IMAP_MCP_IMAP_PASSWORD`, `OPENVIKING_ROOT_API_KEY`, `OPENVIKING_HERMES_KEY_SEED`, `OPENVIKING_API_KEY`, `OPENVIKING_CODEX_KEY_SEED`, and `OPENVIKING_CODEX_API_KEY` as secrets. The OpenViking root key and both tenant-key seeds must each be independent 64-character random hexadecimal values and must never be committed.
+Copy every required value from the ignored `.env` into the stack-variable panel. Mark dashboard credentials, provider keys, messaging tokens, Home Assistant token, sudo password, `RUSTY_IMAP_MCP_IMAP_PASSWORD`, `SEARXNG_SECRET`, `OPENVIKING_ROOT_API_KEY`, `OPENVIKING_HERMES_KEY_SEED`, `OPENVIKING_API_KEY`, `OPENVIKING_CODEX_KEY_SEED`, and `OPENVIKING_CODEX_API_KEY` as secrets. `SEARXNG_SECRET` must contain at least 32 random bytes. The OpenViking root key and both tenant-key seeds must each be independent 64-character random hexadecimal values and must never be committed.
 
 Derive each tenant key locally from its dedicated seed using the same documented v0.4.11 key codec. Do not print keys into shell history; write them directly to the ignored `.env` or Dockhand secret input. The one-shot `openviking-bootstrap` service independently creates or repairs both USER identities and fails closed unless OpenViking returns exactly the derived values:
 
@@ -135,11 +137,42 @@ The managed configuration selects the native `openviking` provider. Existing
 Hermes profile memory and session history remain on `/opt/data`; OpenViking is
 additive and does not migrate or delete them.
 
-## Playwright MCP
+## Private web research layer
+
+Hermes routes ordinary `web_search` calls to the private SearXNG JSON API at
+`http://searxng:8080`. SearXNG keeps only Bing, Brave, DuckDuckGo, Google, and
+Wikipedia engines, disables metrics and HTML response formats, and is reachable
+only on `search_private`.
+
+The hardened Spider MCP is available to Hermes at:
+
+```text
+http://spider-mcp:8080/mcp
+```
+
+Hermes exposes only `spider_scrape`, `spider_links`, and `spider_crawl` from
+that server. The server accepts absolute HTTP/HTTPS public URLs only, forces
+robots.txt compliance, removes caller-controlled proxy/cookie/domain/browser
+targets, returns Markdown or text only, and marks remote content as untrusted.
+Scrapes return at most 128 KiB; crawl pages return at most 32 KiB each; links
+are capped at 100; crawl is capped at 10 pages, depth 3, and concurrency 1.
+
+`research-egress` is the only research service attached to an external Docker
+network. Its Squid ACL re-resolves and checks every destination and redirect,
+allows only ports 80 and 443, and denies special-use IPv4/IPv6 ranges and local
+hostnames. The proxy is a defense-in-depth boundary in addition to Spider's URL
+validation. None of SearXNG, Spider, Squid, Chromium, or CDP publishes a host
+port.
+
+## Playwright MCP and browser isolation
 
 The stack runs Microsoft's official `mcr.microsoft.com/playwright/mcp` image,
-pinned to release v0.0.78 and its immutable multi-architecture digest. Hermes
-connects through its native Streamable HTTP MCP client at:
+pinned to release v0.0.78 and its immutable multi-architecture digest.
+Playwright MCP owns its browser process and forces browser egress through
+`research-egress`. Spider uses a separate `spider-chromium` process whose CDP
+endpoint exists only on `spider_browser_private`. The two browser trust domains
+cannot enumerate or attach to each other's targets or contexts. Hermes connects
+to Playwright through its native Streamable HTTP MCP client at:
 
 ```text
 http://playwright-mcp:8931/mcp
@@ -162,15 +195,18 @@ authorization header from `PLAYWRIGHT_MCP_AUTHORIZATION` through
 `env_http_headers`; the value must come from the client operating system's
 secret store rather than `~/.codex/config.toml`.
 
-Each HTTP client receives an isolated, ephemeral headless Chromium context.
-The service runs as the image's unprivileged `node` user with a read-only root
-filesystem, dropped capabilities, no-new-privileges, and bounded tmpfs storage.
-Service workers are disabled and no host workspace, browser profile, or Docker
-socket is mounted.
+Each Playwright HTTP client receives an isolated, ephemeral Chromium context.
+Spider serializes all network tools through one process-wide permit and cancels
+detached browser/network work when a request disconnects or reaches its deadline.
+Playwright MCP and both Chromium processes run as the image's unprivileged user
+with read-only root filesystems, dropped capabilities, no-new-privileges, and
+bounded tmpfs storage. Service workers are disabled and no host workspace,
+persistent browser profile, or Docker socket is mounted.
 
-Playwright MCP is not an authentication or network security boundary. Treat
-membership of `general_brg` and access to the dedicated NPM credential as
-permission to control a browser. Do not publish port 8931.
+Playwright MCP and CDP are not authentication boundaries. Treat membership of
+`general_brg` and access to the dedicated NPM credential as permission to
+control Playwright's browser. Do not publish ports 8931 or 9222, and never
+attach `spider-chromium` directly to an externally routed network.
 
 ## Access
 
@@ -244,6 +280,8 @@ Then open `http://127.0.0.1:9119`. Keep the NPM route and DNS record private to 
 11. Ask for a Dockhand stack listing and confirm no direct Docker mutation occurs.
 12. Test Home Assistant with an entity read before allowing service calls.
 13. Confirm `rusty-imap-mcp` is healthy and Hermes registers only `mcp_rusty_imap_{list_folders,search,fetch_message,list_attachments,list_labels}`.
-14. Confirm `playwright-mcp` is healthy, has no published port, and Hermes discovers `mcp_playwright_*` browser tools from `http://playwright-mcp:8931/mcp`.
-15. Use Playwright MCP to navigate to a harmless public page, inspect its title, and close the browser context.
-16. Confirm a body fetch leaves the message's `\\Seen` flag unchanged. Rusty uses read-only `EXAMINE` plus `BODY.PEEK[]`; the runtime check verifies the provider preserves that behavior.
+14. Confirm `research-egress`, `spider-chromium`, `searxng`, `spider-mcp`, and `playwright-mcp` are healthy and publish no host ports.
+15. Verify native `web_search` returns a SearXNG result and Hermes discovers only `mcp_spider_{spider_scrape,spider_crawl,spider_links}` from the Spider server.
+16. Scrape and crawl harmless public pages, then require loopback, RFC1918, link-local, metadata, reserved, and Docker service-name targets to fail through both Spider and Playwright.
+17. Use Playwright MCP to navigate to a harmless public page, inspect its title, and close the isolated browser context. Confirm Spider and Playwright use separate browser processes and cannot enumerate one another's targets.
+18. Confirm a body fetch leaves the message's `\\Seen` flag unchanged. Rusty uses read-only `EXAMINE` plus `BODY.PEEK[]`; the runtime check verifies the provider preserves that behavior.
