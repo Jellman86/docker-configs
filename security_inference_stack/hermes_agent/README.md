@@ -24,7 +24,7 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 - SearXNG, Spider, and Chromium have no direct external route: all public-web traffic crosses a non-caching Squid policy gateway that denies private, loopback, link-local, metadata, multicast, reserved, and Docker-internal destinations after DNS resolution.
 - Long-session context compression uses `gpt-5.6-terra` at medium reasoning
   effort; interactive work remains on the main Sol/high profile.
-- The read-only `quark-operations` skill and managed policy are supplied from Git.
+- The read-only `quark-operations` and `private-web-research` skills and managed policy are supplied from Git.
 - A full-posture Rusty IMAP/SMTP MCP sidecar is isolated on a private Compose network and exposes no host ports; permanent expunge, folder deletion, and raw mbox export remain denied.
 
 ## Compose topology
@@ -168,6 +168,20 @@ Hermes routes ordinary `web_search` calls to the private SearXNG JSON API at
 `http://searxng:8080`. SearXNG keeps only Bing, Brave, DuckDuckGo, Google, and
 Wikipedia engines, disables metrics and HTML response formats, and is reachable
 only on `search_private`.
+
+No native `web_extract` backend is configured. The managed
+`private-web-research` skill enforces this tool routing:
+
+| Need | Tool path |
+|---|---|
+| Discover sources | Native `web_search` through SearXNG |
+| Read/render one public page | Spider `spider_scrape` |
+| Extract links | Spider `spider_links` |
+| Bounded multi-page crawl | Spider `spider_crawl` |
+| Click, fill, authenticate or inspect dynamic state | Isolated Playwright MCP |
+
+Do not add a Firecrawl credential as a fallback. Diagnose Spider/Playwright or
+use another lawful source so extraction remains private, bounded and free.
 
 The hardened Spider MCP is available to Hermes at:
 

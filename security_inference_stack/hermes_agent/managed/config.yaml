@@ -107,6 +107,8 @@ browser:
   auto_local_for_private_urls: true
 
 web:
+  # Search stays native. Public-page extraction, link mapping and bounded crawl
+  # use the managed private-web-research skill and Spider MCP instead.
   search_backend: searxng
 
 mcp_servers:

@@ -14,6 +14,7 @@ CHROMIUM_LAUNCHER = ROOT / "web-research" / "chromium-launcher.js"
 SEARXNG = ROOT / "web-research" / "searxng" / "settings.yml"
 PATCH = ROOT / "web-research" / "spider-mcp" / "hardening.patch"
 SPIDER_DOCKERFILE = ROOT / "web-research" / "spider-mcp" / "Dockerfile"
+RESEARCH_SKILL = ROOT / "skills" / "private-web-research" / "SKILL.md"
 
 
 class ResearchStackPolicyTests(unittest.TestCase):
@@ -114,6 +115,8 @@ class ResearchStackPolicyTests(unittest.TestCase):
 
     def test_hermes_has_only_bounded_spider_tools_and_searxng_search(self) -> None:
         self.assertEqual(self.managed["web"]["search_backend"], "searxng")
+        self.assertNotIn("extract_backend", self.managed["web"])
+        self.assertNotIn("firecrawl", MANAGED.read_text().lower())
         spider = self.managed["mcp_servers"]["spider"]
         self.assertEqual(spider["url"], "http://spider-mcp:8080/mcp")
         self.assertFalse(spider["sampling"]["enabled"])
@@ -121,6 +124,19 @@ class ResearchStackPolicyTests(unittest.TestCase):
             spider["tools"]["include"],
             ["spider_scrape", "spider_crawl", "spider_links"],
         )
+
+    def test_managed_skill_routes_research_without_firecrawl(self) -> None:
+        skill = RESEARCH_SKILL.read_text()
+        for marker in (
+            "web_search",
+            "mcp__spider__spider_scrape",
+            "mcp__spider__spider_links",
+            "mcp__spider__spider_crawl",
+            "mcp__playwright__browser_navigate",
+            "Do not use `web_extract`",
+        ):
+            self.assertIn(marker, skill)
+        self.assertNotIn("FIRECRAWL_API_KEY", skill)
 
     def test_squid_denies_all_private_special_ranges_before_allow(self) -> None:
         text = SQUID.read_text()
