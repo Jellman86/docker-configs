@@ -4,6 +4,7 @@ Fedora compute host. Most stacks expect external networks to exist and rely on
 values provided via a local `.env` file.
 
 ## Repo layout
+- [`autofpl/`](autofpl/README.md) - private, stateless autoFPL API on Quark.
 - [`arr_vpn_stack/`](arr_vpn_stack/README.md) - Gluetun, qBittorrent, Prowlarr, Radarr, Sonarr, Byparr, Cleanuparr, and Seerr.
 - [`management/`](management/README.md) - Dockhand control plane.
 - [`media_related_stack/`](media_related_stack/README.md) - Plex and Optimisarr.
@@ -22,8 +23,9 @@ runtime state ever differ.
 - `riker.pownet.uk` / TrueNAS N100 NAS keeps the storage-local media stack:
   `arr_vpn_stack`, `media_related_stack`, and `web_services`.
 - `dell-compute` / Fedora Core Ultra box runs compute-heavy and management
-  stacks: `security_inference_stack`, `security_inference_stack/hermes_agent`,
-  `management` / Dockhand, and the Quark `web_services` variant.
+  stacks: `autofpl`, `security_inference_stack`,
+  `security_inference_stack/hermes_agent`, `management` / Dockhand, and the
+  Quark `web_services` variant.
 - `monitoring_management` is portable across the trusted management network;
   its Dockhand definition and `CONFIG_PATH` determine the owning host.
 
