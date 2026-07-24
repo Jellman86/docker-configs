@@ -84,9 +84,14 @@ The deployment sequence below was verified end to end against the live Dockhand
    publication to succeed.
 2. Discover the target through `GET /api/git/stacks`; verify its repository,
    branch, Compose path, environment, and repull/build/recreate settings.
-3. Send `POST /api/git/stacks/{id}/deploy-stream` with JSON body `{}`. Record
-   the returned `jobId`; do not repeat the request just because deployment is
-   still running.
+3. Send `POST /api/git/stacks/{id}/deploy-stream` with JSON body `{}` and
+   `Content-Type: application/json`, but do **not** add
+   `Accept: application/json`. On Dockhand 1.0.27 that Accept header selects an
+   SSE-to-JSON compatibility path which may complete the deployment yet return
+   `{"success":false,"error":"No result"}`. Without it, record the returned
+   `jobId`; do not repeat the request just because deployment is still running.
+   If any response is ambiguous, inspect the Git stack, container and job state
+   before deciding whether another mutation is safe.
 4. Poll `GET /api/jobs/{jobId}` while `status` is `running`. Require the verified
    success terminal state `done` and inspect `result` for an error/failure. Treat
    `error` or any unknown state as failure.
