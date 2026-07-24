@@ -6,16 +6,22 @@ encryption = "tls"
 command_timeout_seconds = 30
 connect_timeout_seconds = 15
 
+[smtp]
+host = "smtp.mail.me.com"
+port = 587
+username = "scott.powdrill@icloud.com"
+encryption = "starttls"
+command_timeout_seconds = 30
+
 [security]
-posture = "readonly"
+posture = "full"
 protected_folders = ["INBOX", "Sent Messages", "Drafts", "Deleted Messages", "Junk", "Archive"]
 expunge_folders = []
 
 [security.tools]
-download_attachment = "deny"
+# Raw mbox export is outside the requested interactive mailbox workflow and
+# bypasses the normal sanitized response boundary. Keep it explicitly denied.
 export_messages = "deny"
-"search.advanced_query" = "deny"
-"fetch_message.include_html" = "deny"
 
 [security.lookalike]
 enabled = true

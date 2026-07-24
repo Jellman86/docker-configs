@@ -20,14 +20,15 @@ Dockhand must provide one secret variable:
 RUSTY_IMAP_MCP_IMAP_PASSWORD=<iCloud app-specific password>
 ```
 
-The value is migrated from the former `ICLOUD_APP_PASSWORD` variable without being written to Git or printed. The current `ICLOUD_IMAP_LOGIN` value (`scott.powdrill@icloud.com`) becomes Rusty's non-secret `username` in `config.toml`; the duplicate `ICLOUD_EMAIL` value is no longer needed. Upstream Rusty supports host, port, and username in TOML rather than environment variables.
+The value is migrated from the former `ICLOUD_APP_PASSWORD` variable without being written to Git or printed. Compose passes the same iCloud app-specific password to Rusty's protocol-scoped IMAP and SMTP variables; no duplicate Dockhand secret is required. The current `ICLOUD_IMAP_LOGIN` value (`scott.powdrill@icloud.com`) becomes Rusty's non-secret `username` in `config.toml`; the duplicate `ICLOUD_EMAIL` value is no longer needed. Upstream Rusty supports host, port, and username in TOML rather than environment variables.
 
 ## Security boundary
 
-- Rusty posture is `readonly`.
-- Attachment download and raw message export are explicitly denied.
-- No SMTP configuration or credential is present.
-- Hermes independently allowlists only read/search/fetch and metadata tools.
+- Rusty posture is `full`: advanced/body search, sanitized HTML, attachment download, flags/labels, moves, `$PendingReview` drafts, SMTP send/forward, recoverable message deletion, and folder create/rename are enabled.
+- The stronger `destructive` posture is not enabled: permanent expunge and folder deletion remain denied, and critical folders remain protected from rename.
+- Raw unsanitized mbox export remains explicitly denied.
+- SMTP uses Apple's documented `smtp.mail.me.com:587` STARTTLS endpoint and the same app-specific password as IMAP through a separate protocol-scoped environment variable.
+- Hermes independently allowlists the intended `full` posture mailbox tools while excluding infrastructure account switching, raw export, expunge, and folder deletion.
 - The container runs as UID/GID 65532 with a read-only root filesystem, all capabilities dropped, `no-new-privileges`, bounded resources/logs, and tmpfs-only writable storage.
 - Port 8080 is available only on the private Compose network; no host port is published.
 - IMAP mailbox selection uses `EXAMINE`; body fetches use `BODY.PEEK[]`, preserving unread state.

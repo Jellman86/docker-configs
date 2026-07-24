@@ -25,7 +25,7 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 - Long-session context compression uses `gpt-5.6-terra` at medium reasoning
   effort; interactive work remains on the main Sol/high profile.
 - The read-only `quark-operations` skill and managed policy are supplied from Git.
-- A read-only Rusty IMAP MCP sidecar is isolated on a private Compose network and exposes no host ports.
+- A full-posture Rusty IMAP/SMTP MCP sidecar is isolated on a private Compose network and exposes no host ports; permanent expunge, folder deletion, and raw mbox export remain denied.
 
 ## Compose topology
 
@@ -46,7 +46,7 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 | `openviking-bootstrap` | One-shot least-privilege tenant provisioning | `openviking_private` only |
 | `openviking-ollama` | Private embedding model server | `openviking_private` only |
 | `openviking-ollama-model` | One-shot embedding-model pull | `openviking_private` only |
-| `rusty-imap-mcp` | Read-only iCloud IMAP MCP | `rusty_imap_mcp` only |
+| `rusty-imap-mcp` | Full-posture iCloud IMAP/SMTP MCP with non-destructive limits | `rusty_imap_mcp` only |
 
 `general_brg` and `npm_proxy_backends` are external networks. All other named
 networks above are internal Compose networks with isolation selected for their
@@ -319,7 +319,7 @@ or OpenViking storage endpoints as a recovery shortcut.
 10. Ask Hermes for read-only Quark status and verify it connects through SSH.
 11. Ask for a Dockhand stack listing and confirm no direct Docker mutation occurs.
 12. Test Home Assistant with an entity read before allowing service calls.
-13. Confirm `rusty-imap-mcp` is healthy and Hermes registers only `mcp_rusty_imap_{list_folders,search,fetch_message,list_attachments,list_labels}`.
+13. Confirm `rusty-imap-mcp` is healthy and Hermes registers the allowlisted full-posture mail tools, including drafts and SMTP send/forward, while omitting account switching, raw export, expunge, and folder deletion.
 14. Confirm `research-egress`, `spider-chromium`, `searxng`, `spider-mcp`, and `playwright-mcp` are healthy and publish no host ports.
 15. Verify native `web_search` returns a SearXNG result and Hermes discovers only `mcp_spider_{spider_scrape,spider_crawl,spider_links}` from the Spider server.
 16. Scrape and crawl harmless public pages, then require loopback, RFC1918, link-local, metadata, reserved, and Docker service-name targets to fail through both Spider and Playwright.

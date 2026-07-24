@@ -115,13 +115,29 @@ mcp_servers:
     timeout: 120
     connect_timeout: 60
     supports_parallel_tool_calls: false
+    sampling:
+      enabled: false
     tools:
       include:
         - list_folders
         - search
         - fetch_message
         - list_attachments
+        - download_attachment
         - list_labels
+        - mark_read
+        - mark_unread
+        - flag
+        - unflag
+        - add_label
+        - remove_label
+        - move_message
+        - create_draft
+        - send_email
+        - forward
+        - delete_message
+        - create_folder
+        - rename_folder
       resources: false
       prompts: false
   playwright:
