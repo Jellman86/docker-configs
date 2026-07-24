@@ -284,12 +284,17 @@ PLEX_CLAIM -> get a fresh token from https://plex.tv/claim if re-claiming the se
 ## 9. Rebuild checklist (new machine)
 
 1. Confirm the TrueNAS host paths exist: `/mnt/tank` and `/mnt/apps/docker`.
-2. Create the two external networks (§1).
+2. Create the required external networks as a one-time, authorized host bootstrap
+   operation if they do not already exist; do not recreate or replace live
+   networks during a stack deployment.
 3. **Restore state:** copy each app config directory into `/mnt/apps/docker`.
    (Or rebuild config from §3–§8.)
-4. Copy `arr_vpn_stack/.env` (VPN keys) and `media_related_stack/.env`.
-5. Confirm Intel iGPU access via `/dev/dri` for Plex/optimisarr.
-6. `cd arr_vpn_stack && docker compose up -d` (gluetun first — others depend on
-   its healthcheck), then `cd ../media_related_stack && docker compose up -d`.
-7. Verify gluetun has a tunnel + correct exit IP before trusting qbittorrent.
+4. Restore the ignored environment values into each Git-backed Dockhand stack,
+   marking VPN keys and other credentials as secrets. Do not commit or copy a
+   populated `.env` into the repository.
+5. Confirm Intel iGPU access via `/dev/dri` for Plex/Optimisarr.
+6. Configure the `arr_vpn_stack` and `media_related_stack` Git stacks with their
+   repository Compose paths, then deploy each through Dockhand. Wait for Gluetun
+   to become healthy before relying on qBittorrent or dependent applications.
+7. Verify Gluetun has a tunnel and the correct exit IP before trusting qBittorrent.
 8. Re-point seerr/Plex at the new addresses if the IP changed.

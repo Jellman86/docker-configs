@@ -27,6 +27,31 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 - The read-only `quark-operations` skill and managed policy are supplied from Git.
 - A read-only Rusty IMAP MCP sidecar is isolated on a private Compose network and exposes no host ports.
 
+## Compose topology
+
+- Compose file: `security_inference_stack/hermes_agent/docker-compose.yml`
+- Intended host: Quark / `dell-compute`.
+- Only the Hermes dashboard has a host-published port, bound to
+  `${HERMES_DASHBOARD_BIND:-127.0.0.1}:9119` by default.
+
+| Service | Role | Network exposure |
+|---|---|---|
+| `hermes-agent` | Gateway, dashboard, tools, and managed agent runtime | Loopback dashboard plus selected internal/external networks |
+| `playwright-mcp` | Interactive browser MCP | `general_brg` and `research_private`; no host port |
+| `research-egress` | Squid public-web policy gateway | Private research networks plus isolated egress |
+| `spider-chromium` | Spider-only rendered-page browser/CDP | `spider_browser_private` only |
+| `spider-mcp` | Bounded scrape, links, and crawl MCP | Private Spider/research networks |
+| `searxng` | Search JSON API | `search_private` and `research_private` |
+| `openviking` | Shared hierarchical memory and MCP | `openviking_private` and `npm_proxy_backends` |
+| `openviking-bootstrap` | One-shot least-privilege tenant provisioning | `openviking_private` only |
+| `openviking-ollama` | Private embedding model server | `openviking_private` only |
+| `openviking-ollama-model` | One-shot embedding-model pull | `openviking_private` only |
+| `rusty-imap-mcp` | Read-only iCloud IMAP MCP | `rusty_imap_mcp` only |
+
+`general_brg` and `npm_proxy_backends` are external networks. All other named
+networks above are internal Compose networks with isolation selected for their
+specific trust boundary.
+
 ## Host preparation
 
 Hermes expects a private SSH key at:
@@ -260,6 +285,21 @@ ssh -L 9119:127.0.0.1:9119 jellman86@quark.pownet.uk
 ```
 
 Then open `http://127.0.0.1:9119`. Keep the NPM route and DNS record private to the trusted network when using basic authentication.
+
+## Rollback and recovery
+
+Revert the relevant Git/image/configuration change, push `main`, and redeploy
+this stack through Dockhand. The stack contains several independent persistent
+stores (`hermes`, `openviking`, `openviking-ollama`, and mail configuration), so
+an image rollback does not roll back their data. Restore a bind-mounted store
+only from a verified backup and only after stopping the affected service through
+Dockhand. Avoid rotating tenant keys, changing the OpenViking schema, and
+upgrading Hermes in the same rollback boundary.
+
+If an update interrupts the active Hermes gateway, use the trusted Dockhand or
+host recovery path to observe the deployment rather than repeatedly submitting
+the deploy request. Never expose the private Spider CDP, Ollama, SearXNG, Squid,
+or OpenViking storage endpoints as a recovery shortcut.
 
 ## Verification
 

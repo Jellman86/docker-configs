@@ -30,16 +30,21 @@ Git and Dockhand are the only deployment path. Never run `docker run`, `docker p
 
 Read-only Docker diagnostics such as `docker ps`, `docker logs`, `docker inspect`, `docker stats`, and `docker network inspect` are allowed when the SSH user has permission. Prefer Dockhand GET endpoints when they provide the same evidence.
 
-For a Git-backed stack:
+For a Git-backed stack using the Dockhand `1.0.27` API contract verified on
+2026-07-24:
 
 1. Ensure the intended Compose change is committed and pushed and any required image manifest exists.
 2. `GET /api/health` and require an OK response.
-3. `GET /api/git/stacks`; select by stack name, repository, branch, and compose path. Never guess an id.
-4. Require `repullImages: true`.
-5. `POST /api/git/stacks/{id}/sync` with `Accept: application/json`.
-6. `GET /api/git/stacks/{id}` and verify `lastCommit`, `syncStatus: synced`, and a null `syncError`.
-7. `POST /api/git/stacks/{id}/deploy` with `Accept: application/json`; send no body and keep the request open until `success: true`.
-8. Verify the expected image, running state, health, application endpoint, and logs.
+3. Read the live Dockhand version with
+   `docker exec dockhand node -p "require('/app/package.json').version"`. If it
+   is not `1.0.27`, stop and verify the current UI/API deploy route, request
+   payload, job schema, and terminal states before changing this skill.
+4. `GET /api/git/stacks`; select by stack name, repository, branch, and compose path. Never guess an id.
+5. Verify the stack's `repullImages`, `buildOnDeploy`, and `forceRedeploy` settings are appropriate for the change.
+6. `POST /api/git/stacks/{id}/deploy-stream` with content type `application/json` and body `{}`. Record the returned `jobId`.
+7. Poll `GET /api/jobs/{jobId}` while `status` is `running`. Require `done`, inspect `result` for an error/failure, and treat `error` or an unknown status as failure.
+8. `GET /api/git/stacks/{id}` and verify `lastCommit` equals the intended remote revision.
+9. Verify the expected image, running state, health, private-port posture, application endpoint, and logs.
 
 Do not retry a deployment while the first request is running. A long request can be a normal graceful drain.
 
@@ -51,7 +56,7 @@ skill, or repository file.
 
 ## Rollback
 
-Revert or pin a known-good Compose/image version in Git, push it, then repeat the same sync and deploy sequence. Never repair a Git stack by editing Dockhand's generated checkout, `.env.dockhand`, database, or a running container.
+Revert or pin a known-good Compose/image version in Git, push it, then repeat the same deploy-stream and job-verification sequence. Never repair a Git stack by editing Dockhand's generated checkout, `.env.dockhand`, database, or a running container.
 
 ## Host mutations
 

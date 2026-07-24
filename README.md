@@ -4,18 +4,28 @@ Fedora compute host. Most stacks expect external networks to exist and rely on
 values provided via a local `.env` file.
 
 ## Repo layout
-- `arr_vpn_stack/` - Gluetun VPN stack with qBittorrent, Prowlarr, Radarr, Sonarr, and FlareSolverr.
-- `media_related_stack/` - Plex and Optimisarr.
-- `monitoring_management/` - Prometheus, Grafana, SNMP exporter, and SNMP trap receiver.
-- `security_inference_stack/` - Frigate, BirdNET-Go, Mosquitto, YA-WAMF, and Home Assistant; its standalone `hermes_agent` stack includes an opt-in Himalaya iCloud Mail sidecar.
-- `web_services/` - Nginx Proxy Manager, Cloudflare Tunnel, and Tailscale.
+- [`arr_vpn_stack/`](arr_vpn_stack/README.md) - Gluetun, qBittorrent, Prowlarr, Radarr, Sonarr, Byparr, Cleanuparr, and Seerr.
+- [`management/`](management/README.md) - Dockhand control plane.
+- [`media_related_stack/`](media_related_stack/README.md) - Plex and Optimisarr.
+- [`monitoring_management/`](monitoring_management/README.md) - Prometheus, SNMP Exporter, Unpoller, and Grafana.
+- [`security_inference_stack/`](security_inference_stack/README.md) - Frigate, BirdNET-Go, Mosquitto, YA-WAMF, and Home Assistant.
+- [`security_inference_stack/hermes_agent/`](security_inference_stack/hermes_agent/README.md) - independently deployed Hermes, OpenViking, mail, browser, and web-research services.
+- [`web_services/`](web_services/README.md) - host-specific Nginx Proxy Manager, Cloudflare Tunnel, and Tailscale stacks.
+
+Each stack README documents its services, Compose path, host placement, ports,
+networks, storage, variables, security assumptions, deployment checks, and
+rollback boundary. Compose source remains authoritative if documentation and
+runtime state ever differ.
 
 ## Current host layout
 
 - `riker.pownet.uk` / TrueNAS N100 NAS keeps the storage-local media stack:
   `arr_vpn_stack`, `media_related_stack`, and `web_services`.
 - `dell-compute` / Fedora Core Ultra box runs compute-heavy and management
-  stacks: `security_inference_stack` and `management` / Dockhand.
+  stacks: `security_inference_stack`, `security_inference_stack/hermes_agent`,
+  `management` / Dockhand, and the Quark `web_services` variant.
+- `monitoring_management` is portable across the trusted management network;
+  its Dockhand definition and `CONFIG_PATH` determine the owning host.
 
 The Fedora host uses `/mnt/apps` for persistent Docker data:
 
@@ -58,22 +68,35 @@ Every Compose project is a Git-backed Dockhand stack. Git is the source of truth
 pulls and container recreations must be performed through the Dockhand API on the server that owns
 the stack. Do not run `docker pull`, `docker compose pull`, or `docker compose up` on a host.
 
-The deployment sequence is:
+The deployment sequence below was verified end to end against the live Dockhand
+`1.0.27` runtime on 2026-07-24:
+
+> `management/docker-compose.yml` currently tracks `fnsys/dockhand:latest`.
+> Before any deployment mutation, read the live `/app/package.json` version with
+> `docker exec dockhand node -p "require('/app/package.json').version"`. If
+> it is not `1.0.27`, stop and validate the current UI/API route, payload, job
+> schema, and terminal states before updating this runbook. Never infer mutation
+> routes from an older release.
 
 1. Push the application and Compose commits and wait for CI, image smoke tests, and registry
    publication to succeed.
-2. Discover the target through `GET /api/git/stacks`; verify its repository, branch, compose path,
-   and `repullImages: true` setting.
-3. `POST /api/git/stacks/{id}/sync`, then verify `lastCommit`, `syncStatus`, and `syncError` through
-   `GET /api/git/stacks/{id}`.
-4. `POST /api/git/stacks/{id}/deploy` with `Accept: application/json` and wait for `success: true`.
-5. Verify the expected image and health through `GET /api/containers?env={environmentId}` and the
-   application's health endpoint.
+2. Discover the target through `GET /api/git/stacks`; verify its repository,
+   branch, Compose path, environment, and repull/build/recreate settings.
+3. Send `POST /api/git/stacks/{id}/deploy-stream` with JSON body `{}`. Record
+   the returned `jobId`; do not repeat the request just because deployment is
+   still running.
+4. Poll `GET /api/jobs/{jobId}` while `status` is `running`. Require the verified
+   success terminal state `done` and inspect `result` for an error/failure. Treat
+   `error` or any unknown state as failure.
+5. Read `GET /api/git/stacks/{id}` and confirm `lastCommit` equals the intended
+   remote revision.
+6. Verify the expected containers, image references, health checks, private
+   port posture, and application-level behavior.
 
-On Dockhand 1.0.35, the Git deploy endpoint performs a second safety sync. With `repullImages`
-enabled it applies pull policy `always`, producing the API-owned equivalent of an
-`up -d --remove-orphans --pull always`. A long request is expected when a service is draining under
-`stop_grace_period`; do not retry or bypass it.
+The deploy route performs the Git synchronization and applies the stack's
+configured pull/build/recreate policy. A long job is expected when images build
+or a service drains under `stop_grace_period`; do not retry or bypass it. Recheck
+the current Dockhand route contract after a control-plane upgrade.
 
 Notes:
 - Most stacks expect environment overrides in Dockhand's stack configuration.
@@ -85,6 +108,18 @@ Notes:
   `DOCKERCONFIGPATH=/mnt/apps/docker`. The host's Docker engine data lives
   separately at `/mnt/apps/docker-engine`; do not use that path for app config
   bind mounts.
+
+### Validation and rollback
+
+Before committing, parse every changed YAML file, render the affected Compose
+model with non-secret validation placeholders, run stack-specific tests, and
+review `git diff --check` plus the staged diff. Never retrieve a production
+secret merely to make a local render pass.
+
+For rollback, revert the relevant Git commit or restore a reviewed prior image
+reference, push `main`, and redeploy through Dockhand. Persistent bind mounts
+are not rolled back with container images; restore them only from a verified
+backup and only after stopping the affected services through Dockhand.
 
 ## Environment variables
 Common keys used across stacks include:
@@ -116,7 +151,8 @@ web_services/docker-compose.quark.yml
 ```
 
 On Riker, where Nginx Proxy Manager and Tailscale need to reach ARR/media
-containers directly, use the base web services compose file:
+containers directly, use the base web services Compose file (the explicit
+`docker-compose.riker.yml` file is currently equivalent):
 
 ```text
 web_services/docker-compose.yml

@@ -1,59 +1,82 @@
-# Monitoring Management
+# Monitoring and Management Stack
 
-Prometheus-based SNMP monitoring stack for polling SNMP devices.
+Git-backed Dockhand stack for Prometheus-based infrastructure monitoring and Grafana dashboards.
 
 ## Services
 
-- `prometheus` - stores and queries metrics on port `9090`.
-- `snmp-exporter` - polls SNMP devices for Prometheus on port `9116`.
-- `unpoller` - polls the UniFi Network API and exposes richer Prometheus metrics on port `9130`.
-- `grafana` - dashboards on port `3000`.
+| Service | Role | Published access |
+|---|---|---|
+| `prometheus` | Metrics collection, storage, rules, and query API | `${PROMETHEUS_WEB_PORT:-9090}` |
+| `snmp-exporter` | SNMP polling endpoint for Prometheus | `${SNMP_EXPORTER_WEB_PORT:-9116}` |
+| `unpoller` | UniFi controller polling and Prometheus metrics | `${UNPOLLER_WEB_PORT:-9130}` |
+| `grafana` | Dashboards and visualization | `${GRAFANA_WEB_PORT:-3000}` |
 
-## Setup
+## Topology and storage
 
-1. Update `.env` with host paths, time zone, and Grafana credentials.
-2. Add devices to `prometheus/snmp-targets.yml`.
-3. Set `UNIFI_CONTROLLER_URL`, `UNIFI_CONTROLLER_USER`, and `UNIFI_CONTROLLER_PASS` if using Unpoller.
-4. Start the stack:
+- Compose file: `monitoring_management/docker-compose.yml`
+- External network: `general_brg`.
+- All services run as `${PUID:-568}:${PGID:-568}`.
+- `CONFIG_PATH` is required and must contain the configuration/data tree below.
 
-```bash
-docker compose up -d
-```
+| Host path under `${CONFIG_PATH}` | Purpose |
+|---|---|
+| `prometheus/prometheus.yml` | Prometheus configuration, read-only mount |
+| `prometheus/snmp-targets.yml` | SNMP target file, read-only mount |
+| `prometheus/rules/` | Alert/recording rules, read-only mount |
+| `prometheus/data/` | Prometheus time-series database |
+| `snmp-exporter/snmp.yml` | SNMP modules and auth profiles, read-only mount |
+| `grafana/data/` | Grafana state/database |
+| `grafana/provisioning/` | Provisioned data sources and dashboards |
+| `grafana/dashboards/` | Dashboard definitions |
 
-The starter target uses `auth: public_v2` and `module: if_mib`, both provided by the mounted `${CONFIG_PATH}/snmp-exporter/snmp.yml` configuration. Replace `192.168.1.1` before expecting successful scrapes.
+The Compose file deliberately uses `create_host_path: false` for these mounts. Create and permission the tree before first deployment; an absent path should fail rather than silently become an empty directory.
 
-## SNMP Polling
+## Environment
 
-Edit `prometheus/snmp-targets.yml` to add routers, switches, access points, UPS devices, printers, or other SNMP-enabled devices:
+Required or security-sensitive values:
+
+- `CONFIG_PATH`
+- `SNMPV3_USERNAME`, `SNMPV3_AUTH_PASSWORD`, `SNMPV3_PRIV_PASSWORD`
+- `UNIFI_CONTROLLER_URL`, `UNIFI_CONTROLLER_USER`, `UNIFI_CONTROLLER_PASS`
+- `GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD`
+
+Optional settings include `PUID`, `PGID`, `TZ`, published ports, `PROMETHEUS_RETENTION`, UniFi site/DPI/debug options, and `UNIFI_VERIFY_SSL`.
+
+Store SNMP, UniFi, and Grafana credentials as Dockhand secrets. The Compose fallback for Grafana is `admin`/`admin`; always override it before exposing Grafana. Use a dedicated read-only UniFi account and prefer SNMPv3.
+
+## Configuration
+
+Add SNMP devices to `prometheus/snmp-targets.yml`, using auth and module names present in the mounted `snmp.yml`. A typical target entry is:
 
 ```yaml
 - targets:
-    - 192.168.1.1
     - switch.example.lan
   labels:
-    auth: public_v2
+    auth: snmpv3_env
     module: if_mib
 ```
 
-Use SNMPv3 wherever possible. The default SNMPv3 auth profile is `snmpv3_env`, which reads `SNMPV3_USERNAME`, `SNMPV3_AUTH_PASSWORD`, and `SNMPV3_PRIV_PASSWORD` from `.env`. If you need different auth protocols or vendor MIB modules, generate a custom `snmp.yml` with the `prometheus/snmp_exporter` generator and replace `${CONFIG_PATH}/snmp-exporter/snmp.yml`.
+For UniFi OS consoles, set `UNIFI_CONTROLLER_URL` to the console base URL. Keep TLS verification enabled when the controller presents a trusted certificate; if it cannot be enabled, constrain the traffic to the trusted management network and document the certificate limitation.
 
-## UniFi API Polling
+## Deployment and updates
 
-Unpoller provides richer UniFi metrics than SNMP, including sites, clients, gateways, APs, switches, and optional DPI. Create a limited/read-only UniFi Network user, then set:
+Use the Git-backed Dockhand workflow in the [root README](../README.md). Do not use direct `docker compose up` or `pull` commands on the host.
 
-```env
-UNIFI_CONTROLLER_URL=https://192.168.211.254
-UNIFI_CONTROLLER_USER=unpoller
-UNIFI_CONTROLLER_PASS=change-me
-```
+Before deployment, validate configuration files independently where practical. After deployment, verify:
 
-For UniFi OS controllers such as UDM, UXG, CloudKey Gen2, or newer consoles, use the base URL without `:8443`.
+1. Prometheus `/-/healthy` succeeds and all intended targets appear.
+2. SNMP Exporter `/metrics` responds and a representative SNMP scrape succeeds.
+3. Unpoller reports healthy and exports metrics for the expected UniFi site.
+4. Grafana `/api/health` succeeds and its provisioned Prometheus datasource works.
+5. Prometheus retention and disk growth match the host capacity plan.
 
-## Grafana
+## Rollback and backup
 
-Grafana is provisioned with:
+Revert the Git/image/configuration change, push, and redeploy through Dockhand. Back up `prometheus/data` and `grafana/data` according to their consistency requirements; configuration and dashboard source should remain in the managed configuration tree. Restore state only after stopping affected services through Dockhand.
 
-- A default Prometheus datasource.
-- A starter `SNMP Monitoring Overview` dashboard.
+## Security notes
 
-Default login values come from `.env`. Change `GRAFANA_ADMIN_PASSWORD` before exposing Grafana beyond a trusted network.
+- Published monitoring ports should remain on trusted management networks or behind an authenticated reverse proxy.
+- Protect SNMPv3 and UniFi credentials; do not commit populated environment files.
+- Avoid SNMPv2 community strings where SNMPv3 is available.
+- Monitor the size of the Prometheus TSDB; the default retention is 30 days.
