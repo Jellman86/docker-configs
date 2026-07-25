@@ -9,11 +9,12 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "docker-compose.yml"
 README = ROOT / "README.md"
-EXPECTED_REVISION = "8e11433f7104d78c39ef888166c65deb86a9c8c7"
+EXPECTED_REVISION = "f5b7db7921392af1b703f14c6a68e1954d23f157"
 EXPECTED_IMAGE = (
     "ghcr.io/jellman86/autofpl@"
-    "sha256:df67b93cff0f83803fffcfad4ad2fd8c7788ba8f32526ca971f7dcde27ad5c1b"
+    "sha256:8f72f56328256862f9161672fa52d5fb68c72cebeb13f5420e521f91d091dc70"
 )
+EXPECTED_DATA_PATH = "/mnt/apps/docker/autofpl/data"
 
 
 class AutoFplStackPolicyTests(unittest.TestCase):
@@ -31,12 +32,22 @@ class AutoFplStackPolicyTests(unittest.TestCase):
         self.assertIn(EXPECTED_REVISION, documentation)
         self.assertIn(EXPECTED_IMAGE.split("@", maxsplit=1)[1], documentation)
 
-    def test_service_has_no_host_or_persistent_exposure(self) -> None:
+    def test_service_has_no_host_port_and_one_private_data_mount(self) -> None:
         self.assertNotIn("ports", self.service)
-        self.assertNotIn("volumes", self.service)
         self.assertEqual(["8080"], self.service["expose"])
         self.assertEqual({"general_brg"}, set(self.service["networks"]))
         self.assertTrue(self.compose["networks"]["general_brg"]["external"])
+        self.assertEqual(
+            [
+                {
+                    "type": "bind",
+                    "source": EXPECTED_DATA_PATH,
+                    "target": "/data",
+                    "bind": {"create_host_path": False},
+                }
+            ],
+            self.service["volumes"],
+        )
 
     def test_service_is_non_root_read_only_and_bounded(self) -> None:
         self.assertEqual("1654:1654", self.service["user"])
