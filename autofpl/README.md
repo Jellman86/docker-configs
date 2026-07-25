@@ -4,9 +4,9 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `25f1f52d7c8768c6f8bd12d843968406967f1cbc`.
-- Compose pins the immutable manifest digest `sha256:06a6f34b93c5f020d7356af85c0f7e0a6a5ff963eb8d589c26ebeb94ce402bb8`.
-- The application listens on container port `8080` and exposes `/healthz`, `/readyz`, decision-snapshot metadata validation, manual squad validation, starting-XI validation, complete gameweek-selection validation with an ordered outfield bench, effective-captain resolution, automatic-substitution resolution, and a composed effective-gameweek outcome from the same manually supplied play evidence.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `b811482ae2889a8d6c7e8f7c95b905d0ba3c8455`.
+- Compose pins the immutable manifest digest `sha256:3a3581c8ad6e2ec1625ac840ee94f878c95dea6a5ff334729e77f26b2dc9ff1f`.
+- The application listens on container port `8080` and exposes `/healthz`, `/readyz`, decision-snapshot metadata validation, manual squad validation, starting-XI validation, complete gameweek-selection validation with an ordered outfield bench, effective-captain resolution, automatic-substitution resolution, a composed effective-gameweek outcome, and deterministic effective-XI scoring from complete manually supplied per-player points.
 - The current slice is stateless and has no bind mounts or named volumes.
 
 ## Network exposure
@@ -53,7 +53,7 @@ After Dockhand deployment, verify:
 2. `autofpl` is running and healthy with the pinned manifest digest.
 3. No host port is published.
 4. UID/GID, read-only root, capability and network settings match Compose.
-5. `/healthz`, `/readyz`, valid selection, captaincy-resolution, substitution-resolution and effective-resolution requests, and representative malformed/domain-invalid 400/422 handling work from a temporary client attached to `general_brg` or from an existing trusted internal consumer.
+5. `/healthz`, `/readyz`, valid selection, captaincy-resolution, substitution-resolution, effective-resolution and effective-score requests, and representative malformed/domain-invalid 400/422 handling work from a temporary client attached to `general_brg` or from an existing trusted internal consumer.
 
 ## Rollback
 
