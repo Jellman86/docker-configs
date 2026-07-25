@@ -4,10 +4,10 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `f5b7db7921392af1b703f14c6a68e1954d23f157`.
-- Compose pins the immutable manifest digest `sha256:8f72f56328256862f9161672fa52d5fb68c72cebeb13f5420e521f91d091dc70`.
-- The application listens on container port `8080`, serves the responsive Gameweek decision room at `/`, returns its explicitly synthetic forecast joined to persisted snapshot state from `/api/v1/advice/demo`, publishes OpenAPI 3.1 at `/openapi/v1.json`, and exposes the private decision-snapshot write/read routes.
-- One SQLite file under `/data` is authoritative for squad, selection, observation and immutable snapshot state. Startup applies three explicit migrations with foreign keys, WAL and a bounded busy timeout.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `be32299f8b0f67fed537c917fb991803fbe3e051`.
+- Compose pins the immutable manifest digest `sha256:5d2628ca4cf3c720be40997e9749727d83ec7f8de58a090ad23265cb0d751b1e`.
+- The application listens on container port `8080`, serves the responsive Gameweek decision room at `/`, returns its explicitly synthetic forecast joined to persisted snapshot state from `/api/v1/advice/demo`, publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes the private decision-snapshot write/read routes, and serves read-only provenance for the latest official FPL reference capture.
+- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state and private official FPL captures. Startup applies four explicit migrations with foreign keys, WAL and a bounded busy timeout.
 
 ## Network exposure
 
@@ -36,6 +36,8 @@ setfacl -d -m u:1654:rwx,u:1000:rwx,m::rwx /mnt/apps/docker/autofpl/data
 Verify with `getfacl /mnt/apps/docker/autofpl/data`. The directory owner remains the deployment user; UID `1654` receives only the filesystem access needed by the non-root container. Database files, WAL files and backups stay outside Git.
 
 Create a consistent backup from the application image's SQLite online-backup command, using a new filename under `/data/backups`, and verify the backup with the integrity command before a schema-changing deployment or rollback. Do not copy the live database/WAL pair directly.
+
+Before this migration, the live schema-3 database was backed up to `/data/backups/autofpl-before-be32299-20260725T2205Z.db` and the backup returned `ok` from the prior image's integrity command.
 
 ## Dockhand deployment
 
@@ -69,6 +71,7 @@ After Dockhand deployment, verify:
 4. UID/GID, read-only root, capability and network settings match Compose.
 5. `/`, `/api/v1/advice/demo`, `/openapi/v1.json`, `/healthz`, `/readyz`, decision-snapshot create/read/restart behavior, the deterministic endpoints, and representative malformed/domain-invalid 400/422 handling work from a trusted internal client.
 6. The advice response shows a non-null snapshot ID/revision/cutoff, `/data/autofpl.db` is owned by UID `1654`, WAL mode is active, and the built-in integrity command returns `ok`.
+7. Before the first operator import, `/api/v1/data/official-fpl/latest` returns 404. After `--import-official-fpl`, it reports the fixed URLs, null publication time, equal retrieval/availability time, hashes and non-zero source counts without returning raw provider JSON.
 
 ## Rollback
 
