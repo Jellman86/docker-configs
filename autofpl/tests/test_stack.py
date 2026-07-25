@@ -8,9 +8,11 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "docker-compose.yml"
+README = ROOT / "README.md"
+EXPECTED_REVISION = "aeb79c23d9b16401c45bd9eb8a1cec5cb2644c76"
 EXPECTED_IMAGE = (
     "ghcr.io/jellman86/autofpl@"
-    "sha256:7e9c8cf82a3b910af74affd17fb3c77a2bcaf92cf02b67c72f4b58d7714a727f"
+    "sha256:e7002c18f8727c254b6b4beedc8a92384e221c65ec0f20e40bdac25067bab616"
 )
 
 
@@ -23,6 +25,11 @@ class AutoFplStackPolicyTests(unittest.TestCase):
     def test_image_is_exactly_digest_pinned(self) -> None:
         self.assertEqual(EXPECTED_IMAGE, self.service["image"])
         self.assertRegex(self.service["image"], re.compile(r"@sha256:[0-9a-f]{64}$"))
+
+    def test_documentation_matches_pinned_image(self) -> None:
+        documentation = README.read_text(encoding="utf-8")
+        self.assertIn(EXPECTED_REVISION, documentation)
+        self.assertIn(EXPECTED_IMAGE.split("@", maxsplit=1)[1], documentation)
 
     def test_service_has_no_host_or_persistent_exposure(self) -> None:
         self.assertNotIn("ports", self.service)
