@@ -4,9 +4,9 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `891f350ba9036fceb290a1d2791b5412d6dfe971`.
-- Compose pins the immutable manifest digest `sha256:d3ebd0bcd2325607ec196255d5d87ab617795492db690be81224615a215c7013`.
-- The application listens on container port `8080` and exposes `/healthz`, `/readyz`, and `/api/v1/decision-snapshot-metadata/validation`.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `f7d96e97a1ac5a25a39e376ec31d763fe52825d0`.
+- Compose pins the immutable manifest digest `sha256:7e9c8cf82a3b910af74affd17fb3c77a2bcaf92cf02b67c72f4b58d7714a727f`.
+- The application listens on container port `8080` and exposes `/healthz`, `/readyz`, decision-snapshot metadata validation, manual squad validation, and starting-XI validation.
 - The current slice is stateless and has no bind mounts or named volumes.
 
 ## Network exposure

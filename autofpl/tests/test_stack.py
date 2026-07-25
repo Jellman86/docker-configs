@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "docker-compose.yml"
 EXPECTED_IMAGE = (
     "ghcr.io/jellman86/autofpl@"
-    "sha256:d3ebd0bcd2325607ec196255d5d87ab617795492db690be81224615a215c7013"
+    "sha256:7e9c8cf82a3b910af74affd17fb3c77a2bcaf92cf02b67c72f4b58d7714a727f"
 )
 
 
