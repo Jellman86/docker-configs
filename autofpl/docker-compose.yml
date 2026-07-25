@@ -1,6 +1,6 @@
 services:
   autofpl:
-    image: ghcr.io/jellman86/autofpl@sha256:06a6f34b93c5f020d7356af85c0f7e0a6a5ff963eb8d589c26ebeb94ce402bb8
+    image: ghcr.io/jellman86/autofpl@sha256:3a3581c8ad6e2ec1625ac840ee94f878c95dea6a5ff334729e77f26b2dc9ff1f
     container_name: autofpl
     restart: unless-stopped
     user: "1654:1654"
