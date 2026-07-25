@@ -1,6 +1,6 @@
 services:
   autofpl:
-    image: ghcr.io/jellman86/autofpl@sha256:df67b93cff0f83803fffcfad4ad2fd8c7788ba8f32526ca971f7dcde27ad5c1b
+    image: ghcr.io/jellman86/autofpl@sha256:8f72f56328256862f9161672fa52d5fb68c72cebeb13f5420e521f91d091dc70
     container_name: autofpl
     restart: unless-stopped
     user: "1654:1654"
@@ -8,6 +8,12 @@ services:
     read_only: true
     tmpfs:
       - /tmp:rw,nosuid,nodev,noexec,size=16m
+    volumes:
+      - type: bind
+        source: /mnt/apps/docker/autofpl/data
+        target: /data
+        bind:
+          create_host_path: false
     cap_drop:
       - ALL
     security_opt:
