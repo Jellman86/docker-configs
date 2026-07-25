@@ -4,9 +4,9 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `aeb79c23d9b16401c45bd9eb8a1cec5cb2644c76`.
-- Compose pins the immutable manifest digest `sha256:e7002c18f8727c254b6b4beedc8a92384e221c65ec0f20e40bdac25067bab616`.
-- The application listens on container port `8080` and exposes `/healthz`, `/readyz`, decision-snapshot metadata validation, manual squad validation, starting-XI validation, and complete gameweek-selection validation with an ordered outfield bench.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `b7ce6ac1c5f0da65c8e099b315f3beb03f786fcb`.
+- Compose pins the immutable manifest digest `sha256:a1bd9be19a3dd37c86498e430596cea1ffdf5db41ee73ca4b5c9b7e61b6a9f1c`.
+- The application listens on container port `8080` and exposes `/healthz`, `/readyz`, decision-snapshot metadata validation, manual squad validation, starting-XI validation, complete gameweek-selection validation with an ordered outfield bench, and effective-captain resolution from manually supplied player-minute evidence.
 - The current slice is stateless and has no bind mounts or named volumes.
 
 ## Network exposure
@@ -53,7 +53,7 @@ After Dockhand deployment, verify:
 2. `autofpl` is running and healthy with the pinned manifest digest.
 3. No host port is published.
 4. UID/GID, read-only root, capability and network settings match Compose.
-5. `/healthz`, `/readyz`, a valid validation request, and malformed/unsupported request handling work from a temporary client attached to `general_brg` or from an existing trusted internal consumer.
+5. `/healthz`, `/readyz`, valid selection and captaincy-resolution requests, and representative malformed/domain-invalid 400/422 handling work from a temporary client attached to `general_brg` or from an existing trusted internal consumer.
 
 ## Rollback
 
