@@ -4,9 +4,9 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `f604c9d6442a1d5d8e4d432f207527833fb18658`.
-- Compose pins the immutable manifest digest `sha256:542c4fb678bc5946a3f4c5871012316ded534a051318b1fcd02135fffad15b16`.
-- The application listens on container port `8080` and exposes `/healthz`, `/readyz`, decision-snapshot metadata validation, manual squad validation, starting-XI validation, complete gameweek-selection validation with an ordered outfield bench, effective-captain resolution from manually supplied player-minute evidence, and automatic-substitution resolution from manually supplied play evidence.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `25f1f52d7c8768c6f8bd12d843968406967f1cbc`.
+- Compose pins the immutable manifest digest `sha256:06a6f34b93c5f020d7356af85c0f7e0a6a5ff963eb8d589c26ebeb94ce402bb8`.
+- The application listens on container port `8080` and exposes `/healthz`, `/readyz`, decision-snapshot metadata validation, manual squad validation, starting-XI validation, complete gameweek-selection validation with an ordered outfield bench, effective-captain resolution, automatic-substitution resolution, and a composed effective-gameweek outcome from the same manually supplied play evidence.
 - The current slice is stateless and has no bind mounts or named volumes.
 
 ## Network exposure
@@ -53,7 +53,7 @@ After Dockhand deployment, verify:
 2. `autofpl` is running and healthy with the pinned manifest digest.
 3. No host port is published.
 4. UID/GID, read-only root, capability and network settings match Compose.
-5. `/healthz`, `/readyz`, valid selection, captaincy-resolution and substitution-resolution requests, and representative malformed/domain-invalid 400/422 handling work from a temporary client attached to `general_brg` or from an existing trusted internal consumer.
+5. `/healthz`, `/readyz`, valid selection, captaincy-resolution, substitution-resolution and effective-resolution requests, and representative malformed/domain-invalid 400/422 handling work from a temporary client attached to `general_brg` or from an existing trusted internal consumer.
 
 ## Rollback
 
