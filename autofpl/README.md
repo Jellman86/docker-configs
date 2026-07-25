@@ -4,9 +4,9 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `b811482ae2889a8d6c7e8f7c95b905d0ba3c8455`.
-- Compose pins the immutable manifest digest `sha256:3a3581c8ad6e2ec1625ac840ee94f878c95dea6a5ff334729e77f26b2dc9ff1f`.
-- The application listens on container port `8080` and exposes `/healthz`, `/readyz`, decision-snapshot metadata validation, manual squad validation, starting-XI validation, complete gameweek-selection validation with an ordered outfield bench, effective-captain resolution, automatic-substitution resolution, a composed effective-gameweek outcome, and deterministic effective-XI scoring from complete manually supplied per-player points.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `d0880e7e5e71bbb2a1ed9e6c3ed8a5a2cb88d806`.
+- Compose pins the immutable manifest digest `sha256:1690ea7e33bdb94aab0f714f88a257396dd121973763eff4590a1eaa54e2a0f0`.
+- The application listens on container port `8080` and exposes `/healthz`, `/readyz`, decision-snapshot metadata validation, manual squad validation, starting-XI validation, complete gameweek-selection validation with an ordered outfield bench, effective-captain resolution, automatic-substitution resolution, a composed effective-gameweek outcome, and deterministic effective-XI scoring from complete manually supplied per-player points. The source tree also carries the versioned manual-evidence field, provenance, timing and not-before-receipt replay contract; the existing API surface remains unchanged.
 - The current slice is stateless and has no bind mounts or named volumes.
 
 ## Network exposure
