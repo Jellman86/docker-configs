@@ -4,9 +4,9 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `d0880e7e5e71bbb2a1ed9e6c3ed8a5a2cb88d806`.
-- Compose pins the immutable manifest digest `sha256:1690ea7e33bdb94aab0f714f88a257396dd121973763eff4590a1eaa54e2a0f0`.
-- The application listens on container port `8080` and exposes `/healthz`, `/readyz`, decision-snapshot metadata validation, manual squad validation, starting-XI validation, complete gameweek-selection validation with an ordered outfield bench, effective-captain resolution, automatic-substitution resolution, a composed effective-gameweek outcome, and deterministic effective-XI scoring from complete manually supplied per-player points. The source tree also carries the versioned manual-evidence field, provenance, timing and not-before-receipt replay contract; the existing API surface remains unchanged.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `8e11433f7104d78c39ef888166c65deb86a9c8c7`.
+- Compose pins the immutable manifest digest `sha256:df67b93cff0f83803fffcfad4ad2fd8c7788ba8f32526ca971f7dcde27ad5c1b`.
+- The application listens on container port `8080`, serves the first responsive Gameweek decision room at `/`, returns its explicitly synthetic typed fixture from `/api/v1/advice/demo`, and publishes OpenAPI 3.1 at `/openapi/v1.json`. It retains `/healthz`, `/readyz` and the deterministic validation, captaincy, substitution, effective-outcome and effective-score endpoints.
 - The current slice is stateless and has no bind mounts or named volumes.
 
 ## Network exposure
@@ -53,7 +53,7 @@ After Dockhand deployment, verify:
 2. `autofpl` is running and healthy with the pinned manifest digest.
 3. No host port is published.
 4. UID/GID, read-only root, capability and network settings match Compose.
-5. `/healthz`, `/readyz`, valid selection, captaincy-resolution, substitution-resolution, effective-resolution and effective-score requests, and representative malformed/domain-invalid 400/422 handling work from a temporary client attached to `general_brg` or from an existing trusted internal consumer.
+5. `/`, `/api/v1/advice/demo`, `/openapi/v1.json`, `/healthz`, `/readyz`, valid selection, captaincy-resolution, substitution-resolution, effective-resolution and effective-score requests, and representative malformed/domain-invalid 400/422 handling work from a temporary client attached to `general_brg` or from an existing trusted internal consumer.
 
 ## Rollback
 
