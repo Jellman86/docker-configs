@@ -4,13 +4,14 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `7d0b81e9b13ce564243e6e7bc51a9b5e4f1ac871`.
-- Compose pins the immutable manifest digest `sha256:604ee1498c2f6f5568bcc034feb424756d9b4adc94723bb6e34bb07563ff0cb5`.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `a37a594e6188a534a5d8b4658720f52bda970059`.
+- Compose pins the immutable manifest digest `sha256:35bf1b6e0895924eec5a118c8e4fd73660da113d5d46d03854b96887f08ef5f9`.
 - The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the demo advice route builds a legal 15-player identity preview with official portraits and cutoff-aware player dossiers; projected points and explanations remain explicitly synthetic until the evaluated forecasting pipeline replaces them.
 - The API publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes private decision-snapshot write/read routes, and serves read-only provenance, replay and deterministic FPL Form player/fixture identity-coverage views.
-- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures, public forecast captures and collection checks. Startup applies eleven explicit migrations with foreign keys, WAL and a bounded busy timeout. Official final outcomes retain bounded xG/xA/xGC, ICT/BPS and defensive evidence; legacy rows remain null.
+- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures, public forecast captures and collection checks. Startup applies twelve explicit migrations with foreign keys, WAL and a bounded busy timeout. Official final outcomes retain bounded xG/xA/xGC, ICT/BPS and defensive evidence; legacy rows remain null.
 - FPL Form collection reuses Quark's existing Playwright MCP service. One fixed code operation fetches the canonical provider page through Playwright's request context without rendering or executing the roughly 105 MB document. It short-circuits the off-season sentinel and, for an active Gameweek, scans one encoded player object at a time rather than constructing the complete decoded history. The bounded MCP client accepts either direct JSON or SSE Streamable HTTP responses and selects the matching JSON-RPC result. The browser returns compact, versioned evidence to autoFPL with transport, extraction-version and full provider-payload hash provenance. The application does not run a second browser stack or download the page into the API process.
 - The instance checks FPL Form at most every six hours. Its persisted last-check time survives restarts, so a deployment waits the remaining interval rather than creating an extra provider request.
+- The instance also checks the fixed official bootstrap/fixture pair every six hours and persists the attempt time independently of immutable content deduplication.
 - The read-only FPL Form evaluator reuses the same authoritative identity resolution, pairs only deadline-eligible captures with later final outcomes, and emits deterministic exploratory metrics for published conditional points and a separately labelled appearance-adjusted challenger.
 - The player dossier exposes retained official underlying evidence, while the analytics boundary produces cutoff-safe temporal summaries and an identical-fold, unpromoted underlying-feature ablation.
 
