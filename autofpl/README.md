@@ -24,6 +24,8 @@ http://autofpl-api:8080
 
 The container runs explicitly as UID/GID `1654`, uses a read-only root filesystem, has only a bounded `/tmp` tmpfs, drops all Linux capabilities, enables `no-new-privileges`, and bounds PIDs, CPU, memory, shutdown time, and JSON logs. The only writable mount is the private SQLite directory at `/data`. The health check uses the image's built-in fail-closed probe.
 
+The 768 MiB memory limit covers the normally small API plus the same-container operator importer. The fixed FPL Form page was measured at about 105 MB and its bounded parse peaked around 426 MiB; the previous 256 MiB limit terminated that documented command before it could return its normal fail-closed result.
+
 ## Persistent data
 
 The bind source is `/mnt/apps/docker/autofpl/data`. Compose sets `create_host_path: false` so a missing path fails rather than being silently created as root. Provision it once as the Quark deployment user before the first stateful deployment:
