@@ -4,8 +4,8 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `ca79ff0185f2029f3c64fba420c2b89dbdee0985`.
-- Compose pins the immutable manifest digest `sha256:f2320e09cfc1bd06efbab8e5627bab31faf175b453aa3673d19c0102b11bb597`.
+- `autofpl` runs `ghcr.io/jellman86/autofpl:dev`, which is published only after the autoFPL `dev` container build, vulnerability scan and smoke test pass.
+- Compose sets `pull_policy: always`, and Dockhand repulls images on deployment. Application merges therefore need only a Dockhand redeploy, not a second configuration commit. Commit-SHA image tags remain available for exact rollback.
 - The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the advice route returns an explicitly unvalidated Baseline v0 squad, XI, bench and captaincy with official portraits, cutoff-aware player dossiers, wide intervals and transparent market/fixture evidence. Schema 13 persists one immutable forecast artifact and content hash per official capture; schema 14 retains the official provider's optional next-Gameweek expected-points value as a separately labelled, not-promoted dossier challenger. Schema 15 adds immutable, forecast-linked selection revisions with an explicit one-time user lock and deadline-derived draft, locked, expired and frozen states. Schemas 16–19 add bounded third-party research-source observations, a verified 2025/26 historical FPL archive, cutoff-safe cross-season player state, and a read-only identical-fold cross-season feature ablation. Users can edit XI/bench membership, bench priority and captaincy against the same forecast squad; valid changes create a new unlocked superseding revision and never rewrite or submit the prior choice. Refreshing prediction only reloads Baseline v0 and does not start collection or change a user's saved selection.
 - The API publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes private decision-snapshot write/read routes, and serves read-only provenance, replay and deterministic FPL Form player/fixture identity-coverage views.
 - One SQLite file under `/data` is authoritative for squad, immutable selection revisions and locks, observation, immutable snapshot state, official FPL captures, Baseline v0 forecast artifacts, public forecast captures, research observations, the verified historical archive and collection checks. Startup applies nineteen explicit migrations with foreign keys, WAL and a bounded busy timeout. Official final outcomes retain bounded xG/xA/xGC, ICT/BPS and defensive evidence; legacy rows remain null.
@@ -15,7 +15,7 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 - The read-only FPL Form evaluator reuses the same authoritative identity resolution, pairs only deadline-eligible captures with later final outcomes, and emits deterministic exploratory metrics for published conditional points and a separately labelled appearance-adjusted challenger.
 - The read-only official expected-points evaluator scores retained `ep_next` values unchanged against later final outcomes, requires complete capture/player chronology, keeps zero-minute players in the population, and emits deterministic overall, position and zero-minute metrics without promoting the source.
 - The player dossier exposes retained official underlying evidence, while the analytics boundary produces cutoff-safe temporal summaries and identical-fold, unpromoted underlying-feature and cross-season ablations. The prior-season archive preserves the latest pre-cutoff player performance and availability state while excluding archived source expected-points and final-health leakage.
-- Explicit deterministic FFScout adapters read one retained pre-deadline snapshot, resolve predicted-XI entries through embedded official Premier League photo codes, and resolve `Out` plus percentage-bearing `Doubts` only through unique team-scoped official names. They write separately versioned, idempotent quarantined start and availability claims, exclude bans, report unmatched or ambiguous identities, and cannot influence a forecast or selection.
+- Explicit deterministic FFScout adapters read one retained pre-deadline snapshot, resolve predicted-XI entries through embedded official Premier League photo codes, and resolve `Out` plus percentage-bearing `Doubts` only through unique team-scoped official names. A separate strAIghtred adapter retains displayed consensus start probabilities and assigns the same player/target duplicate cluster as FFScout so dependent agreement is not counted twice. All such claims remain idempotent and quarantined, and cannot influence a forecast or selection.
 
 ## Network exposure
 
@@ -90,7 +90,7 @@ docker compose -f autofpl/docker-compose.yml config --quiet
 After Dockhand deployment, verify:
 
 1. Dockhand synchronized the intended `docker-configs/main` commit.
-2. `autofpl` is running and healthy with the pinned manifest digest.
+2. `autofpl` is running and healthy from the current verified `dev` publication.
 3. No host port is published.
 4. UID/GID, read-only root, capability and network settings match Compose.
 5. `/`, `/api/v1/advice/demo`, the selected-player dossier route, `/openapi/v1.json`, `/healthz`, `/readyz`, decision-snapshot create/read/restart behavior, the deterministic endpoints, and representative malformed/domain-invalid 400/422 handling work from a trusted internal client.
@@ -103,4 +103,4 @@ After Dockhand deployment, verify:
 
 ## Rollback
 
-Create and verify a consistent backup before changing the image or schema. Roll back by reverting the Compose digest through Git and Dockhand only when the older image supports the current schema. Otherwise restore the matching verified backup as a separately reviewed operation; never overwrite the live database while the application is running.
+Create and verify a consistent backup before changing the image or schema. Roll back by changing the Compose image temporarily to the required commit-SHA tag through Git and Dockhand only when that image supports the current schema. Return the stack to `:dev` after recovery. Otherwise restore the matching verified backup as a separately reviewed operation; never overwrite the live database while the application is running.
