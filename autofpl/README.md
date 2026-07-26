@@ -4,12 +4,12 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `d091825c1a44977d66495768eddceca961f4a206`.
-- Compose pins the immutable manifest digest `sha256:6e31c096e37c436bb7c2686ef8b34229af40536f26047d2318cf2ba4064cebaa`.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `9d701425186810bb50d1e696296d016331d7e5bf`.
+- Compose pins the immutable manifest digest `sha256:43203eeab4f3af3d521895cd95d4b4dae2257186749ac2df3f93cd46aaff135b`.
 - The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the demo advice route builds a legal 15-player identity preview with official portraits and cutoff-aware player dossiers; projected points and explanations remain explicitly synthetic until the evaluated forecasting pipeline replaces them.
 - The API publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes private decision-snapshot write/read routes, and serves read-only provenance, replay and deterministic FPL Form player/fixture identity-coverage views.
 - One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures and public forecast captures. Startup applies ten explicit migrations with foreign keys, WAL and a bounded busy timeout. Official final outcomes retain bounded xG/xA/xGC, ICT/BPS and defensive evidence; legacy rows remain null.
-- FPL Form collection reuses Quark's existing Playwright MCP service. One fixed code operation navigates to the canonical provider page and parses its large embedded payload without generating an accessibility snapshot. The browser returns compact, versioned evidence to autoFPL with transport, extraction-version and full provider-payload hash provenance. The application does not run a second browser stack or download the roughly 105 MB page into the API process.
+- FPL Form collection reuses Quark's existing Playwright MCP service. One fixed code operation navigates to the canonical provider page and parses its large embedded payload without generating an accessibility snapshot. The bounded MCP client accepts either direct JSON or SSE Streamable HTTP responses and selects the matching JSON-RPC result. The browser returns compact, versioned evidence to autoFPL with transport, extraction-version and full provider-payload hash provenance. The application does not run a second browser stack or download the roughly 105 MB page into the API process.
 - The read-only FPL Form evaluator reuses the same authoritative identity resolution, pairs only deadline-eligible captures with later final outcomes, and emits deterministic exploratory metrics for published conditional points and a separately labelled appearance-adjusted challenger.
 - The player dossier exposes retained official underlying evidence, while the analytics boundary produces cutoff-safe temporal summaries and an identical-fold, unpromoted underlying-feature ablation.
 
