@@ -4,14 +4,15 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `be32299f8b0f67fed537c917fb991803fbe3e051`.
-- Compose pins the immutable manifest digest `sha256:5d2628ca4cf3c720be40997e9749727d83ec7f8de58a090ad23265cb0d751b1e`.
-- The application listens on container port `8080`, serves the responsive Gameweek decision room at `/`, returns its explicitly synthetic forecast joined to persisted snapshot state from `/api/v1/advice/demo`, publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes the private decision-snapshot write/read routes, and serves read-only provenance for the latest official FPL reference capture.
-- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state and private official FPL captures. Startup applies four explicit migrations with foreign keys, WAL and a bounded busy timeout.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `57e6530326272f6ce86646dae03f2a62ba48bdb0`.
+- Compose pins the immutable manifest digest `sha256:0176a6208877e446f10e212218389e497bd5d45517c3897f619fb3e5da5059cb`.
+- The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the demo advice route builds a legal 15-player identity preview with official portraits and cutoff-aware player dossiers; projected points and explanations remain explicitly synthetic until the evaluated forecasting pipeline replaces them.
+- The API publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes private decision-snapshot write/read routes, and serves read-only provenance and replay views for official FPL and FPL Form captures.
+- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures and public forecast captures. Startup applies seven explicit migrations with foreign keys, WAL and a bounded busy timeout.
 
 ## Network exposure
 
-The service joins the existing external `general_brg` network with alias `autofpl-api`. It declares container port `8080` for internal discovery but publishes no host port. No Nginx Proxy Manager host, Cloudflare route, Tailscale route, or public DNS record is part of this stack.
+The service joins the existing external `general_brg` network with alias `autofpl-api`. It declares container port `8080` for internal discovery but publishes no host port. The separately managed private-LAN DNS and Nginx Proxy Manager route exposes `https://autofpl.pownet.uk` to trusted clients and proxies to `autofpl-api:8080`; this Compose stack does not create or modify that ingress. There is no public or tunnel route.
 
 Internal callers on `general_brg` can use:
 
@@ -69,9 +70,10 @@ After Dockhand deployment, verify:
 2. `autofpl` is running and healthy with the pinned manifest digest.
 3. No host port is published.
 4. UID/GID, read-only root, capability and network settings match Compose.
-5. `/`, `/api/v1/advice/demo`, `/openapi/v1.json`, `/healthz`, `/readyz`, decision-snapshot create/read/restart behavior, the deterministic endpoints, and representative malformed/domain-invalid 400/422 handling work from a trusted internal client.
-6. The advice response shows a non-null snapshot ID/revision/cutoff, `/data/autofpl.db` is owned by UID `1654`, WAL mode is active, and the built-in integrity command returns `ok`.
-7. Before the first operator import, `/api/v1/data/official-fpl/latest` returns 404. After `--import-official-fpl`, it reports the fixed URLs, null publication time, equal retrieval/availability time, hashes and non-zero source counts without returning raw provider JSON.
+5. `/`, `/api/v1/advice/demo`, the selected-player dossier route, `/openapi/v1.json`, `/healthz`, `/readyz`, decision-snapshot create/read/restart behavior, the deterministic endpoints, and representative malformed/domain-invalid 400/422 handling work from a trusted internal client.
+6. When a qualifying official replay exists, advice reports `synthetic-forecast-real-identities`, returns a legal official 15-player preview, links every player to a cutoff-aware dossier and does not mislabel its synthetic projections as a real forecast.
+7. `/data/autofpl.db` is owned by UID `1654`, WAL mode is active, and the built-in integrity command returns `ok`.
+8. Before the first operator import, `/api/v1/data/official-fpl/latest` returns 404. After `--import-official-fpl`, it reports the fixed URLs, null publication time, equal retrieval/availability time, hashes and non-zero source counts without returning raw provider JSON.
 
 ## Rollback
 
