@@ -9,10 +9,10 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "docker-compose.yml"
 README = ROOT / "README.md"
-EXPECTED_REVISION = "57e6530326272f6ce86646dae03f2a62ba48bdb0"
+EXPECTED_REVISION = "f2c0270063c03dc4af183d5d98760c65ec098840"
 EXPECTED_IMAGE = (
     "ghcr.io/jellman86/autofpl@"
-    "sha256:0176a6208877e446f10e212218389e497bd5d45517c3897f619fb3e5da5059cb"
+    "sha256:fd274940bcdce140e8e8bfc982c0b96c1898b682f5e5810635bf50efb5d50fc1"
 )
 EXPECTED_DATA_PATH = "/mnt/apps/docker/autofpl/data"
 
@@ -56,7 +56,7 @@ class AutoFplStackPolicyTests(unittest.TestCase):
         self.assertEqual(["ALL"], self.service["cap_drop"])
         self.assertIn("no-new-privileges:true", self.service["security_opt"])
         self.assertIn("/tmp:rw,nosuid,nodev,noexec,size=16m", self.service["tmpfs"])
-        self.assertEqual("768m", self.service["mem_limit"])
+        self.assertEqual("256m", self.service["mem_limit"])
         for key in ("pids_limit", "mem_limit", "cpus", "stop_grace_period", "logging"):
             self.assertIn(key, self.service)
 

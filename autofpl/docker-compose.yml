@@ -1,6 +1,6 @@
 services:
   autofpl:
-    image: ghcr.io/jellman86/autofpl@sha256:0176a6208877e446f10e212218389e497bd5d45517c3897f619fb3e5da5059cb
+    image: ghcr.io/jellman86/autofpl@sha256:fd274940bcdce140e8e8bfc982c0b96c1898b682f5e5810635bf50efb5d50fc1
     container_name: autofpl
     restart: unless-stopped
     user: "1654:1654"
@@ -19,7 +19,7 @@ services:
     security_opt:
       - no-new-privileges:true
     pids_limit: 64
-    mem_limit: 768m
+    mem_limit: 256m
     cpus: 1.0
     stop_grace_period: 30s
     expose:

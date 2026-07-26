@@ -4,11 +4,12 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `57e6530326272f6ce86646dae03f2a62ba48bdb0`.
-- Compose pins the immutable manifest digest `sha256:0176a6208877e446f10e212218389e497bd5d45517c3897f619fb3e5da5059cb`.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `f2c0270063c03dc4af183d5d98760c65ec098840`.
+- Compose pins the immutable manifest digest `sha256:fd274940bcdce140e8e8bfc982c0b96c1898b682f5e5810635bf50efb5d50fc1`.
 - The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the demo advice route builds a legal 15-player identity preview with official portraits and cutoff-aware player dossiers; projected points and explanations remain explicitly synthetic until the evaluated forecasting pipeline replaces them.
 - The API publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes private decision-snapshot write/read routes, and serves read-only provenance and replay views for official FPL and FPL Form captures.
-- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures and public forecast captures. Startup applies seven explicit migrations with foreign keys, WAL and a bounded busy timeout.
+- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures and public forecast captures. Startup applies eight explicit migrations with foreign keys, WAL and a bounded busy timeout.
+- FPL Form collection reuses Quark's existing Playwright MCP service. The browser parses the provider's large embedded payload in its own bounded container and returns compact, versioned evidence to autoFPL with transport, extraction-version and full provider-payload hash provenance. The application does not run a second browser stack or download the roughly 105 MB page into the API process.
 
 ## Network exposure
 
@@ -24,7 +25,7 @@ http://autofpl-api:8080
 
 The container runs explicitly as UID/GID `1654`, uses a read-only root filesystem, has only a bounded `/tmp` tmpfs, drops all Linux capabilities, enables `no-new-privileges`, and bounds PIDs, CPU, memory, shutdown time, and JSON logs. The only writable mount is the private SQLite directory at `/data`. The health check uses the image's built-in fail-closed probe.
 
-The 768 MiB memory limit covers the normally small API plus the same-container operator importer. The fixed FPL Form page was measured at about 105 MB and its bounded parse peaked around 426 MiB; the previous 256 MiB limit terminated that documented command before it could return its normal fail-closed result.
+The 256 MiB limit covers the API and its bounded MCP response handling. The large dynamic-page parse runs in the separately managed Playwright service, so the operator importer no longer needs the temporary 768 MiB application allowance.
 
 ## Persistent data
 
@@ -41,6 +42,8 @@ Verify with `getfacl /mnt/apps/docker/autofpl/data`. The directory owner remains
 Create a consistent backup from the application image's SQLite online-backup command, using a new filename under `/data/backups`, and verify the backup with the integrity command before a schema-changing deployment or rollback. Do not copy the live database/WAL pair directly.
 
 Before this migration, the live schema-3 database was backed up to `/data/backups/autofpl-before-be32299-20260725T2205Z.db` and the backup returned `ok` from the prior image's integrity command.
+
+Before the schema-8 Playwright collector deployment, the live database was backed up to `/data/backups/autofpl-before-f2c0270-20260726T0922Z.db`; the SQLite integrity check returned `ok`.
 
 ## Dockhand deployment
 
@@ -76,6 +79,7 @@ After Dockhand deployment, verify:
 6. When a qualifying official replay exists, advice reports `synthetic-forecast-real-identities`, returns a legal official 15-player preview, links every player to a cutoff-aware dossier and does not mislabel its synthetic projections as a real forecast.
 7. `/data/autofpl.db` is owned by UID `1654`, WAL mode is active, and the built-in integrity command returns `ok`.
 8. Before the first operator import, `/api/v1/data/official-fpl/latest` returns 404. After `--import-official-fpl`, it reports the fixed URLs, null publication time, equal retrieval/availability time, hashes and non-zero source counts without returning raw provider JSON.
+9. `--import-fpl-form-forecast` uses `playwright-mcp:8931`, fails cleanly without a partial capture when the provider has no active next-Gameweek forecast, and records `playwright-mcp`, extraction version and provider payload hash provenance when an active forecast is available.
 
 ## Rollback
 
