@@ -9,10 +9,10 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "docker-compose.yml"
 README = ROOT / "README.md"
-EXPECTED_REVISION = "05f1f25819663c271d5e09fd09968b99aa541cb2"
+EXPECTED_REVISION = "7d0b81e9b13ce564243e6e7bc51a9b5e4f1ac871"
 EXPECTED_IMAGE = (
     "ghcr.io/jellman86/autofpl@"
-    "sha256:8514304cb152ecb917c54118bfe6472e06fcdba2b8cc1d879151b9132b25dfd5"
+    "sha256:604ee1498c2f6f5568bcc034feb424756d9b4adc94723bb6e34bb07563ff0cb5"
 )
 EXPECTED_DATA_PATH = "/mnt/apps/docker/autofpl/data"
 
@@ -66,6 +66,12 @@ class AutoFplStackPolicyTests(unittest.TestCase):
             self.service["healthcheck"]["test"],
         )
         self.assertIn("autofpl-api", self.service["networks"]["general_brg"]["aliases"])
+        self.assertEqual(
+            "360",
+            self.service["environment"][
+                "AutoFpl__Research__FplFormPollIntervalMinutes"
+            ],
+        )
 
 
 if __name__ == "__main__":
