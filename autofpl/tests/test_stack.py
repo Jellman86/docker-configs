@@ -56,6 +56,7 @@ class AutoFplStackPolicyTests(unittest.TestCase):
         self.assertEqual(["ALL"], self.service["cap_drop"])
         self.assertIn("no-new-privileges:true", self.service["security_opt"])
         self.assertIn("/tmp:rw,nosuid,nodev,noexec,size=16m", self.service["tmpfs"])
+        self.assertEqual("768m", self.service["mem_limit"])
         for key in ("pids_limit", "mem_limit", "cpus", "stop_grace_period", "logging"):
             self.assertIn(key, self.service)
 
