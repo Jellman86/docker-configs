@@ -81,6 +81,12 @@ class AutoFplStackPolicyTests(unittest.TestCase):
                 "AutoFpl__Research__OfficialFplPollIntervalMinutes"
             ],
         )
+        self.assertEqual(
+            "360",
+            self.service["environment"][
+                "AutoFpl__Research__ResearchSourcePollIntervalMinutes"
+            ],
+        )
 
 
 if __name__ == "__main__":

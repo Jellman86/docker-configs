@@ -10,6 +10,7 @@ services:
     environment:
       AutoFpl__Research__FplFormPollIntervalMinutes: "360"
       AutoFpl__Research__OfficialFplPollIntervalMinutes: "360"
+      AutoFpl__Research__ResearchSourcePollIntervalMinutes: "360"
     tmpfs:
       - /tmp:rw,nosuid,nodev,noexec,size=16m
     volumes:
