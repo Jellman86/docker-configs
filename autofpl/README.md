@@ -4,13 +4,14 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `464ff2db402bbfc48d1c634ce1ce03c968c43891`.
-- Compose pins the immutable manifest digest `sha256:1a5c599d1a5d710cce67863899090336b7033d61f28a795b3e7678e8b19c1604`.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `d091825c1a44977d66495768eddceca961f4a206`.
+- Compose pins the immutable manifest digest `sha256:6e31c096e37c436bb7c2686ef8b34229af40536f26047d2318cf2ba4064cebaa`.
 - The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the demo advice route builds a legal 15-player identity preview with official portraits and cutoff-aware player dossiers; projected points and explanations remain explicitly synthetic until the evaluated forecasting pipeline replaces them.
 - The API publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes private decision-snapshot write/read routes, and serves read-only provenance, replay and deterministic FPL Form player/fixture identity-coverage views.
-- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures and public forecast captures. Startup applies nine explicit migrations with foreign keys, WAL and a bounded busy timeout.
+- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures and public forecast captures. Startup applies ten explicit migrations with foreign keys, WAL and a bounded busy timeout. Official final outcomes retain bounded xG/xA/xGC, ICT/BPS and defensive evidence; legacy rows remain null.
 - FPL Form collection reuses Quark's existing Playwright MCP service. One fixed code operation navigates to the canonical provider page and parses its large embedded payload without generating an accessibility snapshot. The browser returns compact, versioned evidence to autoFPL with transport, extraction-version and full provider-payload hash provenance. The application does not run a second browser stack or download the roughly 105 MB page into the API process.
 - The read-only FPL Form evaluator reuses the same authoritative identity resolution, pairs only deadline-eligible captures with later final outcomes, and emits deterministic exploratory metrics for published conditional points and a separately labelled appearance-adjusted challenger.
+- The player dossier exposes retained official underlying evidence, while the analytics boundary produces cutoff-safe temporal summaries and an identical-fold, unpromoted underlying-feature ablation.
 
 ## Network exposure
 
@@ -47,6 +48,8 @@ Before this migration, the live schema-3 database was backed up to `/data/backup
 Before the schema-8 Playwright collector deployment, the live database was backed up to `/data/backups/autofpl-before-f2c0270-20260726T0922Z.db`; the SQLite integrity check returned `ok`.
 
 Before the schema-9 canonical-source hotfix, the live database was backed up to `/data/backups/autofpl-before-2bec8d0-20260726T0941Z.db`; the SQLite integrity check returned `ok`.
+
+Before this schema-10 deployment, the live database was backed up online to `/data/backups/autofpl-before-d091825-20260726T1216Z.db`; both the live database and backup returned `ok`, and the backup SHA-256 is `1504ba13387aebeb79c158814fc0402b226b63556a0af8d48034aef075a81fee`.
 
 ## Dockhand deployment
 
