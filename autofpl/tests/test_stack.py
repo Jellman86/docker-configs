@@ -9,10 +9,10 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "docker-compose.yml"
 README = ROOT / "README.md"
-EXPECTED_REVISION = "be32299f8b0f67fed537c917fb991803fbe3e051"
+EXPECTED_REVISION = "57e6530326272f6ce86646dae03f2a62ba48bdb0"
 EXPECTED_IMAGE = (
     "ghcr.io/jellman86/autofpl@"
-    "sha256:5d2628ca4cf3c720be40997e9749727d83ec7f8de58a090ad23265cb0d751b1e"
+    "sha256:0176a6208877e446f10e212218389e497bd5d45517c3897f619fb3e5da5059cb"
 )
 EXPECTED_DATA_PATH = "/mnt/apps/docker/autofpl/data"
 
