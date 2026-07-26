@@ -4,12 +4,13 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `2bec8d0662c41662a3fb04b04626ac1baf75ae14`.
-- Compose pins the immutable manifest digest `sha256:5de3617c735e583188ef9487c5171db652730ed545d824c89f0862bcdd90b6cf`.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `464ff2db402bbfc48d1c634ce1ce03c968c43891`.
+- Compose pins the immutable manifest digest `sha256:1a5c599d1a5d710cce67863899090336b7033d61f28a795b3e7678e8b19c1604`.
 - The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the demo advice route builds a legal 15-player identity preview with official portraits and cutoff-aware player dossiers; projected points and explanations remain explicitly synthetic until the evaluated forecasting pipeline replaces them.
-- The API publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes private decision-snapshot write/read routes, and serves read-only provenance and replay views for official FPL and FPL Form captures.
+- The API publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes private decision-snapshot write/read routes, and serves read-only provenance, replay and deterministic FPL Form player/fixture identity-coverage views.
 - One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures and public forecast captures. Startup applies nine explicit migrations with foreign keys, WAL and a bounded busy timeout.
 - FPL Form collection reuses Quark's existing Playwright MCP service. One fixed code operation navigates to the canonical provider page and parses its large embedded payload without generating an accessibility snapshot. The browser returns compact, versioned evidence to autoFPL with transport, extraction-version and full provider-payload hash provenance. The application does not run a second browser stack or download the roughly 105 MB page into the API process.
+- The read-only FPL Form evaluator reuses the same authoritative identity resolution, pairs only deadline-eligible captures with later final outcomes, and emits deterministic exploratory metrics for published conditional points and a separately labelled appearance-adjusted challenger.
 
 ## Network exposure
 
@@ -82,6 +83,7 @@ After Dockhand deployment, verify:
 7. `/data/autofpl.db` is owned by UID `1654`, WAL mode is active, and the built-in integrity command returns `ok`.
 8. Before the first operator import, `/api/v1/data/official-fpl/latest` returns 404. After `--import-official-fpl`, it reports the fixed URLs, null publication time, equal retrieval/availability time, hashes and non-zero source counts without returning raw provider JSON.
 9. `--import-fpl-form-forecast` uses `playwright-mcp:8931`, fails cleanly without a partial capture when the provider has no active next-Gameweek forecast, and records `playwright-mcp`, extraction version and provider payload hash provenance when an active forecast is available.
+10. The capture-specific FPL Form identity route returns 404 for an unknown capture and fails closed on unavailable, ambiguous or post-deadline evidence. `--evaluate-fpl-form-forecast` returns exit `2` with a deterministic `insufficient-data` report until a complete forecast/outcome pair exists.
 
 ## Rollback
 
