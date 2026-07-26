@@ -9,12 +9,13 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "docker-compose.yml"
 README = ROOT / "README.md"
-EXPECTED_REVISION = "c72fafc9ac8a1fc644140f5b7ffe3371932cda68"
+EXPECTED_REVISION = "54152f0567b17e97b6ca781ea286df00201076c6"
 EXPECTED_IMAGE = (
     "ghcr.io/jellman86/autofpl@"
-    "sha256:46a1ebfcfec45099ddbaecf842db56b1f75f5a402049c695a9b629a5f8086974"
+    "sha256:affce10702755e154d378c5a20c109bbd46fa6c09e796dfbb998d5220bba5cb0"
 )
 EXPECTED_DATA_PATH = "/mnt/apps/docker/autofpl/data"
+EXPECTED_RESEARCH_NETWORK = "hermes_agent_research_private"
 
 
 class AutoFplStackPolicyTests(unittest.TestCase):
@@ -35,8 +36,15 @@ class AutoFplStackPolicyTests(unittest.TestCase):
     def test_service_has_no_host_port_and_one_private_data_mount(self) -> None:
         self.assertNotIn("ports", self.service)
         self.assertEqual(["8080"], self.service["expose"])
-        self.assertEqual({"general_brg"}, set(self.service["networks"]))
+        self.assertEqual(
+            {"general_brg", "research_private"}, set(self.service["networks"])
+        )
         self.assertTrue(self.compose["networks"]["general_brg"]["external"])
+        self.assertTrue(self.compose["networks"]["research_private"]["external"])
+        self.assertEqual(
+            EXPECTED_RESEARCH_NETWORK,
+            self.compose["networks"]["research_private"]["name"],
+        )
         self.assertEqual(
             [
                 {
