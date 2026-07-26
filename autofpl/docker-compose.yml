@@ -1,6 +1,6 @@
 services:
   autofpl:
-    image: ghcr.io/jellman86/autofpl@sha256:604ee1498c2f6f5568bcc034feb424756d9b4adc94723bb6e34bb07563ff0cb5
+    image: ghcr.io/jellman86/autofpl@sha256:35bf1b6e0895924eec5a118c8e4fd73660da113d5d46d03854b96887f08ef5f9
     container_name: autofpl
     restart: unless-stopped
     user: "1654:1654"
@@ -8,6 +8,7 @@ services:
     read_only: true
     environment:
       AutoFpl__Research__FplFormPollIntervalMinutes: "360"
+      AutoFpl__Research__OfficialFplPollIntervalMinutes: "360"
     tmpfs:
       - /tmp:rw,nosuid,nodev,noexec,size=16m
     volumes:
