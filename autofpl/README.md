@@ -4,8 +4,8 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `e21fc265a5a607305e54123160fa42e684c055a9`.
-- Compose pins the immutable manifest digest `sha256:4ce701472e1655d422a053214033c4fc6acd4e52aba0c8c835f92e58ef466c3c`.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `44e4f97995d6f8603c9f12460ee11672e170e1b9`.
+- Compose pins the immutable manifest digest `sha256:44c3c85d3b473e17e1caf5a2e8f8ec2ff96791574c28c6c5bfa52351fa5e6dd5`.
 - The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the advice route returns an explicitly unvalidated Baseline v0 squad, XI, bench and captaincy with official portraits, cutoff-aware player dossiers, wide intervals and transparent market/fixture evidence. Schema 13 persists one immutable forecast artifact and content hash per official capture; schema 14 retains the official provider's optional next-Gameweek expected-points value as a separately labelled, not-promoted dossier challenger. Refreshing prediction only reloads Baseline v0 and does not start collection.
 - The API publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes private decision-snapshot write/read routes, and serves read-only provenance, replay and deterministic FPL Form player/fixture identity-coverage views.
 - One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures, Baseline v0 forecast artifacts, public forecast captures and collection checks. Startup applies fourteen explicit migrations with foreign keys, WAL and a bounded busy timeout. Official final outcomes retain bounded xG/xA/xGC, ICT/BPS and defensive evidence; legacy rows remain null.
@@ -13,6 +13,7 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 - The instance checks FPL Form at most every six hours. Its persisted last-check time survives restarts, so a deployment waits the remaining interval rather than creating an extra provider request.
 - The instance also checks the fixed official bootstrap/fixture pair every six hours and persists the attempt time independently of immutable content deduplication.
 - The read-only FPL Form evaluator reuses the same authoritative identity resolution, pairs only deadline-eligible captures with later final outcomes, and emits deterministic exploratory metrics for published conditional points and a separately labelled appearance-adjusted challenger.
+- The read-only official expected-points evaluator scores retained `ep_next` values unchanged against later final outcomes, requires complete capture/player chronology, keeps zero-minute players in the population, and emits deterministic overall, position and zero-minute metrics without promoting the source.
 - The player dossier exposes retained official underlying evidence, while the analytics boundary produces cutoff-safe temporal summaries and an identical-fold, unpromoted underlying-feature ablation.
 
 ## Network exposure
@@ -92,7 +93,7 @@ After Dockhand deployment, verify:
 7. `/data/autofpl.db` is owned by UID `1654`, WAL mode is active, and the built-in integrity command returns `ok`.
 8. Before the first operator import, `/api/v1/data/official-fpl/latest` returns 404. After `--import-official-fpl`, it reports the fixed URLs, null publication time, equal retrieval/availability time, hashes and non-zero source counts without returning raw provider JSON.
 9. `--import-fpl-form-forecast` uses `playwright-mcp:8931`, fails cleanly without a partial capture when the provider has no active next-Gameweek forecast, and records `playwright-mcp`, extraction version and provider payload hash provenance when an active forecast is available.
-10. The capture-specific FPL Form identity route returns 404 for an unknown capture and fails closed on unavailable, ambiguous or post-deadline evidence. `--evaluate-fpl-form-forecast` returns exit `2` with a deterministic `insufficient-data` report until a complete forecast/outcome pair exists.
+10. The capture-specific FPL Form identity route returns 404 for an unknown capture and fails closed on unavailable, ambiguous or post-deadline evidence. `--evaluate-fpl-form-forecast` and `--evaluate-official-fpl-expected-points` return exit `2` with deterministic `insufficient-data` reports until their complete forecast/outcome pairs exist.
 
 ## Rollback
 
