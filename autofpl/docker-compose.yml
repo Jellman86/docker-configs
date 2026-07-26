@@ -1,6 +1,6 @@
 services:
   autofpl:
-    image: ghcr.io/jellman86/autofpl@sha256:46a1ebfcfec45099ddbaecf842db56b1f75f5a402049c695a9b629a5f8086974
+    image: ghcr.io/jellman86/autofpl@sha256:affce10702755e154d378c5a20c109bbd46fa6c09e796dfbb998d5220bba5cb0
     container_name: autofpl
     restart: unless-stopped
     user: "1654:1654"
@@ -31,6 +31,7 @@ services:
       general_brg:
         aliases:
           - autofpl-api
+      research_private: {}
     healthcheck:
       test: ["CMD", "dotnet", "AutoFpl.Api.dll", "--health-check"]
       interval: 30s
@@ -46,4 +47,7 @@ services:
 networks:
   general_brg:
     name: general_brg
+    external: true
+  research_private:
+    name: hermes_agent_research_private
     external: true
