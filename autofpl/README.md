@@ -4,11 +4,11 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `60ae7961d2db9dfe79559ae17c0f4700ebb3e92b`.
-- Compose pins the immutable manifest digest `sha256:1d44aaf5503595edf67c104c05e332f704138bf69e9ecf8da9b6b1f178987ef8`.
-- The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the advice route returns an explicitly unvalidated Baseline v0 squad, XI, bench and captaincy with official portraits, cutoff-aware player dossiers, wide intervals and transparent market/fixture evidence. Schema 13 persists one immutable forecast artifact and content hash per official capture; refreshing prediction only reloads it and does not start collection.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `e21fc265a5a607305e54123160fa42e684c055a9`.
+- Compose pins the immutable manifest digest `sha256:4ce701472e1655d422a053214033c4fc6acd4e52aba0c8c835f92e58ef466c3c`.
+- The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the advice route returns an explicitly unvalidated Baseline v0 squad, XI, bench and captaincy with official portraits, cutoff-aware player dossiers, wide intervals and transparent market/fixture evidence. Schema 13 persists one immutable forecast artifact and content hash per official capture; schema 14 retains the official provider's optional next-Gameweek expected-points value as a separately labelled, not-promoted dossier challenger. Refreshing prediction only reloads Baseline v0 and does not start collection.
 - The API publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes private decision-snapshot write/read routes, and serves read-only provenance, replay and deterministic FPL Form player/fixture identity-coverage views.
-- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures, Baseline v0 forecast artifacts, public forecast captures and collection checks. Startup applies thirteen explicit migrations with foreign keys, WAL and a bounded busy timeout. Official final outcomes retain bounded xG/xA/xGC, ICT/BPS and defensive evidence; legacy rows remain null.
+- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures, Baseline v0 forecast artifacts, public forecast captures and collection checks. Startup applies fourteen explicit migrations with foreign keys, WAL and a bounded busy timeout. Official final outcomes retain bounded xG/xA/xGC, ICT/BPS and defensive evidence; legacy rows remain null.
 - FPL Form collection reuses Quark's existing Playwright MCP service. One fixed code operation fetches the canonical provider page through Playwright's request context without rendering or executing the roughly 105 MB document. It short-circuits the off-season sentinel and, for an active Gameweek, scans one encoded player object at a time rather than constructing the complete decoded history. The bounded MCP client accepts either direct JSON or SSE Streamable HTTP responses and selects the matching JSON-RPC result. The browser returns compact, versioned evidence to autoFPL with transport, extraction-version and full provider-payload hash provenance. The application does not run a second browser stack or download the page into the API process.
 - The instance checks FPL Form at most every six hours. Its persisted last-check time survives restarts, so a deployment waits the remaining interval rather than creating an extra provider request.
 - The instance also checks the fixed official bootstrap/fixture pair every six hours and persists the attempt time independently of immutable content deduplication.
@@ -54,6 +54,8 @@ Before the schema-9 canonical-source hotfix, the live database was backed up to 
 Before this schema-10 deployment, the live database was backed up online to `/data/backups/autofpl-before-d091825-20260726T1216Z.db`; both the live database and backup returned `ok`, and the backup SHA-256 is `1504ba13387aebeb79c158814fc0402b226b63556a0af8d48034aef075a81fee`.
 
 Before the schema-13 forecast-artifact deployment, the live database was backed up online to `/data/backups/autofpl-before-60ae796-20260726T1434Z.db`; both the live database and backup returned `ok`, and the backup SHA-256 is `968e3112afec48555ab4cee062bebaf699eb105d8f4043bedaccad792ea095e9`.
+
+Before the schema-14 official expected-points challenger deployment, the live database was backed up online to `/data/backups/autofpl-before-e21fc26-20260726T1500Z.db`; both the live database and backup returned `ok`, and the backup SHA-256 is `3e89de48378db065ac6f54e83927d964c0117eef038cd51b0c0905a9527d835f`.
 
 ## Dockhand deployment
 
