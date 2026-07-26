@@ -4,12 +4,12 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `f2c0270063c03dc4af183d5d98760c65ec098840`.
-- Compose pins the immutable manifest digest `sha256:fd274940bcdce140e8e8bfc982c0b96c1898b682f5e5810635bf50efb5d50fc1`.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `2bec8d0662c41662a3fb04b04626ac1baf75ae14`.
+- Compose pins the immutable manifest digest `sha256:5de3617c735e583188ef9487c5171db652730ed545d824c89f0862bcdd90b6cf`.
 - The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the demo advice route builds a legal 15-player identity preview with official portraits and cutoff-aware player dossiers; projected points and explanations remain explicitly synthetic until the evaluated forecasting pipeline replaces them.
 - The API publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes private decision-snapshot write/read routes, and serves read-only provenance and replay views for official FPL and FPL Form captures.
-- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures and public forecast captures. Startup applies eight explicit migrations with foreign keys, WAL and a bounded busy timeout.
-- FPL Form collection reuses Quark's existing Playwright MCP service. The browser parses the provider's large embedded payload in its own bounded container and returns compact, versioned evidence to autoFPL with transport, extraction-version and full provider-payload hash provenance. The application does not run a second browser stack or download the roughly 105 MB page into the API process.
+- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures and public forecast captures. Startup applies nine explicit migrations with foreign keys, WAL and a bounded busy timeout.
+- FPL Form collection reuses Quark's existing Playwright MCP service. One fixed code operation navigates to the canonical provider page and parses its large embedded payload without generating an accessibility snapshot. The browser returns compact, versioned evidence to autoFPL with transport, extraction-version and full provider-payload hash provenance. The application does not run a second browser stack or download the roughly 105 MB page into the API process.
 
 ## Network exposure
 
@@ -44,6 +44,8 @@ Create a consistent backup from the application image's SQLite online-backup com
 Before this migration, the live schema-3 database was backed up to `/data/backups/autofpl-before-be32299-20260725T2205Z.db` and the backup returned `ok` from the prior image's integrity command.
 
 Before the schema-8 Playwright collector deployment, the live database was backed up to `/data/backups/autofpl-before-f2c0270-20260726T0922Z.db`; the SQLite integrity check returned `ok`.
+
+Before the schema-9 canonical-source hotfix, the live database was backed up to `/data/backups/autofpl-before-2bec8d0-20260726T0941Z.db`; the SQLite integrity check returned `ok`.
 
 ## Dockhand deployment
 
