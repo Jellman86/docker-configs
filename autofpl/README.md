@@ -4,11 +4,11 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Service
 
-- `autofpl` runs the verified image published from autoFPL `dev` merge commit `44e4f97995d6f8603c9f12460ee11672e170e1b9`.
-- Compose pins the immutable manifest digest `sha256:44c3c85d3b473e17e1caf5a2e8f8ec2ff96791574c28c6c5bfa52351fa5e6dd5`.
-- The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the advice route returns an explicitly unvalidated Baseline v0 squad, XI, bench and captaincy with official portraits, cutoff-aware player dossiers, wide intervals and transparent market/fixture evidence. Schema 13 persists one immutable forecast artifact and content hash per official capture; schema 14 retains the official provider's optional next-Gameweek expected-points value as a separately labelled, not-promoted dossier challenger. Refreshing prediction only reloads Baseline v0 and does not start collection.
+- `autofpl` runs the verified image published from autoFPL `dev` merge commit `da3bb1ed0df7784c648bfc79feafe71b96778421`.
+- Compose pins the immutable manifest digest `sha256:cf1c363cb6e3ac19ca210b366ac9aa306365f114ba15fc68f6340a5a8cd80efa`.
+- The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the advice route returns an explicitly unvalidated Baseline v0 squad, XI, bench and captaincy with official portraits, cutoff-aware player dossiers, wide intervals and transparent market/fixture evidence. Schema 13 persists one immutable forecast artifact and content hash per official capture; schema 14 retains the official provider's optional next-Gameweek expected-points value as a separately labelled, not-promoted dossier challenger. Schema 15 adds immutable, forecast-linked selection revisions with an explicit one-time user lock and deadline-derived draft, locked, expired and frozen states. Refreshing prediction only reloads Baseline v0 and does not start collection or change a user's saved selection.
 - The API publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes private decision-snapshot write/read routes, and serves read-only provenance, replay and deterministic FPL Form player/fixture identity-coverage views.
-- One SQLite file under `/data` is authoritative for squad, selection, observation, immutable snapshot state, official FPL captures, Baseline v0 forecast artifacts, public forecast captures and collection checks. Startup applies fourteen explicit migrations with foreign keys, WAL and a bounded busy timeout. Official final outcomes retain bounded xG/xA/xGC, ICT/BPS and defensive evidence; legacy rows remain null.
+- One SQLite file under `/data` is authoritative for squad, immutable selection revisions and locks, observation, immutable snapshot state, official FPL captures, Baseline v0 forecast artifacts, public forecast captures and collection checks. Startup applies fifteen explicit migrations with foreign keys, WAL and a bounded busy timeout. Official final outcomes retain bounded xG/xA/xGC, ICT/BPS and defensive evidence; legacy rows remain null.
 - FPL Form collection reuses Quark's existing Playwright MCP service. One fixed code operation fetches the canonical provider page through Playwright's request context without rendering or executing the roughly 105 MB document. It short-circuits the off-season sentinel and, for an active Gameweek, scans one encoded player object at a time rather than constructing the complete decoded history. The bounded MCP client accepts either direct JSON or SSE Streamable HTTP responses and selects the matching JSON-RPC result. The browser returns compact, versioned evidence to autoFPL with transport, extraction-version and full provider-payload hash provenance. The application does not run a second browser stack or download the page into the API process.
 - The instance checks FPL Form at most every six hours. Its persisted last-check time survives restarts, so a deployment waits the remaining interval rather than creating an extra provider request.
 - The instance also checks the fixed official bootstrap/fixture pair every six hours and persists the attempt time independently of immutable content deduplication.
@@ -58,6 +58,8 @@ Before the schema-13 forecast-artifact deployment, the live database was backed 
 
 Before the schema-14 official expected-points challenger deployment, the live database was backed up online to `/data/backups/autofpl-before-e21fc26-20260726T1500Z.db`; both the live database and backup returned `ok`, and the backup SHA-256 is `3e89de48378db065ac6f54e83927d964c0117eef038cd51b0c0905a9527d835f`.
 
+Before the schema-15 selection-lifecycle deployment, the live database was backed up online to `/data/backups/autofpl-before-da3bb1e-20260726T1559Z.db`; both the live database and backup returned `ok`, and the backup SHA-256 is `8a06c42d13f5aa733b71aa49aa6173a33c819f990bcf24fe81450c0e4bd2ffea`.
+
 ## Dockhand deployment
 
 Create a Git-backed Dockhand stack with:
@@ -94,6 +96,7 @@ After Dockhand deployment, verify:
 8. Before the first operator import, `/api/v1/data/official-fpl/latest` returns 404. After `--import-official-fpl`, it reports the fixed URLs, null publication time, equal retrieval/availability time, hashes and non-zero source counts without returning raw provider JSON.
 9. `--import-fpl-form-forecast` uses `playwright-mcp:8931`, fails cleanly without a partial capture when the provider has no active next-Gameweek forecast, and records `playwright-mcp`, extraction version and provider payload hash provenance when an active forecast is available.
 10. The capture-specific FPL Form identity route returns 404 for an unknown capture and fails closed on unavailable, ambiguous or post-deadline evidence. `--evaluate-fpl-form-forecast` and `--evaluate-official-fpl-expected-points` return exit `2` with deterministic `insufficient-data` reports until their complete forecast/outcome pairs exist.
+11. `/api/v1/selections/current` returns 404 before a user creates a draft. The UI offers an explicit forecast-to-draft action and a separate confirmation-gated lock action only for persisted pre-deadline forecasts; synthetic previews remain read-only. Locking does not write to an FPL account.
 
 ## Rollback
 
