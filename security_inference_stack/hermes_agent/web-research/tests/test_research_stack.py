@@ -27,12 +27,12 @@ class ResearchStackPolicyTests(unittest.TestCase):
 
     def test_required_services_exist(self) -> None:
         self.assertTrue(
-            {"research-egress", "searxng", "spider-chromium", "spider-mcp"}
+            {"research-egress", "byparr", "searxng", "spider-chromium", "spider-mcp"}
             <= self.services.keys()
         )
 
     def test_no_research_service_publishes_ports_or_mounts_docker_socket(self) -> None:
-        for name in ("research-egress", "searxng", "spider-chromium", "spider-mcp"):
+        for name in ("research-egress", "byparr", "searxng", "spider-chromium", "spider-mcp"):
             service = self.services[name]
             self.assertNotIn("ports", service, name)
             for mount in service.get("volumes", []):
@@ -61,9 +61,13 @@ class ResearchStackPolicyTests(unittest.TestCase):
             set(self.services["research-egress"]["networks"]),
             {"research_private", "spider_browser_private", "research_egress"},
         )
+        self.assertEqual(
+            set(self.services["byparr"]["networks"]),
+            {"research_private"},
+        )
 
     def test_services_are_hardened_and_bounded(self) -> None:
-        for name in ("research-egress", "searxng", "spider-chromium", "spider-mcp"):
+        for name in ("research-egress", "byparr", "searxng", "spider-chromium", "spider-mcp"):
             service = self.services[name]
             self.assertTrue(service.get("read_only"), name)
             self.assertEqual(service.get("cap_drop"), ["ALL"], name)
@@ -74,7 +78,7 @@ class ResearchStackPolicyTests(unittest.TestCase):
             self.assertIn("healthcheck", service, name)
 
     def test_images_and_build_inputs_are_immutable(self) -> None:
-        for name in ("research-egress", "searxng", "spider-chromium"):
+        for name in ("research-egress", "byparr", "searxng", "spider-chromium"):
             image = self.services[name]["image"]
             self.assertIn("@sha256:", image, name)
             self.assertNotIn(":latest@", image, name)
@@ -91,6 +95,16 @@ class ResearchStackPolicyTests(unittest.TestCase):
         self.assertIn("--proxy-bypass=<-loopback>", command)
         self.assertNotIn("spider_browser_private", service["networks"])
         self.assertIn("research-egress", service["depends_on"])
+
+    def test_byparr_is_private_proxy_forced_and_uses_local_healthcheck(self) -> None:
+        service = self.services["byparr"]
+        self.assertEqual(service["environment"]["PROXY_SERVER"], "http://research-egress:3128")
+        self.assertIn("research-egress", service["depends_on"])
+        self.assertNotIn("general_brg", service["networks"])
+        probe = " ".join(service["healthcheck"]["test"])
+        self.assertIn("127.0.0.1',8191", probe)
+        self.assertNotIn("/health", probe)
+        self.assertNotIn("google", probe.lower())
 
     def test_spider_browser_is_not_shared_with_playwright(self) -> None:
         self.assertIn("spider_browser_private", self.services["spider-chromium"]["networks"])

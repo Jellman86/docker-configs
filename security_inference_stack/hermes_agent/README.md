@@ -21,7 +21,9 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 - A private Ollama v0.32.1 sidecar supplies `nomic-embed-text` embeddings without a separately billed embedding API.
 - The official Microsoft Playwright MCP v0.0.78 image supplies interactive browser automation in its own isolated browser trust domain.
 - A private SearXNG instance supplies ordinary search, while a pinned and hardened Spider MCP supplies bounded scrape, link-map, and recursive-crawl tools.
-- SearXNG, Spider, and Chromium have no direct external route: all public-web traffic crosses a non-caching Squid policy gateway that denies private, loopback, link-local, metadata, multicast, reserved, and Docker-internal destinations after DNS resolution.
+- A pinned Byparr 2.1.0 sidecar supplies a last-resort Camoufox transport for
+  allowlisted sources that challenge the ordinary browsers.
+- SearXNG, Spider, Byparr, and Chromium have no direct external route: all public-web traffic crosses a non-caching Squid policy gateway that denies private, loopback, link-local, metadata, multicast, reserved, and Docker-internal destinations after DNS resolution.
 - Long-session context compression uses `gpt-5.6-terra` at medium reasoning
   effort; interactive work remains on the main Sol/high profile.
 - The read-only `quark-operations` and `private-web-research` skills and managed policy are supplied from Git.
@@ -39,6 +41,7 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 | `hermes-agent` | Gateway, dashboard, tools, and managed agent runtime | Loopback dashboard plus selected internal/external networks |
 | `playwright-mcp` | Interactive browser MCP | `general_brg` and `research_private`; no host port |
 | `research-egress` | Squid public-web policy gateway | Private research networks plus isolated egress |
+| `byparr` | Camoufox challenge-handling transport | `research_private` only |
 | `spider-chromium` | Spider-only rendered-page browser/CDP | `spider_browser_private` only |
 | `spider-mcp` | Bounded scrape, links, and crawl MCP | Private Spider/research networks |
 | `searxng` | Search JSON API | `search_private` and `research_private` |
@@ -179,9 +182,19 @@ No native `web_extract` backend is configured. The managed
 | Extract links | Spider `spider_links` |
 | Bounded multi-page crawl | Spider `spider_crawl` |
 | Click, fill, authenticate or inspect dynamic state | Isolated Playwright MCP |
+| Fetch a specifically allowlisted page that presents a browser challenge | Byparr through a typed application adapter |
 
 Do not add a Firecrawl credential as a fallback. Diagnose Spider/Playwright or
 use another lawful source so extraction remains private, bounded and free.
+
+Byparr is available to trusted application containers on `research_private` at
+`http://byparr:8191/v1`. It is transport infrastructure, not an evidence source
+or a general user-facing proxy. Its upstream API accepts arbitrary URLs and
+request-level proxy overrides, so application adapters must expose only fixed,
+reviewed source definitions and must not forward caller-supplied URLs or
+`X-Proxy-*` headers. Never publish port 8191 or attach Byparr to `general_brg`.
+The Compose healthcheck is a local TCP probe because the upstream `/health`
+endpoint makes an external request.
 
 The hardened Spider MCP is available to Hermes at:
 
@@ -200,8 +213,8 @@ are capped at 100; crawl is capped at 10 pages, depth 3, and concurrency 1.
 network. Its Squid ACL re-resolves and checks every destination and redirect,
 allows only ports 80 and 443, and denies special-use IPv4/IPv6 ranges and local
 hostnames. The proxy is a defense-in-depth boundary in addition to Spider's URL
-validation. None of SearXNG, Spider, Squid, Chromium, or CDP publishes a host
-port.
+validation. None of SearXNG, Spider, Byparr, Squid, Chromium, or CDP publishes
+a host port.
 
 ## Playwright MCP and browser isolation
 
@@ -334,8 +347,9 @@ or OpenViking storage endpoints as a recovery shortcut.
 11. Ask for a Dockhand stack listing and confirm no direct Docker mutation occurs.
 12. Test Home Assistant with an entity read before allowing service calls.
 13. Confirm `rusty-imap-mcp` is healthy and Hermes registers the allowlisted full-posture mail tools, including drafts and SMTP send/forward, while omitting account switching, raw export, expunge, and folder deletion.
-14. Confirm `research-egress`, `spider-chromium`, `searxng`, `spider-mcp`, and `playwright-mcp` are healthy and publish no host ports.
+14. Confirm `research-egress`, `byparr`, `spider-chromium`, `searxng`, `spider-mcp`, and `playwright-mcp` are healthy and publish no host ports.
 15. Verify native `web_search` returns a SearXNG result and Hermes discovers only `mcp_spider_{spider_scrape,spider_crawl,spider_links}` from the Spider server.
 16. Scrape and crawl harmless public pages, then require loopback, RFC1918, link-local, metadata, reserved, and Docker service-name targets to fail through both Spider and Playwright.
 17. Use Playwright MCP to navigate to a harmless public page, inspect its title, and close the isolated browser context. Confirm Spider and Playwright use separate browser processes and cannot enumerate one another's targets.
-18. Confirm a body fetch leaves the message's `\\Seen` flag unchanged. Rusty uses read-only `EXAMINE` plus `BODY.PEEK[]`; the runtime check verifies the provider preserves that behavior.
+18. From a trusted `research_private` client, send Byparr one fixed harmless public URL and confirm it returns through `research-egress`; then verify a loopback or Docker service-name target is denied and no caller-selected proxy header is used.
+19. Confirm a body fetch leaves the message's `\\Seen` flag unchanged. Rusty uses read-only `EXAMINE` plus `BODY.PEEK[]`; the runtime check verifies the provider preserves that behavior.

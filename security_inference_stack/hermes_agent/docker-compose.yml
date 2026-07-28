@@ -196,6 +196,50 @@ services:
         max-size: "5m"
         max-file: "3"
 
+  byparr:
+    image: ghcr.io/thephaseless/byparr:2.1.0@sha256:01a46a2865d9a6db5eb8ead04ec0dd33b8fbe233e8565ae70b50d4cc0af4cfb0
+    container_name: byparr
+    restart: unless-stopped
+    init: true
+    user: "1000:1000"
+    read_only: true
+    shm_size: "1gb"
+    pids_limit: 512
+    mem_limit: "${BYPARR_MEMORY_LIMIT:-2g}"
+    cpus: "${BYPARR_CPUS:-1.50}"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8191"
+      PROXY_SERVER: http://research-egress:3128
+      LOG_LEVEL: "${BYPARR_LOG_LEVEL:-INFO}"
+      UV_CACHE_DIR: /tmp/uv-cache
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777
+    expose:
+      - "8191"
+    networks:
+      research_private:
+        aliases:
+          - byparr
+    depends_on:
+      research-egress:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import socket; s=socket.create_connection(('127.0.0.1',8191),3); s.close()"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   spider-chromium:
     image: mcr.microsoft.com/playwright/mcp:v0.0.78@sha256:3d871c22ea2d4cca0966e2cfb1860e1cb03eb7353725a3d6cffd133296fb04eb
     container_name: spider-chromium
