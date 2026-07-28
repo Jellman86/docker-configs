@@ -65,6 +65,10 @@ Before the schema-15 selection-lifecycle deployment, the live database was backe
 
 Before the schema-19 historical-data and research-evidence deployment, the live database was backed up online to `/data/backups/autofpl-before-54152f0-20260726T1813Z.db`; both the live database and backup returned `ok`, the backup is 7,925,760 bytes, and its SHA-256 is `dd95949eb7993ec9416d8a52e4f6334d5b59e2d56b08dd549da2dd0980d9c235`.
 
+Before the schema-21 Byparr research-capture deployment, the live database was backed up online to `/data/backups/autofpl-before-362ce1c-20260728T1615Z.db`; both the live database and backup returned `ok`, the backup is 34,504,704 bytes, and its SHA-256 is `bd2d692f7c090f75c5427eb2cd41996989e3e4277df6bff6fa1b85f77d7d84f0`.
+
+After retaining FBref snapshot 27, a second online backup was written to `/data/backups/autofpl-after-fbref-snapshot27-20260728T1618Z.db`; the backup returned `ok`, is 35,098,624 bytes, and has SHA-256 `6ee22548245a8840fef8718cbe1be7bd2f3f94e0aea0ddec8b9f112d984f631f`.
+
 ## Dockhand deployment
 
 Create a Git-backed Dockhand stack with:
