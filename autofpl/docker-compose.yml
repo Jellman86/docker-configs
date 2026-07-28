@@ -9,6 +9,8 @@ services:
     read_only: true
     environment:
       AutoFpl__Research__ByparrUrl: "http://192.168.213.101:8191/"
+      AutoFpl__Research__FbrefMatchLogCaptureIntervalMinutes: "60"
+      AutoFpl__Research__FbrefMatchLogCaptureBatchSize: "5"
       AutoFpl__Research__FplFormPollIntervalMinutes: "360"
       AutoFpl__Research__OfficialFplPollIntervalMinutes: "360"
       AutoFpl__Research__ResearchSourcePollIntervalMinutes: "360"
