@@ -69,13 +69,14 @@ class ResearchStackPolicyTests(unittest.TestCase):
     def test_services_are_hardened_and_bounded(self) -> None:
         for name in ("research-egress", "byparr", "searxng", "spider-chromium", "spider-mcp"):
             service = self.services[name]
-            self.assertTrue(service.get("read_only"), name)
             self.assertEqual(service.get("cap_drop"), ["ALL"], name)
             self.assertIn("no-new-privileges:true", service.get("security_opt", []), name)
             self.assertIn("mem_limit", service, name)
             self.assertIn("cpus", service, name)
             self.assertIn("pids_limit", service, name)
             self.assertIn("healthcheck", service, name)
+        for name in ("research-egress", "searxng", "spider-chromium", "spider-mcp"):
+            self.assertTrue(self.services[name].get("read_only"), name)
 
     def test_images_and_build_inputs_are_immutable(self) -> None:
         for name in ("research-egress", "byparr", "searxng", "spider-chromium"):
@@ -101,6 +102,9 @@ class ResearchStackPolicyTests(unittest.TestCase):
         self.assertEqual(service["environment"]["PROXY_SERVER"], "http://research-egress:3128")
         self.assertIn("research-egress", service["depends_on"])
         self.assertNotIn("general_brg", service["networks"])
+        self.assertEqual(service["user"], "1000:1000")
+        self.assertNotIn("volumes", service)
+        self.assertFalse(service.get("read_only", False))
         probe = " ".join(service["healthcheck"]["test"])
         self.assertIn("127.0.0.1',8191", probe)
         self.assertNotIn("/health", probe)

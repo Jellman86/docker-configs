@@ -21,8 +21,10 @@ This is a standalone Git-backed Dockhand stack stored beside Quark's inference c
 - A private Ollama v0.32.1 sidecar supplies `nomic-embed-text` embeddings without a separately billed embedding API.
 - The official Microsoft Playwright MCP v0.0.78 image supplies interactive browser automation in its own isolated browser trust domain.
 - A private SearXNG instance supplies ordinary search, while a pinned and hardened Spider MCP supplies bounded scrape, link-map, and recursive-crawl tools.
-- A pinned Byparr 2.1.0 sidecar supplies a last-resort Camoufox transport for
-  allowlisted sources that challenge the ordinary browsers.
+- A Byparr sidecar pinned to upstream commit `c42a353` and its immutable OCI
+  digest supplies a last-resort challenge-handling transport for allowlisted
+  sources that challenge the ordinary browsers. This post-2.1.0 revision
+  includes upstream's browser lifecycle fix.
 - SearXNG, Spider, Byparr, and Chromium have no direct external route: all public-web traffic crosses a non-caching Squid policy gateway that denies private, loopback, link-local, metadata, multicast, reserved, and Docker-internal destinations after DNS resolution.
 - Long-session context compression uses `gpt-5.6-terra` at medium reasoning
   effort; interactive work remains on the main Sol/high profile.
@@ -194,7 +196,10 @@ request-level proxy overrides, so application adapters must expose only fixed,
 reviewed source definitions and must not forward caller-supplied URLs or
 `X-Proxy-*` headers. Never publish port 8191 or attach Byparr to `general_brg`.
 The Compose healthcheck is a local TCP probe because the upstream `/health`
-endpoint makes an external request.
+endpoint makes an external request. Byparr runs non-root with no capabilities,
+host mounts, or published port. Its upstream browser cache requires an
+ephemeral writable container layer, which is discarded on recreation; do not
+add a persistent browser profile or host cache.
 
 The hardened Spider MCP is available to Hermes at:
 

@@ -197,12 +197,13 @@ services:
         max-file: "3"
 
   byparr:
-    image: ghcr.io/thephaseless/byparr:2.1.0@sha256:01a46a2865d9a6db5eb8ead04ec0dd33b8fbe233e8565ae70b50d4cc0af4cfb0
+    # Upstream commit c42a353b8ac1962321e43620cda1fa44d8c49fac includes
+    # the post-2.1.0 browser lifecycle fix and is pinned to its OCI index.
+    image: ghcr.io/thephaseless/byparr:main@sha256:c75576e2a6debaec2ddcb7de5cfb8dcd2a2398c04aa7a3ec0fe14d1bd35584fa
     container_name: byparr
     restart: unless-stopped
     init: true
     user: "1000:1000"
-    read_only: true
     shm_size: "1gb"
     pids_limit: 512
     mem_limit: "${BYPARR_MEMORY_LIMIT:-2g}"
@@ -216,7 +217,6 @@ services:
       PORT: "8191"
       PROXY_SERVER: http://research-egress:3128
       LOG_LEVEL: "${BYPARR_LOG_LEVEL:-INFO}"
-      UV_CACHE_DIR: /tmp/uv-cache
     tmpfs:
       - /tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777
     expose:
