@@ -11,6 +11,7 @@ README = ROOT / "README.md"
 EXPECTED_IMAGE = "ghcr.io/jellman86/autofpl:dev"
 EXPECTED_DATA_PATH = "/mnt/apps/docker/autofpl/data"
 EXPECTED_RESEARCH_NETWORK = "hermes_agent_research_private"
+EXPECTED_BYPARR_URL = "http://192.168.213.101:8191/"
 
 
 class AutoFplStackPolicyTests(unittest.TestCase):
@@ -69,6 +70,10 @@ class AutoFplStackPolicyTests(unittest.TestCase):
             self.service["healthcheck"]["test"],
         )
         self.assertIn("autofpl-api", self.service["networks"]["general_brg"]["aliases"])
+        self.assertEqual(
+            EXPECTED_BYPARR_URL,
+            self.service["environment"]["AutoFpl__Research__ByparrUrl"],
+        )
         self.assertEqual(
             "360",
             self.service["environment"][
