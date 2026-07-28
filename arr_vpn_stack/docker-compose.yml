@@ -202,6 +202,8 @@ services:
     init: true
     restart: unless-stopped
     logging: *default-logging
+    ports:
+      - "${BYPARR_PORT:-8191}:8191/tcp"
     networks:
       vpn_stack_brg:
     depends_on:

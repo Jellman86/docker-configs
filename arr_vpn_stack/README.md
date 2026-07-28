@@ -11,7 +11,7 @@ Git-backed Dockhand stack for the download and media-management services on Rike
 | `prowlarr` | Indexer manager | `9696` |
 | `radarr` | Movie management | `7878` |
 | `sonarr` | TV management | `8989` |
-| `byparr` | Browser-backed indexer challenge helper | Internal `8191` only |
+| `byparr` | Browser-backed indexer challenge helper | Riker port `8191` |
 | `cleanuparr` | Queue and download cleanup | `11011` |
 | `seerr` | Media request interface | `5055` |
 
@@ -24,6 +24,8 @@ Port variables in `docker-compose.yml` can override most published defaults.
 - External network: `${NETWORK:-arr_stack_brg}`.
 - qBittorrent uses `network_mode: service:gluetun`; it has no independent network path or host ports.
 - Byparr reaches the public web through Gluetun's HTTP proxy at `http://gluetun:8888` by default.
+- Byparr publishes port 8191 on Riker so Quark-hosted applications can reuse
+  the proven service without an NPM or public route.
 - Prowlarr, Radarr, Sonarr, Cleanuparr, Seerr, and Gluetun communicate over `arr_stack_brg`.
 
 Gluetun requires `/dev/net/tun` and `NET_ADMIN`. Confirm the external network and TUN device exist before first deployment.
@@ -67,7 +69,8 @@ After deployment, verify:
 1. Gluetun is healthy and reports the intended VPN exit before trusting qBittorrent.
 2. qBittorrent is healthy and still shares Gluetun's network namespace.
 3. Radarr, Sonarr, Prowlarr, Cleanuparr, and Seerr are healthy and retain their state.
-4. Byparr is reachable internally and uses Gluetun's proxy.
+4. Byparr is reachable from Quark at `http://192.168.213.101:8191` and uses
+   Gluetun's proxy.
 5. The `/data` mount points at the expected storage tree.
 
 ## Rollback
@@ -79,5 +82,8 @@ Revert the relevant Git commit or restore a previously reviewed image reference,
 - VPN credentials are secrets; do not place them in Git, logs, or documentation.
 - Gluetun is deliberately privileged only with the network capability and TUN device needed for VPN routing.
 - Do not expose Gluetun's proxy beyond trusted container/LAN boundaries.
+- Byparr accepts arbitrary destination URLs and proxy overrides. Keep port 8191
+  on the trusted LAN only; callers must use typed, allowlisted source adapters
+  and must not forward user-controlled URLs or `X-Proxy-*` headers.
 - qBittorrent must not be changed to a separate network without an explicit leak-prevention review.
 - The detailed migration and application reference is in [`ARR_STACK_MIGRATION.md`](../ARR_STACK_MIGRATION.md).
