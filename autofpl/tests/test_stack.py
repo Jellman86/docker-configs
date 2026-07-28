@@ -75,6 +75,18 @@ class AutoFplStackPolicyTests(unittest.TestCase):
             self.service["environment"]["AutoFpl__Research__ByparrUrl"],
         )
         self.assertEqual(
+            "60",
+            self.service["environment"][
+                "AutoFpl__Research__FbrefMatchLogCaptureIntervalMinutes"
+            ],
+        )
+        self.assertEqual(
+            "5",
+            self.service["environment"][
+                "AutoFpl__Research__FbrefMatchLogCaptureBatchSize"
+            ],
+        )
+        self.assertEqual(
             "360",
             self.service["environment"][
                 "AutoFpl__Research__FplFormPollIntervalMinutes"
