@@ -33,7 +33,12 @@ http://autofpl-api:8080
 
 The container runs explicitly as UID/GID `1654`, uses a read-only root filesystem, has only a bounded `/tmp` tmpfs, drops all Linux capabilities, enables `no-new-privileges`, and bounds PIDs, CPU, memory, shutdown time, and JSON logs. The only writable mount is the private SQLite directory at `/data`. The health check uses the image's built-in fail-closed probe.
 
-The 256 MiB limit covers the API and its bounded MCP response handling. The large dynamic-page parse runs in the separately managed Playwright service, so the operator importer no longer needs the temporary 768 MiB application allowance.
+The 512 MiB limit covers the always-on API plus a bounded operator process or
+shadow feature-table read. Raw FBref pages are parsed sequentially and shared
+aggregate/schedule contexts avoid duplicate decompression, but a 256 MiB
+container ceiling proved too small when the web and operator .NET runtimes
+overlapped. The separate Playwright service still handles dynamic-page
+rendering.
 
 ## Persistent data
 
