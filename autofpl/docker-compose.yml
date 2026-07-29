@@ -10,6 +10,8 @@ services:
     environment:
       AutoFpl__Analytics__ShadowInboxPath: "/analytics-inbox"
       AutoFpl__Analytics__ShadowInboxPollIntervalMinutes: "1"
+      AutoFpl__Analytics__SnapshotPath: "/analytics-snapshot/autofpl.db"
+      AutoFpl__Analytics__SnapshotPollIntervalMinutes: "1"
       AutoFpl__Research__ByparrUrl: "http://192.168.213.101:8191/"
       AutoFpl__Research__FbrefMatchLogCaptureIntervalMinutes: "60"
       AutoFpl__Research__FbrefMatchLogCaptureBatchSize: "5"
@@ -27,6 +29,11 @@ services:
       - type: bind
         source: /mnt/apps/docker/autofpl/analytics-inbox
         target: /analytics-inbox
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /mnt/apps/docker/autofpl/analytics-snapshot
+        target: /analytics-snapshot
         bind:
           create_host_path: false
     cap_drop:
@@ -72,8 +79,8 @@ services:
       - /tmp:rw,nosuid,nodev,noexec,size=32m
     volumes:
       - type: bind
-        source: /mnt/apps/docker/autofpl/data
-        target: /data
+        source: /mnt/apps/docker/autofpl/analytics-snapshot
+        target: /analytics-snapshot
         read_only: true
         bind:
           create_host_path: false

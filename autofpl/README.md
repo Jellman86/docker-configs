@@ -5,11 +5,11 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 ## Service
 
 - `autofpl` runs `ghcr.io/jellman86/autofpl:dev`, which is published only after the autoFPL `dev` container build, vulnerability scan and smoke test pass.
-- `autofpl-analytics` runs `ghcr.io/jellman86/autofpl-analytics:dev`, the separately built and scanned scientific worker. It waits for the API health check, then checks exact official/shadow capture identity every 15 minutes. A missing current shadow is generated from the read-only SQLite mount and handed to the API through the private inbox; it is never fitted in a web request.
+- `autofpl-analytics` runs `ghcr.io/jellman86/autofpl-analytics:dev`, the separately built and scanned scientific worker. It waits for the API health check, then checks exact official/shadow capture identity every minute. A missing current shadow is generated from the application's standalone SQLite snapshot and handed to the API through the private inbox; it is never fitted in a web request.
 - Compose sets `pull_policy: always`, and Dockhand repulls images on deployment. Application merges therefore need only a Dockhand redeploy, not a second configuration commit. Commit-SHA image tags remain available for exact rollback.
 - The application listens on container port `8080` and serves the responsive Gameweek decision room at `/`. When a qualifying official capture exists, the advice route returns an explicitly unvalidated Baseline v0 squad, XI, bench and captaincy with official portraits, cutoff-aware player dossiers, wide intervals and transparent market/fixture evidence. Schema 13 persists one immutable forecast artifact and content hash per official capture; schema 14 retains the official provider's optional next-Gameweek expected-points value as a separately labelled, not-promoted dossier challenger. Schema 15 adds immutable, forecast-linked selection revisions with an explicit one-time user lock and deadline-derived draft, locked, expired and frozen states. Schemas 16–19 add bounded third-party research-source observations, a verified 2025/26 historical FPL archive, cutoff-safe cross-season player state, and a read-only identical-fold cross-season feature ablation. Users can edit XI/bench membership, bench priority and captaincy against the same forecast squad; valid changes create a new unlocked superseding revision and never rewrite or submit the prior choice. Refreshing prediction only reloads Baseline v0 and does not start collection or change a user's saved selection.
 - The API publishes OpenAPI 3.1 at `/openapi/v1.json`, exposes private decision-snapshot write/read routes, and serves read-only provenance, replay and deterministic FPL Form player/fixture identity-coverage views.
-- One SQLite file under `/data` is authoritative for squad, immutable selection revisions and locks, observation, immutable snapshot state, official FPL captures, Baseline v0 forecast artifacts, public forecast captures, research observations, the verified historical archive and collection checks. Startup applies twenty-one explicit migrations with foreign keys, WAL and a bounded busy timeout. Official final outcomes retain bounded xG/xA/xGC, ICT/BPS and defensive evidence; legacy rows remain null.
+- One SQLite file under `/data` is authoritative for squad, immutable selection revisions and locks, observation, immutable snapshot state, official FPL captures, Baseline v0 forecast artifacts, public forecast captures, research observations, the verified historical archive and collection checks. Startup applies twenty-six explicit migrations with foreign keys, WAL and a bounded busy timeout. Official final outcomes retain bounded xG/xA/xGC, ICT/BPS and defensive evidence; legacy rows remain null.
 - FPL Form collection reuses Quark's existing Playwright MCP service. One fixed code operation fetches the canonical provider page through Playwright's request context without rendering or executing the roughly 105 MB document. It short-circuits the off-season sentinel and, for an active Gameweek, scans one encoded player object at a time rather than constructing the complete decoded history. The bounded MCP client accepts either direct JSON or SSE Streamable HTTP responses and selects the matching JSON-RPC result. The browser returns compact, versioned evidence to autoFPL with transport, extraction-version and full provider-payload hash provenance. The application does not run a second browser stack or download the page into the API process.
 - The instance checks FPL Form at most every six hours. Its persisted last-check time survives restarts, so a deployment waits the remaining interval rather than creating an extra provider request.
 - The instance also checks the fixed official bootstrap/fixture pair every six hours and persists the attempt time independently of immutable content deduplication.
@@ -19,7 +19,7 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 - The read-only official expected-points evaluator scores retained `ep_next` values unchanged against later final outcomes, requires complete capture/player chronology, keeps zero-minute players in the population, and emits deterministic overall, position and zero-minute metrics without promoting the source.
 - The player dossier exposes retained official underlying evidence, while the analytics boundary produces cutoff-safe temporal summaries and identical-fold, unpromoted underlying-feature and cross-season ablations. The prior-season archive preserves the latest pre-cutoff player performance and availability state while excluding archived source expected-points and final-health leakage.
 - Explicit deterministic FFScout adapters read one retained pre-deadline snapshot, resolve predicted-XI entries through embedded official Premier League photo codes, and resolve `Out` plus percentage-bearing `Doubts` only through unique team-scoped official names. A separate strAIghtred adapter retains displayed consensus start probabilities and assigns the same player/target duplicate cluster as FFScout so dependent agreement is not counted twice. All such claims remain idempotent and quarantined, and cannot influence a forecast or selection.
-- The API checks `/analytics-inbox` once per minute and imports at most one capture-named artifact through its strict 2 MiB validator. Accepted and rejected files are archived in place. The web application remains the only SQLite writer; the worker cannot alter product state directly.
+- The API publishes `/analytics-snapshot/autofpl.db` with SQLite's online-backup operation when relevant capture, forecast, scenario, selection or lock identity changes. It verifies integrity, switches the copy to standalone delete-journal mode and atomically replaces the prior snapshot. The API separately checks `/analytics-inbox` once per minute and imports at most one capture-named artifact through its strict 2 MiB validator. Accepted and rejected files are archived in place. The web application remains the only authoritative SQLite writer; the worker cannot alter product state directly.
 
 ## Network exposure
 
@@ -33,7 +33,7 @@ http://autofpl-api:8080
 
 ## Hardening
 
-Both containers run explicitly as UID/GID `1654`, use read-only root filesystems, have only bounded `/tmp` tmpfs mounts, drop all Linux capabilities, enable `no-new-privileges`, and bound PIDs, CPU, memory, shutdown time, and JSON logs. The API can write the private SQLite directory and analytics inbox. The worker receives the database directory read-only and can write only its inbox. The API health check uses the image's built-in fail-closed probe; the worker is a polling process with no network health surface.
+Both containers run explicitly as UID/GID `1654`, use read-only root filesystems, have only bounded `/tmp` tmpfs mounts, drop all Linux capabilities, enable `no-new-privileges`, and bound PIDs, CPU, memory, shutdown time, and JSON logs. The API can write the private SQLite directory, analytics snapshot directory and analytics inbox. The worker receives only the standalone snapshot directory read-only and can write only its separate inbox. The API health check uses the image's built-in fail-closed probe; the worker is a polling process with no network health surface.
 
 The 512 MiB limit covers the always-on API plus a bounded operator process or
 shadow feature-table read. Raw FBref pages are parsed sequentially and shared
@@ -63,8 +63,17 @@ setfacl -m u:1654:rwx /mnt/apps/docker/autofpl/analytics-inbox
 setfacl -d -m u:1654:rwx,m::rwx /mnt/apps/docker/autofpl/analytics-inbox
 ```
 
-Compose sets `create_host_path: false` for both paths. A missing or
-mis-permissioned inbox therefore fails deployment visibly rather than being
+Provision the separate application-written, worker-read-only snapshot
+directory as well:
+
+```bash
+install -d -m 0750 /mnt/apps/docker/autofpl/analytics-snapshot
+setfacl -m u:1654:rwx /mnt/apps/docker/autofpl/analytics-snapshot
+setfacl -d -m u:1654:rwx,m::rwx /mnt/apps/docker/autofpl/analytics-snapshot
+```
+
+Compose sets `create_host_path: false` for all three paths. A missing or
+mis-permissioned handoff therefore fails deployment visibly rather than being
 silently created as root.
 
 Create a consistent backup from the application image's SQLite online-backup command, using a new filename under `/data/backups`, and verify the backup with the integrity command before a schema-changing deployment or rollback. Do not copy the live database/WAL pair directly.
@@ -131,7 +140,7 @@ After Dockhand deployment, verify:
 10. The capture-specific FPL Form identity route returns 404 for an unknown capture and fails closed on unavailable, ambiguous or post-deadline evidence. `--evaluate-fpl-form-forecast` and `--evaluate-official-fpl-expected-points` return exit `2` with deterministic `insufficient-data` reports until their complete forecast/outcome pairs exist.
 11. `/api/v1/selections/current` returns 404 before a user creates a draft. The UI offers explicit forecast-to-draft, edit and confirmation-gated lock actions only for persisted pre-deadline forecasts; synthetic previews remain read-only. Edits reject infeasible formations and create immutable superseding drafts, including after an earlier revision was locked. Neither editing nor locking writes to an FPL account.
 12. From the autoFPL container, Riker's Byparr health endpoint responds on the configured private-LAN origin, and `--capture-research-source fbref-championship-playing-time-2025-26` retains a bounded snapshot whose inventory reports `byparr/2.1.0` provenance without exposing the raw HTML.
-13. The analytics worker has `/data` mounted read-only and the shared inbox writable, logs `current` while an exact shadow exists, and produces at most one pending file when the next supported official capture lacks a shadow. The API archives a valid handoff `.imported`; `/api/v1/forecasts/multi-season-shadow/readiness` then reports the exact official and shadow capture IDs as `current`.
+13. The API atomically publishes an integrity-checked delete-journal database at `/analytics-snapshot/autofpl.db`; the analytics worker has that directory mounted read-only, has no `/data` mount, and retains the shared inbox writable. It logs `current` while an exact shadow exists and produces at most one pending file when the next supported official capture lacks a shadow. The API archives a valid handoff `.imported`; `/api/v1/forecasts/multi-season-shadow/readiness` then reports the exact official and shadow capture IDs as `current`.
 
 ## Rollback
 

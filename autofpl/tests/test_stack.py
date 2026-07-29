@@ -12,6 +12,7 @@ EXPECTED_IMAGE = "ghcr.io/jellman86/autofpl:dev"
 EXPECTED_ANALYTICS_IMAGE = "ghcr.io/jellman86/autofpl-analytics:dev"
 EXPECTED_DATA_PATH = "/mnt/apps/docker/autofpl/data"
 EXPECTED_INBOX_PATH = "/mnt/apps/docker/autofpl/analytics-inbox"
+EXPECTED_SNAPSHOT_PATH = "/mnt/apps/docker/autofpl/analytics-snapshot"
 EXPECTED_RESEARCH_NETWORK = "hermes_agent_research_private"
 EXPECTED_BYPARR_URL = "http://192.168.213.101:8191/"
 
@@ -56,6 +57,12 @@ class AutoFplStackPolicyTests(unittest.TestCase):
                     "type": "bind",
                     "source": EXPECTED_INBOX_PATH,
                     "target": "/analytics-inbox",
+                    "bind": {"create_host_path": False},
+                },
+                {
+                    "type": "bind",
+                    "source": EXPECTED_SNAPSHOT_PATH,
+                    "target": "/analytics-snapshot",
                     "bind": {"create_host_path": False},
                 },
             ],
@@ -127,6 +134,18 @@ class AutoFplStackPolicyTests(unittest.TestCase):
                 "AutoFpl__Analytics__ShadowInboxPath"
             ],
         )
+        self.assertEqual(
+            "1",
+            self.service["environment"][
+                "AutoFpl__Analytics__SnapshotPollIntervalMinutes"
+            ],
+        )
+        self.assertEqual(
+            "/analytics-snapshot/autofpl.db",
+            self.service["environment"][
+                "AutoFpl__Analytics__SnapshotPath"
+            ],
+        )
 
     def test_analytics_worker_tracks_verified_dev_publications(self) -> None:
         self.assertEqual(EXPECTED_ANALYTICS_IMAGE, self.analytics["image"])
@@ -142,15 +161,15 @@ class AutoFplStackPolicyTests(unittest.TestCase):
         self.assertNotIn("ports", self.analytics)
         self.assertNotIn("expose", self.analytics)
 
-    def test_analytics_worker_database_is_read_only_and_inbox_is_shared(
+    def test_analytics_worker_snapshot_is_read_only_and_inbox_is_shared(
         self,
     ) -> None:
         self.assertEqual(
             [
                 {
                     "type": "bind",
-                    "source": EXPECTED_DATA_PATH,
-                    "target": "/data",
+                    "source": EXPECTED_SNAPSHOT_PATH,
+                    "target": "/analytics-snapshot",
                     "read_only": True,
                     "bind": {"create_host_path": False},
                 },
