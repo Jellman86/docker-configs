@@ -9,7 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "docker-compose.yml"
 README = ROOT / "README.md"
 EXPECTED_IMAGE = "ghcr.io/jellman86/autofpl:dev"
+EXPECTED_ANALYTICS_IMAGE = "ghcr.io/jellman86/autofpl-analytics:dev"
 EXPECTED_DATA_PATH = "/mnt/apps/docker/autofpl/data"
+EXPECTED_INBOX_PATH = "/mnt/apps/docker/autofpl/analytics-inbox"
 EXPECTED_RESEARCH_NETWORK = "hermes_agent_research_private"
 EXPECTED_BYPARR_URL = "http://192.168.213.101:8191/"
 
@@ -19,6 +21,7 @@ class AutoFplStackPolicyTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.compose = yaml.safe_load(COMPOSE.read_text(encoding="utf-8"))
         cls.service = cls.compose["services"]["autofpl"]
+        cls.analytics = cls.compose["services"]["autofpl-analytics"]
 
     def test_image_tracks_verified_dev_publications(self) -> None:
         self.assertEqual(EXPECTED_IMAGE, self.service["image"])
@@ -29,7 +32,7 @@ class AutoFplStackPolicyTests(unittest.TestCase):
         self.assertIn(EXPECTED_IMAGE, documentation)
         self.assertIn("pull_policy: always", documentation)
 
-    def test_service_has_no_host_port_and_one_private_data_mount(self) -> None:
+    def test_service_has_no_host_port_and_private_mounts(self) -> None:
         self.assertNotIn("ports", self.service)
         self.assertEqual(["8080"], self.service["expose"])
         self.assertEqual(
@@ -48,7 +51,13 @@ class AutoFplStackPolicyTests(unittest.TestCase):
                     "source": EXPECTED_DATA_PATH,
                     "target": "/data",
                     "bind": {"create_host_path": False},
-                }
+                },
+                {
+                    "type": "bind",
+                    "source": EXPECTED_INBOX_PATH,
+                    "target": "/analytics-inbox",
+                    "bind": {"create_host_path": False},
+                },
             ],
             self.service["volumes"],
         )
@@ -104,6 +113,80 @@ class AutoFplStackPolicyTests(unittest.TestCase):
                 "AutoFpl__Research__ResearchSourcePollIntervalMinutes"
             ],
         )
+
+    def test_shadow_handoff_is_explicitly_enabled(self) -> None:
+        self.assertEqual(
+            "1",
+            self.service["environment"][
+                "AutoFpl__Analytics__ShadowInboxPollIntervalMinutes"
+            ],
+        )
+        self.assertEqual(
+            "/analytics-inbox",
+            self.service["environment"][
+                "AutoFpl__Analytics__ShadowInboxPath"
+            ],
+        )
+
+    def test_analytics_worker_tracks_verified_dev_publications(self) -> None:
+        self.assertEqual(EXPECTED_ANALYTICS_IMAGE, self.analytics["image"])
+        self.assertEqual("always", self.analytics["pull_policy"])
+        self.assertEqual(
+            {"condition": "service_healthy"},
+            self.analytics["depends_on"]["autofpl"],
+        )
+
+    def test_analytics_worker_has_no_network_or_port(self) -> None:
+        self.assertEqual("none", self.analytics["network_mode"])
+        self.assertNotIn("networks", self.analytics)
+        self.assertNotIn("ports", self.analytics)
+        self.assertNotIn("expose", self.analytics)
+
+    def test_analytics_worker_database_is_read_only_and_inbox_is_shared(
+        self,
+    ) -> None:
+        self.assertEqual(
+            [
+                {
+                    "type": "bind",
+                    "source": EXPECTED_DATA_PATH,
+                    "target": "/data",
+                    "read_only": True,
+                    "bind": {"create_host_path": False},
+                },
+                {
+                    "type": "bind",
+                    "source": EXPECTED_INBOX_PATH,
+                    "target": "/analytics-inbox",
+                    "bind": {"create_host_path": False},
+                },
+            ],
+            self.analytics["volumes"],
+        )
+
+    def test_analytics_worker_is_non_root_read_only_and_bounded(self) -> None:
+        self.assertEqual("1654:1654", self.analytics["user"])
+        self.assertTrue(self.analytics["read_only"])
+        self.assertTrue(self.analytics["init"])
+        self.assertEqual(["ALL"], self.analytics["cap_drop"])
+        self.assertIn(
+            "no-new-privileges:true",
+            self.analytics["security_opt"],
+        )
+        self.assertIn(
+            "/tmp:rw,nosuid,nodev,noexec,size=32m",
+            self.analytics["tmpfs"],
+        )
+        self.assertEqual("1g", self.analytics["mem_limit"])
+        self.assertEqual(2.0, self.analytics["cpus"])
+        for key in (
+            "pids_limit",
+            "mem_limit",
+            "cpus",
+            "stop_grace_period",
+            "logging",
+        ):
+            self.assertIn(key, self.analytics)
 
 
 if __name__ == "__main__":

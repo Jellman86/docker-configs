@@ -8,6 +8,8 @@ services:
     init: true
     read_only: true
     environment:
+      AutoFpl__Analytics__ShadowInboxPath: "/analytics-inbox"
+      AutoFpl__Analytics__ShadowInboxPollIntervalMinutes: "1"
       AutoFpl__Research__ByparrUrl: "http://192.168.213.101:8191/"
       AutoFpl__Research__FbrefMatchLogCaptureIntervalMinutes: "60"
       AutoFpl__Research__FbrefMatchLogCaptureBatchSize: "5"
@@ -20,6 +22,11 @@ services:
       - type: bind
         source: /mnt/apps/docker/autofpl/data
         target: /data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /mnt/apps/docker/autofpl/analytics-inbox
+        target: /analytics-inbox
         bind:
           create_host_path: false
     cap_drop:
@@ -43,6 +50,46 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  autofpl-analytics:
+    image: ghcr.io/jellman86/autofpl-analytics:dev
+    pull_policy: always
+    container_name: autofpl-analytics
+    restart: unless-stopped
+    user: "1654:1654"
+    init: true
+    read_only: true
+    network_mode: none
+    depends_on:
+      autofpl:
+        condition: service_healthy
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=32m
+    volumes:
+      - type: bind
+        source: /mnt/apps/docker/autofpl/data
+        target: /data
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /mnt/apps/docker/autofpl/analytics-inbox
+        target: /analytics-inbox
+        bind:
+          create_host_path: false
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 1g
+    cpus: 2.0
+    stop_grace_period: 30s
     logging:
       driver: json-file
       options:
