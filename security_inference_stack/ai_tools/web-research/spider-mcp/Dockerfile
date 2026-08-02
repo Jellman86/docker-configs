@@ -60,7 +60,7 @@ RUN uv sync --frozen --no-dev --no-editable
 
 FROM python:3.13.13-slim-trixie@sha256:7ba5f5888fbe0014ab9edb2278922995c2201fc3752c46b0be24763eb46fa9f3
 
-LABEL org.opencontainers.image.title="Hardened Spider MCP for Hermes" \
+LABEL org.opencontainers.image.title="Hardened Spider MCP for AI Tools" \
       org.opencontainers.image.description="Pinned Spider MCP with bounded public-web tools behind a pinned Streamable HTTP proxy" \
       org.opencontainers.image.source="https://github.com/spider-rs/spider" \
       org.opencontainers.image.revision="de35b3a9dd740542070fa2ee0e70bc804dde07ee" \

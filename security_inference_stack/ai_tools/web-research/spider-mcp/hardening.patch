@@ -587,7 +587,7 @@ index 0967465..15e50d5 100644
 +        end -= 1;
 +    }
 +    content.truncate(end);
-+    content.push_str("\n\n[output truncated by Hermes web-research limits]");
++    content.push_str("\n\n[output truncated by AI tools web-research limits]");
 +    content
 +}
 +

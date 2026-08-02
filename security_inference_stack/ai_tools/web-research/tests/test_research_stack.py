@@ -8,13 +8,11 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 COMPOSE = ROOT / "docker-compose.yml"
-MANAGED = ROOT / "managed" / "config.yaml"
 SQUID = ROOT / "web-research" / "squid.conf"
 CHROMIUM_LAUNCHER = ROOT / "web-research" / "chromium-launcher.js"
 SEARXNG = ROOT / "web-research" / "searxng" / "settings.yml"
 PATCH = ROOT / "web-research" / "spider-mcp" / "hardening.patch"
 SPIDER_DOCKERFILE = ROOT / "web-research" / "spider-mcp" / "Dockerfile"
-RESEARCH_SKILL = ROOT / "skills" / "private-web-research" / "SKILL.md"
 
 
 class ResearchStackPolicyTests(unittest.TestCase):
@@ -23,7 +21,6 @@ class ResearchStackPolicyTests(unittest.TestCase):
         cls.compose = yaml.safe_load(COMPOSE.read_text())
         cls.services = cls.compose["services"]
         cls.networks = cls.compose["networks"]
-        cls.managed = yaml.safe_load(MANAGED.read_text())
 
     def test_required_services_exist(self) -> None:
         self.assertTrue(
@@ -37,6 +34,10 @@ class ResearchStackPolicyTests(unittest.TestCase):
             self.assertNotIn("ports", service, name)
             for mount in service.get("volumes", []):
                 self.assertNotIn("docker.sock", str(mount), name)
+
+    def test_no_ai_tool_publishes_a_host_port(self) -> None:
+        for name, service in self.services.items():
+            self.assertNotIn("ports", service, name)
 
     def test_networks_force_browser_search_and_crawler_through_proxy(self) -> None:
         self.assertTrue(self.networks["research_private"]["internal"])
@@ -61,6 +62,7 @@ class ResearchStackPolicyTests(unittest.TestCase):
             set(self.services["research-egress"]["networks"]),
             {"research_private", "spider_browser_private", "research_egress"},
         )
+
     def test_services_are_hardened_and_bounded(self) -> None:
         for name in ("research-egress", "searxng", "spider-chromium", "spider-mcp"):
             service = self.services[name]
@@ -99,9 +101,9 @@ class ResearchStackPolicyTests(unittest.TestCase):
 
     def test_spider_chromium_uses_playwright_managed_launcher(self) -> None:
         service = self.services["spider-chromium"]
-        self.assertEqual(service["entrypoint"], ["node", "/opt/hermes/chromium-launcher.js"])
+        self.assertEqual(service["entrypoint"], ["node", "/opt/ai-tools/chromium-launcher.js"])
         self.assertIn(
-            "./web-research/chromium-launcher.js:/opt/hermes/chromium-launcher.js:ro",
+            "./web-research/chromium-launcher.js:/opt/ai-tools/chromium-launcher.js:ro",
             service["volumes"],
         )
         launcher = CHROMIUM_LAUNCHER.read_text()
@@ -112,30 +114,17 @@ class ResearchStackPolicyTests(unittest.TestCase):
         self.assertIn("http://research-egress:3128", launcher)
         self.assertIn("<-loopback>", launcher)
 
-    def test_hermes_has_only_bounded_spider_tools_and_searxng_search(self) -> None:
-        self.assertEqual(self.managed["web"]["search_backend"], "searxng")
-        self.assertNotIn("extract_backend", self.managed["web"])
-        self.assertNotIn("firecrawl", MANAGED.read_text().lower())
-        spider = self.managed["mcp_servers"]["spider"]
-        self.assertEqual(spider["url"], "http://spider-mcp:8080/mcp")
-        self.assertFalse(spider["sampling"]["enabled"])
-        self.assertEqual(
-            spider["tools"]["include"],
-            ["spider_scrape", "spider_crawl", "spider_links"],
-        )
+    def test_retired_agent_runtime_is_absent(self) -> None:
+        self.assertNotIn("hermes-agent", self.services)
+        self.assertFalse((ROOT / "managed").exists())
+        self.assertFalse((ROOT / "skills").exists())
 
-    def test_managed_skill_routes_research_without_firecrawl(self) -> None:
-        skill = RESEARCH_SKILL.read_text()
-        for marker in (
-            "web_search",
-            "mcp__spider__spider_scrape",
-            "mcp__spider__spider_links",
-            "mcp__spider__spider_crawl",
-            "mcp__playwright__browser_navigate",
-            "Do not use `web_extract`",
-        ):
-            self.assertIn(marker, skill)
-        self.assertNotIn("FIRECRAWL_API_KEY", skill)
+    def test_shared_tool_endpoints_remain_available_to_trusted_consumers(self) -> None:
+        self.assertIn("general_brg", self.services["playwright-mcp"]["networks"])
+        self.assertIn("general_brg", self.services["rusty-imap-mcp"]["networks"])
+        self.assertIn("spider_mcp_private", self.services["spider-mcp"]["networks"])
+        self.assertIn("search_private", self.services["searxng"]["networks"])
+        self.assertIn("npm_proxy_backends", self.services["openviking"]["networks"])
 
     def test_squid_denies_all_private_special_ranges_before_allow(self) -> None:
         text = SQUID.read_text()

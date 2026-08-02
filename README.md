@@ -10,7 +10,7 @@ values provided via a local `.env` file.
 - [`media_related_stack/`](media_related_stack/README.md) - Plex and Optimisarr.
 - [`monitoring_management/`](monitoring_management/README.md) - Prometheus, SNMP Exporter, Unpoller, and Grafana.
 - [`security_inference_stack/`](security_inference_stack/README.md) - Frigate, BirdNET-Go, Mosquitto, YA-WAMF, and Home Assistant.
-- [`security_inference_stack/hermes_agent/`](security_inference_stack/hermes_agent/README.md) - independently deployed Hermes, OpenViking, mail, browser, and web-research services.
+- [`security_inference_stack/ai_tools/`](security_inference_stack/ai_tools/README.md) - independently deployed OpenViking, mail, browser, and web-research services.
 - [`web_services/`](web_services/README.md) - host-specific Nginx Proxy Manager, Cloudflare Tunnel, and Tailscale stacks.
 
 Each stack README documents its services, Compose path, host placement, ports,
@@ -24,7 +24,7 @@ runtime state ever differ.
   `arr_vpn_stack`, `media_related_stack`, and `web_services`.
 - `dell-compute` / Fedora Core Ultra box runs compute-heavy and management
   stacks: `autofpl`, `security_inference_stack`,
-  `security_inference_stack/hermes_agent`, `management` / Dockhand, and the
+  `security_inference_stack/ai_tools`, `management` / Dockhand, and the
   Quark `web_services` variant.
 - `monitoring_management` is portable across the trusted management network;
   its Dockhand definition and `CONFIG_PATH` determine the owning host.
