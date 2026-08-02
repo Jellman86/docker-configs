@@ -2,7 +2,7 @@
 
 Git-backed Dockhand stack for local video security, audio classification, MQTT, inference aggregation, and Home Assistant on Quark.
 
-Hermes is intentionally deployed as a separate nested stack; see [`hermes_agent/README.md`](hermes_agent/README.md).
+Shared AI support services are deployed as a separate nested stack; see [`ai_tools/README.md`](ai_tools/README.md).
 
 ## Services
 
@@ -63,7 +63,7 @@ Store credentials in Dockhand's encrypted variables. Never commit camera, MQTT, 
 - Mosquitto creates an authenticated listener on `general_brg` but does not publish port 1883 on the host.
 - Frigate and BirdNET publish observations that YA-WAMF correlates.
 - YA-WAMF defaults to the `intel_npu` provider on Quark but keeps the setting overridable for validated comparisons.
-- Home Assistant is lifecycle-independent from Hermes even though Hermes may use Home Assistant's API.
+- Home Assistant is lifecycle-independent from the shared AI tools stack.
 
 ## Deployment and updates
 

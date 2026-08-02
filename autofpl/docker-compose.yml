@@ -108,5 +108,5 @@ networks:
     name: general_brg
     external: true
   research_private:
-    name: hermes_agent_research_private
+    name: ai_tools_research_private
     external: true

@@ -1,110 +1,4 @@
 services:
-  hermes-agent:
-    image: nousresearch/hermes-agent:v2026.7.20@sha256:f7b35053268f532f98955195c909f15a230470fbcbdacaa9fdecb95707dad04a
-    container_name: hermes-agent
-    restart: unless-stopped
-    command: ["gateway", "run"]
-    shm_size: "1gb"
-    stop_grace_period: 60s
-    cpus: "${HERMES_CPUS:-2.0}"
-    mem_limit: "${HERMES_MEMORY_LIMIT:-4g}"
-    pids_limit: 512
-    security_opt:
-      - no-new-privileges:true
-    networks:
-      general_brg:
-        aliases:
-          - hermes-agent
-      rusty_imap_mcp:
-        aliases:
-          - hermes-agent
-      openviking_private:
-        aliases:
-          - hermes-agent
-      spider_mcp_private:
-        aliases:
-          - hermes-agent
-      search_private:
-        aliases:
-          - hermes-agent
-    depends_on:
-      rusty-imap-mcp:
-        condition: service_healthy
-      playwright-mcp:
-        condition: service_healthy
-      spider-mcp:
-        condition: service_healthy
-      searxng:
-        condition: service_healthy
-      openviking-bootstrap:
-        condition: service_completed_successfully
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    ports:
-      - name: dashboard
-        target: 9119
-        published: "${HERMES_DASHBOARD_PORT:-9119}"
-        host_ip: "${HERMES_DASHBOARD_BIND:-127.0.0.1}"
-        protocol: tcp
-    environment:
-      PUID: "${PUID:-1000}"
-      PGID: "${PGID:-1000}"
-      TZ: "${TZ:-Europe/London}"
-      HERMES_TIMEZONE: "${HERMES_TIMEZONE:-Europe/London}"
-      HERMES_MANAGED_DIR: /etc/hermes
-      HERMES_DASHBOARD: "1"
-      HERMES_DASHBOARD_HOST: 0.0.0.0
-      HERMES_DASHBOARD_PORT: "9119"
-      HERMES_DASHBOARD_PUBLIC_URL: "${HERMES_DASHBOARD_PUBLIC_URL:-https://hermes.pownet.uk}"
-      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: "${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:?dashboard username is required}"
-      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: "${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:?dashboard password is required}"
-      HERMES_DASHBOARD_BASIC_AUTH_SECRET: "${HERMES_DASHBOARD_BASIC_AUTH_SECRET:?dashboard session secret is required}"
-      API_SERVER_ENABLED: "false"
-      TERMINAL_ENV: ssh
-      TERMINAL_SSH_HOST: "${TERMINAL_SSH_HOST:-host.docker.internal}"
-      TERMINAL_SSH_USER: "${TERMINAL_SSH_USER:?host SSH user is required}"
-      TERMINAL_SSH_PORT: "${TERMINAL_SSH_PORT:-22}"
-      TERMINAL_SSH_KEY: /opt/data/host-control/id_ed25519
-      TERMINAL_SSH_PERSISTENT: "true"
-      HERMES_WRITE_SAFE_ROOT: "${HERMES_WRITE_SAFE_ROOT:-/opt/data}"
-      HERMES_HOST_WORKDIR: "${HERMES_HOST_WORKDIR:-/home/jellman86}"
-      SUDO_PASSWORD: "${HERMES_HOST_SUDO_PASSWORD:-}"
-      HASS_URL: "${HASS_URL:-http://host.docker.internal:8123}"
-      HASS_TOKEN: "${HASS_TOKEN:-}"
-      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
-      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
-      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
-      OPENVIKING_ENDPOINT: http://openviking:1933
-      OPENVIKING_API_KEY: "${OPENVIKING_API_KEY:?dedicated OpenViking Hermes user API key is required}"
-      OPENVIKING_AGENT: hermes
-      SEARXNG_URL: http://searxng:8080
-      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
-      TELEGRAM_ALLOWED_USERS: "${TELEGRAM_ALLOWED_USERS:-}"
-      DISCORD_BOT_TOKEN: "${DISCORD_BOT_TOKEN:-}"
-      DISCORD_ALLOWED_USERS: "${DISCORD_ALLOWED_USERS:-}"
-      GATEWAY_ALLOWED_USERS: "${GATEWAY_ALLOWED_USERS:-}"
-    volumes:
-      - type: bind
-        source: "${DOCKERCONFIGPATH:-/mnt/apps/docker}/hermes"
-        target: /opt/data
-        bind:
-          create_host_path: true
-      # Dockhand 1.0.35 translates relative bind sources to its host-side
-      # stack path only when Compose short syntax is used.
-      - ./managed:/etc/hermes:ro
-      - ./skills:/opt/managed-skills:ro
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9119/api/status"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 90s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
-
   playwright-mcp:
     image: mcr.microsoft.com/playwright/mcp:v0.0.78@sha256:3d871c22ea2d4cca0966e2cfb1860e1cb03eb7353725a3d6cffd133296fb04eb
     container_name: playwright-mcp
@@ -210,11 +104,11 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-    entrypoint: ["node", "/opt/hermes/chromium-launcher.js"]
+    entrypoint: ["node", "/opt/ai-tools/chromium-launcher.js"]
     environment:
       HOME: /tmp
     volumes:
-      - ./web-research/chromium-launcher.js:/opt/hermes/chromium-launcher.js:ro
+      - ./web-research/chromium-launcher.js:/opt/ai-tools/chromium-launcher.js:ro
     tmpfs:
       - /tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777
     networks:
@@ -427,8 +321,8 @@ services:
     environment:
       OPENVIKING_ENDPOINT: http://openviking:1933
       OPENVIKING_ROOT_API_KEY: "${OPENVIKING_ROOT_API_KEY:?OpenViking root API key is required}"
-      OPENVIKING_HERMES_KEY_SEED: "${OPENVIKING_HERMES_KEY_SEED:?OpenViking Hermes user key seed is required}"
-      OPENVIKING_API_KEY: "${OPENVIKING_API_KEY:?dedicated OpenViking Hermes user API key is required}"
+      OPENVIKING_HERMES_KEY_SEED: "${OPENVIKING_HERMES_KEY_SEED:?legacy shared OpenViking user key seed is required}"
+      OPENVIKING_API_KEY: "${OPENVIKING_API_KEY:?legacy shared OpenViking user API key is required}"
       OPENVIKING_CODEX_KEY_SEED: "${OPENVIKING_CODEX_KEY_SEED:?OpenViking Codex user key seed is required}"
       OPENVIKING_CODEX_API_KEY: "${OPENVIKING_CODEX_API_KEY:?dedicated OpenViking Codex user API key is required}"
     volumes:
@@ -563,6 +457,9 @@ services:
       - /var/lib/rusty-imap-mcp:rw,nosuid,nodev,noexec,size=32m,mode=0700,uid=65532,gid=65532
     networks:
       rusty_imap_mcp:
+        aliases:
+          - rusty-imap-mcp
+      general_brg:
         aliases:
           - rusty-imap-mcp
     healthcheck:

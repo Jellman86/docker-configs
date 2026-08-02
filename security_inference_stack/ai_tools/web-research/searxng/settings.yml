@@ -9,7 +9,7 @@ use_default_settings:
 
 general:
   debug: false
-  instance_name: Hermes Private Search
+  instance_name: AI Tools Private Search
   enable_metrics: false
 
 search:

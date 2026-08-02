@@ -38,7 +38,7 @@ RUN curl --fail --location --silent --show-error --retry 3 \
 # The upstream x86-64 release is built on Ubuntu 24.04 and requires GLIBC_2.38.
 FROM python:3.13.13-slim-trixie@sha256:aa938a849bcb82dce8f49480f056ab82bf5c1c3ebc294f0430f37b6820e7f286
 
-LABEL org.opencontainers.image.title="Rusty IMAP MCP for Hermes" \
+LABEL org.opencontainers.image.title="Rusty IMAP MCP for AI Tools" \
       org.opencontainers.image.description="Pinned rusty-imap-mcp behind a pinned Streamable HTTP MCP proxy" \
       org.opencontainers.image.source="https://github.com/randomparity/rusty-imap-mcp" \
       org.opencontainers.image.version="0.1.0"

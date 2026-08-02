@@ -1,6 +1,6 @@
 # Rusty IMAP MCP sidecar
 
-This image packages the attested `randomparity/rusty-imap-mcp` v0.1.0 Linux x86-64 release behind `sparfenyuk/mcp-proxy` v0.12.0 for Hermes-compatible Streamable HTTP.
+This image packages the attested `randomparity/rusty-imap-mcp` v0.1.0 Linux x86-64 release behind `sparfenyuk/mcp-proxy` v0.12.0 for Streamable HTTP clients.
 
 ## Supply-chain pins
 
@@ -28,14 +28,14 @@ The value is migrated from the former `ICLOUD_APP_PASSWORD` variable without bei
 - The stronger `destructive` posture is not enabled: permanent expunge and folder deletion remain denied, and critical folders remain protected from rename.
 - Raw unsanitized mbox export remains explicitly denied.
 - SMTP uses Apple's documented `smtp.mail.me.com:587` STARTTLS endpoint and the same app-specific password as IMAP through a separate protocol-scoped environment variable.
-- Hermes independently allowlists the intended `full` posture mailbox tools while excluding infrastructure account switching, raw export, expunge, and folder deletion.
+- Clients should independently allowlist the intended `full` posture mailbox tools while excluding infrastructure account switching, raw export, expunge, and folder deletion.
 - The container runs as UID/GID 65532 with a read-only root filesystem, all capabilities dropped, `no-new-privileges`, bounded resources/logs, and tmpfs-only writable storage.
-- Port 8080 is available only on the private Compose network; no host port is published.
+- Port 8080 is available to trusted containers on `general_brg` and the dedicated private Compose network; no host port is published.
 - IMAP mailbox selection uses `EXAMINE`; body fetches use `BODY.PEEK[]`, preserving unread state.
 
 ## Endpoint
 
-Hermes connects to:
+Trusted containers connect to:
 
 ```text
 http://rusty-imap-mcp:8080/mcp
