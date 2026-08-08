@@ -175,6 +175,11 @@ services:
     image: ghcr.io/jellman86/yawamf-monalithic:dev-intel
     container_name: yawamf-monalithic
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "${YAWAMF_CONTAINER_LOG_MAX_SIZE:-10m}"
+        max-file: "${YAWAMF_CONTAINER_LOG_MAX_FILES:-3}"
     user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}
     devices:
       - /dev/dri:/dev/dri                    # Intel iGPU (OpenVINO intel_gpu)
@@ -220,6 +225,7 @@ services:
       # Model/provider validation is performed before activation. Avoid blocking app readiness
       # on the optional synthetic GPU-vs-CPU startup benchmark.
       - CLASSIFIER_RUNTIME_BENCHMARK_ENABLED=${CLASSIFIER_RUNTIME_BENCHMARK_ENABLED:-0}
+      - DB_PRE_MIGRATION_BACKUP_RETENTION=${YAWAMF_DB_PRE_MIGRATION_BACKUP_RETENTION:-10}
       - LIBVA_DRIVER_NAME=${LIBVA_DRIVER_NAME:-iHD}
       - LIBVA_DRIVERS_PATH=${LIBVA_DRIVERS_PATH:-/usr/lib/x86_64-linux-gnu/dri}
     healthcheck:
