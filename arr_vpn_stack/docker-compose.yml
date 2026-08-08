@@ -1,5 +1,7 @@
 name: arr_stack
 
+x-gluetun-image: &gluetun-image ${GLUETUN_IMAGE:-qmcgaw/gluetun@sha256:e3272b29a4bc177b389fbdcb54cf9716ccbfc30f04d8b7a35b0a5be9cdb58461}
+
 x-logging: &default-logging
   driver: json-file
   options:
@@ -9,7 +11,7 @@ x-logging: &default-logging
 services:
 #-----------------------------------------------
   gluetun:
-    image: ${GLUETUN_IMAGE:-qmcgaw/gluetun:latest}
+    image: *gluetun-image
     container_name: gluetun
     restart: unless-stopped
     logging: *default-logging
@@ -62,6 +64,8 @@ services:
     container_name: qbittorrent
     restart: unless-stopped
     logging: *default-logging
+    labels:
+      com.jellman86.gluetun-image: *gluetun-image
     network_mode: "service:gluetun"
     depends_on:
       gluetun:
