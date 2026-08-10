@@ -25,6 +25,20 @@ Git-backed Dockhand stack for Plex and Jellyfin playback plus Optimisarr media o
 
 Confirm the iGPU device and host render-group ID before deployment to a new host.
 
+## Private application access
+
+Jellyfin is available to trusted-network clients at
+`https://jellyfin.pownet.uk`. UniFi provides a private A record to Riker
+(`192.168.213.101`), where Nginx Proxy Manager terminates the managed
+`*.pownet.uk` certificate and proxies HTTP/WebSocket traffic to
+`192.168.213.101:8096`.
+
+This hostname is intentionally private-LAN ingress. Do not add a public DNS
+record or Cloudflare Tunnel route without a separate exposure and
+authentication review. Because Jellyfin uses host networking, keep the proxy
+upstream on Riker's address rather than changing it to the Compose service
+name.
+
 ### Jellyfin container and GPU research
 
 Research was refreshed on 2026-08-10 against primary upstream documentation:
@@ -90,17 +104,19 @@ After deployment, verify:
 1. Plex responds at `/identity`, retains its libraries, and can access `/dev/dri`.
 2. Jellyfin reaches `http://localhost:8096/health`, completes its setup wizard,
    and adds the existing folders below `/library` without changing them.
-3. In Jellyfin's Dashboard, open Playback > Transcoding, select **Intel Quick
+3. `https://jellyfin.pownet.uk/health` returns `Healthy`, the certificate is
+   valid for the hostname, and the web UI loads after its root redirect.
+4. In Jellyfin's Dashboard, open Playback > Transcoding, select **Intel Quick
    Sync (QSV)**, use `/dev/dri/renderD128`, and enable only codecs reported by
    the host. Compose exposes the GPU but cannot safely preconfigure this
    installation-specific setting.
-4. Use the permitted read-only diagnostic `docker exec jellyfin
+5. Use the permitted read-only diagnostic `docker exec jellyfin
    /usr/lib/jellyfin-ffmpeg/vainfo` and then force one lower-bitrate playback.
    Confirm the Jellyfin FFmpeg log selects QSV rather than a software encoder.
-5. Optimisarr responds at `/api/health` and retains its database.
-6. Optimisarr resolves Radarr/Sonarr on `arr_stack_brg`.
-7. `/data`, `/work`, and `/trash` resolve to the intended same filesystem.
-8. A representative Optimisarr hardware-transcode check uses the expected Intel device before enabling automated work.
+6. Optimisarr responds at `/api/health` and retains its database.
+7. Optimisarr resolves Radarr/Sonarr on `arr_stack_brg`.
+8. `/data`, `/work`, and `/trash` resolve to the intended same filesystem.
+9. A representative Optimisarr hardware-transcode check uses the expected Intel device before enabling automated work.
 
 ## Rollback
 
