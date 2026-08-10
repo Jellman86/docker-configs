@@ -7,7 +7,7 @@ values provided via a local `.env` file.
 - [`autofpl/`](autofpl/README.md) - private, stateless autoFPL API on Quark.
 - [`arr_vpn_stack/`](arr_vpn_stack/README.md) - Gluetun, qBittorrent, Prowlarr, Radarr, Sonarr, Byparr, Cleanuparr, and Seerr.
 - [`management/`](management/README.md) - Dockhand control plane.
-- [`media_related_stack/`](media_related_stack/README.md) - Plex and Optimisarr.
+- [`media_related_stack/`](media_related_stack/README.md) - Plex, Jellyfin, and Optimisarr.
 - [`monitoring_management/`](monitoring_management/README.md) - Prometheus, SNMP Exporter, Unpoller, and Grafana.
 - [`security_inference_stack/`](security_inference_stack/README.md) - Frigate, BirdNET-Go, Mosquitto, YA-WAMF, and Home Assistant.
 - [`security_inference_stack/ai_tools/`](security_inference_stack/ai_tools/README.md) - independently deployed OpenViking, mail, browser, and web-research services.

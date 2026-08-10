@@ -36,6 +36,53 @@ services:
         retries: 3
         start_period: 1m
 #-----------------------------------------------
+    jellyfin:
+      image: lscr.io/linuxserver/jellyfin:latest
+      container_name: jellyfin
+      restart: unless-stopped
+      environment:
+        - PUID=${PUID:-568}
+        - PGID=${PGID:-568}
+        - TZ=${TZ:-Europe/London}
+        - UMASK=${UMASK:-002}
+        # Riker's N100 uses the modern Intel media driver for QSV/VA-API.
+        - LIBVA_DRIVER_NAME=${LIBVA_DRIVER_NAME:-iHD}
+      volumes:
+        - type: bind
+          source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/jellyfin
+          target: /config
+          bind:
+            create_host_path: true
+        # Use the exact Plex library root, but keep Jellyfin read-only so adding
+        # a second media server cannot delete or rewrite shared source media.
+        - type: bind
+          source: ${MEDIA_PATH:-/mnt/tank/media}
+          target: /library
+          read_only: true
+          bind:
+            create_host_path: false
+      # LinuxServer grants its abc user access to the mounted render device.
+      # Enable Intel Quick Sync in Jellyfin after first boot; Compose cannot
+      # safely pre-seed that per-installation application setting.
+      devices:
+        - /dev/dri:/dev/dri
+      # Host networking keeps DLNA and UDP client discovery on Riker's LAN,
+      # matching Plex. Jellyfin's HTTP UI is consequently available on 8096.
+      network_mode: host
+      healthcheck:
+        test: ["CMD-SHELL", "curl -fsS http://localhost:8096/health >/dev/null || exit 1"]
+        interval: 1m
+        timeout: 10s
+        retries: 5
+        # Jellyfin documents that /health stays unhealthy during startup and
+        # database migrations, so do not judge a fresh install immediately.
+        start_period: 2m
+      logging:
+        driver: json-file
+        options:
+          max-size: 10m
+          max-file: "3"
+#-----------------------------------------------
     optimisarr:
       image: ${OPTIMISARR_IMAGE:-ghcr.io/jellman86/optimisarr:dev}
       container_name: optimisarr
