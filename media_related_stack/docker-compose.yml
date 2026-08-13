@@ -115,6 +115,9 @@ services:
         # OPTIMISARR_LOG_LEVEL=info override, whose lowercase value is invalid here.
         Logging__LogLevel__Default: ${OPTIMISARR_DOTNET_LOG_LEVEL:-Information}
         Logging__LogLevel__System.Net.Http.HttpClient: ${OPTIMISARR_HTTP_LOG_LEVEL:-Warning}
+        # Optional built-in bearer-token backstop. Store the value as an encrypted
+        # Dockhand stack secret rather than committing it to this repository.
+        OPTIMISARR_ADMIN_TOKEN: ${OPTIMISARR_ADMIN_TOKEN:-}
         LIBVA_DRIVER_NAME: ${LIBVA_DRIVER_NAME:-iHD}
       volumes:
         - type: bind
