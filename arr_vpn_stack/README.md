@@ -6,7 +6,7 @@ Git-backed Dockhand stack for the download and media-management services on Rike
 
 | Service | Role | Published access |
 |---|---|---|
-| `gluetun` | VPN gateway, DNS resolver, and HTTP proxy | qBittorrent TCP/UDP `5041`; Web UI `8081` |
+| `gluetun` | VPN gateway, DNS resolver, and HTTP proxy | LAN-bound control API `8000`; qBittorrent TCP/UDP `5041`; Web UI `8081` |
 | `qbittorrent` | Download client sharing Gluetun's network namespace | Through Gluetun only |
 | `prowlarr` | Indexer manager | `9696` |
 | `radarr` | Movie management | `7878` |
@@ -22,6 +22,10 @@ Port variables in `docker-compose.yml` can override most published defaults.
 - Compose file: `arr_vpn_stack/docker-compose.yml`
 - Intended host: Riker / TrueNAS.
 - External network: `${NETWORK:-arr_stack_brg}`.
+- Gluetun's unauthenticated control API is bound by default to Riker's LAN
+  address at `http://192.168.213.101:8000`. Override
+  `GLUETUN_CONTROL_BIND_ADDRESS` or `GLUETUN_CONTROL_PORT` only when the trusted
+  management network changes; never bind it to a public interface.
 - qBittorrent uses `network_mode: service:gluetun`; it has no independent network path or host ports.
 - Byparr reaches the public web through Gluetun's HTTP proxy at `http://gluetun:8888` by default.
 - Byparr publishes port 8191 on Riker so Quark-hosted applications can reuse
@@ -58,7 +62,11 @@ Secrets that belong in Dockhand's encrypted variables:
 
 - `WGPRIVKEY` for WireGuard, or `OPENVPNUSER` and `OPENVPNPASSWORD` for OpenVPN
 
-VPN selection and policy variables include `VPNHOST`, `VPNPROTOCOL`, `VPNCOUNTRY`, `FIREWALL_INPUT_PORTS`, and `FIREWALL_OUTBOUND_SUBNETS`. Never commit a populated `.env` file.
+VPN selection and policy variables include `VPNHOST`, `VPNPROTOCOL`, `VPNCOUNTRY`,
+`GLUETUN_CONTROL_BIND_ADDRESS`, `GLUETUN_CONTROL_PORT`, `FIREWALL_INPUT_PORTS`,
+and `FIREWALL_OUTBOUND_SUBNETS`. If Dockhand overrides `FIREWALL_INPUT_PORTS`,
+that value must include `8000` for the control API. Never commit a populated
+`.env` file.
 
 ## Deployment and updates
 
@@ -71,7 +79,10 @@ After deployment, verify:
 3. Radarr, Sonarr, Prowlarr, Cleanuparr, and Seerr are healthy and retain their state.
 4. Byparr is reachable from Quark at `http://192.168.213.101:8191` and uses
    Gluetun's proxy.
-5. The `/data` mount points at the expected storage tree.
+5. Gluetun's control API responds from the trusted LAN at
+   `http://192.168.213.101:8000/v1/version` and is unreachable from untrusted
+   networks.
+6. The `/data` mount points at the expected storage tree.
 
 ## Rollback
 
@@ -81,6 +92,10 @@ Revert the relevant Git commit or restore a previously reviewed image reference,
 
 - VPN credentials are secrets; do not place them in Git, logs, or documentation.
 - Gluetun is deliberately privileged only with the network capability and TUN device needed for VPN routing.
+- Gluetun's control API is intentionally unauthenticated for Auspex on the
+  trusted `192.168.213.0/24` management network. It can stop the VPN, DNS, or
+  updater, so port `8000` must never be forwarded by the router, published by a
+  reverse proxy, or bound to a public interface.
 - Do not expose Gluetun's proxy beyond trusted container/LAN boundaries.
 - Byparr accepts arbitrary destination URLs and proxy overrides. Keep port 8191
   on the trusted LAN only; callers must use typed, allowlisted source adapters
