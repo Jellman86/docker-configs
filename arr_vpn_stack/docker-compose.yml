@@ -104,10 +104,14 @@ services:
           grep -Eq '^[^[:space:]]+[[:space:]]+00000000[[:space:]]'
           /proc/net/route &&
           curl --fail --silent --show-error http://localhost:8081 || exit 1
-      interval: 1m
+      interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 30s
+      retries: 2
+      # 30s/2 marks a broken namespace in about a minute instead of three, but
+      # it would also condemn a slow start. qBittorrent has to wait for
+      # Gluetun's namespace and then load its torrent state before the WebUI
+      # answers, so startup is given its own, longer allowance.
+      start_period: 90s
 #-----------------------------------------------
   prowlarr:
     image: ${PROWLARR_IMAGE:-lscr.io/linuxserver/prowlarr:latest}
@@ -208,6 +212,13 @@ services:
     init: true
     restart: unless-stopped
     logging: *default-logging
+    # Byparr drives a real browser, and Docker gives every container 64MB of
+    # /dev/shm by default — the shared memory a browser uses for its renderer
+    # processes. Browsers stall or crash when it runs out, which surfaces here
+    # as a challenge that never finishes rather than as an obvious failure.
+    # This is a cap on a tmpfs, not a reservation, so it costs nothing until it
+    # is used.
+    shm_size: ${BYPARR_SHM_SIZE:-1gb}
     ports:
       - "${BYPARR_PORT:-8191}:8191/tcp"
     networks:
@@ -221,10 +232,15 @@ services:
       PROXY_SERVER: ${BYPARR_PROXY_SERVER:-http://gluetun:8888}
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS --max-time 30 http://localhost:$${PORT:-8191}/health >/dev/null || exit 1"]
-      interval: 15m
+      interval: 1m
       timeout: 30s
       retries: 3
-      start_period: 5s
+      # Byparr answers /health about fifteen seconds after start on a warm
+      # image, but the interval here is now 1m rather than 15m, so the first
+      # real probe lands early enough for a cold start — a fresh pull, or a
+      # browser still unpacking — to be mistaken for a failure. Startup gets its
+      # own allowance so the steady-state check can stay quick.
+      start_period: 60s
 #-----------------------------------------------
   cleanuparr:
     image: ${CLEANUPARR_IMAGE:-ghcr.io/cleanuparr/cleanuparr:latest}
@@ -286,6 +302,185 @@ services:
       interval: 15s
       timeout: 3s
       retries: 3
+#-----------------------------------------------
+  # Repairs the containers that lose their network when gluetun goes away.
+  #
+  # qbittorrent shares gluetun's network namespace, and that namespace is
+  # destroyed whenever gluetun's container stops. It comes back with no routes
+  # at all and stays that way: `depends_on.restart` does not cover this, because
+  # the Compose spec limits it to restarts Compose itself performs and excludes
+  # "automated restart by the container runtime after the container dies".
+  # prowlarr and byparr survive — they reach gluetun's HTTP proxy over the
+  # bridge — but they hold pooled connections and cached DNS for a proxy that
+  # has gone, which matters most when gluetun comes back on a different bridge
+  # address. Restarting them drops that state. It does not clear a disabled
+  # indexer: Prowlarr keeps escalation and DisabledTill in IndexerStatus on
+  # disk, and those survive any restart.
+  #
+  # Every repair goes through Dockhand's API, never the Docker socket or CLI, so
+  # this obeys the same rule as everything else here: Dockhand owns lifecycle.
+  gluetun-guard:
+    image: ${GLUETUN_GUARD_IMAGE:-python:3.13-alpine}
+    container_name: gluetun-guard
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      vpn_stack_brg:
+    environment:
+      TZ: ${TZ:-Europe/London}
+      DOCKHAND_URL: ${DOCKHAND_URL:-http://192.168.213.101:30328}
+      DOCKHAND_ENV_ID: ${DOCKHAND_ENV_ID:-1}
+      DOCKHAND_TOKEN: ${DOCKHAND_TOKEN:-}
+      STACK_NAME: ${GLUETUN_GUARD_STACK:-arr_stack}
+      ANCHOR_CONTAINER: ${GLUETUN_GUARD_ANCHOR:-gluetun}
+      NAMESPACE_DEPENDENTS: ${GLUETUN_GUARD_NAMESPACE_DEPENDENTS:-qbittorrent}
+      # byparr is deliberately not in this list. A challenge solve can occupy it
+      # for two minutes, and restarting it mid-solve returns a 408 to Prowlarr,
+      # which Prowlarr records as an indexer failure and escalates — the restart
+      # would manufacture the very failures it is meant to help with. It also
+      # resolves `gluetun` through Docker's DNS on each request, so it has no
+      # stale address to shed. Add it here only if it is seen to need it.
+      PROXY_DEPENDENTS: ${GLUETUN_GUARD_PROXY_DEPENDENTS:-prowlarr}
+      POLL_SECONDS: ${GLUETUN_GUARD_POLL_SECONDS:-10}
+      READY_TIMEOUT_SECONDS: ${GLUETUN_GUARD_READY_TIMEOUT_SECONDS:-180}
+      COOLDOWN_SECONDS: ${GLUETUN_GUARD_COOLDOWN_SECONDS:-120}
+    entrypoint: ["python3", "-u", "-c"]
+    command:
+      - |
+        import json
+        import os
+        import time
+        import urllib.request
+
+        BASE = os.environ.get("DOCKHAND_URL", "").rstrip("/")
+        ENV_ID = os.environ.get("DOCKHAND_ENV_ID", "1")
+        TOKEN = os.environ.get("DOCKHAND_TOKEN", "")
+        STACK = os.environ.get("STACK_NAME", "arr_stack")
+        ANCHOR = os.environ.get("ANCHOR_CONTAINER", "gluetun")
+        NAMESPACE_DEPS = os.environ.get("NAMESPACE_DEPENDENTS", "qbittorrent").split()
+        PROXY_DEPS = os.environ.get("PROXY_DEPENDENTS", "prowlarr").split()
+        POLL = float(os.environ.get("POLL_SECONDS", "10"))
+        READY_TIMEOUT = float(os.environ.get("READY_TIMEOUT_SECONDS", "180"))
+        COOLDOWN = float(os.environ.get("COOLDOWN_SECONDS", "120"))
+
+        def log(message):
+            print(time.strftime("%Y-%m-%dT%H:%M:%S"), message, flush=True)
+
+        def call(method, path, timeout):
+            request = urllib.request.Request(BASE + path, method=method)
+            request.add_header("Accept", "application/json")
+            if TOKEN:
+                request.add_header("Authorization", "Bearer " + TOKEN)
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return response.status, response.read().decode("utf-8", "replace")
+
+        QUIET = {"failing": False}
+
+        def anchor():
+            # Identity and liveness of the container whose namespace is shared. Id
+            # distinguishes a recreate from a restart; StartedAt is the only field a
+            # restart too fast to observe still moves.
+            try:
+                status, body = call("GET", "/api/containers/" + ANCHOR + "/inspect?env=" + ENV_ID, 20)
+                payload = json.loads(body) if status == 200 else None
+            except Exception as error:
+                if not QUIET["failing"]:
+                    log("inspect " + ANCHOR + " failed, will keep trying quietly: " + repr(error))
+                    QUIET["failing"] = True
+                return None
+            if payload is None:
+                return None
+            if QUIET["failing"]:
+                log("inspect " + ANCHOR + " recovered")
+                QUIET["failing"] = False
+            state = payload.get("State") or {}
+            return {
+                "id": payload.get("Id") or "",
+                "started": state.get("StartedAt") or "",
+                "running": bool(state.get("Running")),
+                "health": (state.get("Health") or {}).get("Status") or "",
+            }
+
+        def wait_until_ready():
+            # Repairing before the tunnel is up would only put the dependents back
+            # behind a killswitch, so give it a bounded chance to report healthy.
+            deadline = time.monotonic() + READY_TIMEOUT
+            while time.monotonic() < deadline:
+                state = anchor()
+                if state and state["running"] and state["health"] in ("", "healthy"):
+                    return
+                time.sleep(POLL)
+            log("gave up waiting for " + ANCHOR + " to report healthy; repairing anyway")
+
+        def restart(names):
+            # Returns False if any dependent was not repaired, so the caller can keep
+            # the old baseline and try again rather than record a repair that failed.
+            ok = True
+            for name in names:
+                try:
+                    status, body = call("POST", "/api/containers/" + name + "/restart?env=" + ENV_ID, 300)
+                    log("restart " + name + ": HTTP " + str(status) + " " + body.strip()[:120])
+                    ok = ok and status == 200
+                except Exception as error:
+                    log("restart " + name + " failed: " + repr(error))
+                    ok = False
+            return ok
+
+        def recreate_stack():
+            # The only repair for a stale namespace reference. Dockhand runs
+            # `compose stop` then `up -d --force-recreate`; this container goes with it.
+            log("recreating " + STACK + " through Dockhand; this container will be replaced")
+            try:
+                path = "/api/stacks/" + STACK + "/restart?env=" + ENV_ID + "&mode=recreate"
+                status, body = call("POST", path, 1800)
+                log("recreate " + STACK + ": HTTP " + str(status) + " " + body.strip()[-200:])
+                return status == 200
+            except Exception as error:
+                log("recreate " + STACK + " failed: " + repr(error))
+                return False
+
+        baseline = None
+        announced = False
+        while baseline is None:
+            baseline = anchor()
+            if baseline is None:
+                if not announced:
+                    log("waiting for Dockhand and " + ANCHOR)
+                    announced = True
+                time.sleep(POLL)
+        log("watching " + ANCHOR + " id=" + baseline["id"][:12] + " started=" + baseline["started"])
+
+        while True:
+            time.sleep(POLL)
+            current = anchor()
+            if current is None or not current["running"]:
+                continue
+            if current["id"] != baseline["id"]:
+                log(ANCHOR + " recreated (" + baseline["id"][:12] + " -> " + current["id"][:12]
+                    + "); namespace references are stale")
+                wait_until_ready()
+                repaired = recreate_stack()
+                time.sleep(COOLDOWN)
+                if repaired:
+                    baseline = anchor() or current
+            elif current["started"] != baseline["started"]:
+                log(ANCHOR + " restarted in place at " + current["started"])
+                wait_until_ready()
+                repaired = restart(NAMESPACE_DEPS + PROXY_DEPS)
+                time.sleep(COOLDOWN)
+                if repaired:
+                    baseline = anchor() or current
+    healthcheck:
+      # Healthy only while it can reach the control plane it repairs through.
+      # A guard that has quietly lost Dockhand is a safety net that is not there.
+      test: ["CMD-SHELL", "wget -q -T 5 -O /dev/null \"$${DOCKHAND_URL}/api/health\" || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      # On a host reboot this can easily start before Dockhand does. The guard
+      # itself waits quietly for that; the healthcheck needs the same patience
+      # or every boot reports it as failed before it has had a chance.
+      start_period: 60s
 networks:
   vpn_stack_brg:
     name: ${NETWORK:-arr_stack_brg}

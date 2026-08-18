@@ -5,7 +5,7 @@ values provided via a local `.env` file.
 
 ## Repo layout
 - [`autofpl/`](autofpl/README.md) - private, stateless autoFPL API on Quark.
-- [`arr_vpn_stack/`](arr_vpn_stack/README.md) - Gluetun, qBittorrent, Prowlarr, Radarr, Sonarr, Byparr, Cleanuparr, and Seerr.
+- [`arr_vpn_stack/`](arr_vpn_stack/README.md) - Gluetun, qBittorrent, Prowlarr, Radarr, Sonarr, Byparr, Cleanuparr, Seerr, and the Gluetun restart guard.
 - [`management/`](management/README.md) - Dockhand control plane.
 - [`media_related_stack/`](media_related_stack/README.md) - Plex, Jellyfin, and Optimisarr.
 - [`monitoring_management/`](monitoring_management/README.md) - Prometheus, SNMP Exporter, Unpoller, and Grafana.
