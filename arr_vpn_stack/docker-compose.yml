@@ -107,7 +107,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 2
-      start_period: 30s
+      # 30s/2 marks a broken namespace in about a minute instead of three, but
+      # it would also condemn a slow start. qBittorrent has to wait for
+      # Gluetun's namespace and then load its torrent state before the WebUI
+      # answers, so startup is given its own, longer allowance.
+      start_period: 90s
 #-----------------------------------------------
   prowlarr:
     image: ${PROWLARR_IMAGE:-lscr.io/linuxserver/prowlarr:latest}
@@ -208,6 +212,13 @@ services:
     init: true
     restart: unless-stopped
     logging: *default-logging
+    # Byparr drives a real browser, and Docker gives every container 64MB of
+    # /dev/shm by default — the shared memory a browser uses for its renderer
+    # processes. Browsers stall or crash when it runs out, which surfaces here
+    # as a challenge that never finishes rather than as an obvious failure.
+    # This is a cap on a tmpfs, not a reservation, so it costs nothing until it
+    # is used.
+    shm_size: ${BYPARR_SHM_SIZE:-1gb}
     ports:
       - "${BYPARR_PORT:-8191}:8191/tcp"
     networks:
@@ -224,7 +235,12 @@ services:
       interval: 1m
       timeout: 30s
       retries: 3
-      start_period: 5s
+      # Byparr answers /health about fifteen seconds after start on a warm
+      # image, but the interval here is now 1m rather than 15m, so the first
+      # real probe lands early enough for a cold start — a fresh pull, or a
+      # browser still unpacking — to be mistaken for a failure. Startup gets its
+      # own allowance so the steady-state check can stay quick.
+      start_period: 60s
 #-----------------------------------------------
   cleanuparr:
     image: ${CLEANUPARR_IMAGE:-ghcr.io/cleanuparr/cleanuparr:latest}
@@ -295,9 +311,11 @@ services:
   # the Compose spec limits it to restarts Compose itself performs and excludes
   # "automated restart by the container runtime after the container dies".
   # prowlarr and byparr survive — they reach gluetun's HTTP proxy over the
-  # bridge — but they hold pooled connections to a proxy that has gone, and
-  # prowlarr then holds its indexers in a failure backoff long after gluetun is
-  # healthy again.
+  # bridge — but they hold pooled connections and cached DNS for a proxy that
+  # has gone, which matters most when gluetun comes back on a different bridge
+  # address. Restarting them drops that state. It does not clear a disabled
+  # indexer: Prowlarr keeps escalation and DisabledTill in IndexerStatus on
+  # disk, and those survive any restart.
   #
   # Every repair goes through Dockhand's API, never the Docker socket or CLI, so
   # this obeys the same rule as everything else here: Dockhand owns lifecycle.
@@ -316,7 +334,13 @@ services:
       STACK_NAME: ${GLUETUN_GUARD_STACK:-arr_stack}
       ANCHOR_CONTAINER: ${GLUETUN_GUARD_ANCHOR:-gluetun}
       NAMESPACE_DEPENDENTS: ${GLUETUN_GUARD_NAMESPACE_DEPENDENTS:-qbittorrent}
-      PROXY_DEPENDENTS: ${GLUETUN_GUARD_PROXY_DEPENDENTS:-prowlarr byparr}
+      # byparr is deliberately not in this list. A challenge solve can occupy it
+      # for two minutes, and restarting it mid-solve returns a 408 to Prowlarr,
+      # which Prowlarr records as an indexer failure and escalates — the restart
+      # would manufacture the very failures it is meant to help with. It also
+      # resolves `gluetun` through Docker's DNS on each request, so it has no
+      # stale address to shed. Add it here only if it is seen to need it.
+      PROXY_DEPENDENTS: ${GLUETUN_GUARD_PROXY_DEPENDENTS:-prowlarr}
       POLL_SECONDS: ${GLUETUN_GUARD_POLL_SECONDS:-10}
       READY_TIMEOUT_SECONDS: ${GLUETUN_GUARD_READY_TIMEOUT_SECONDS:-180}
       COOLDOWN_SECONDS: ${GLUETUN_GUARD_COOLDOWN_SECONDS:-120}
@@ -334,7 +358,7 @@ services:
         STACK = os.environ.get("STACK_NAME", "arr_stack")
         ANCHOR = os.environ.get("ANCHOR_CONTAINER", "gluetun")
         NAMESPACE_DEPS = os.environ.get("NAMESPACE_DEPENDENTS", "qbittorrent").split()
-        PROXY_DEPS = os.environ.get("PROXY_DEPENDENTS", "prowlarr byparr").split()
+        PROXY_DEPS = os.environ.get("PROXY_DEPENDENTS", "prowlarr").split()
         POLL = float(os.environ.get("POLL_SECONDS", "10"))
         READY_TIMEOUT = float(os.environ.get("READY_TIMEOUT_SECONDS", "180"))
         COOLDOWN = float(os.environ.get("COOLDOWN_SECONDS", "120"))
@@ -453,7 +477,10 @@ services:
       interval: 1m
       timeout: 10s
       retries: 3
-      start_period: 20s
+      # On a host reboot this can easily start before Dockhand does. The guard
+      # itself waits quietly for that; the healthcheck needs the same patience
+      # or every boot reports it as failed before it has had a chance.
+      start_period: 60s
 networks:
   vpn_stack_brg:
     name: ${NETWORK:-arr_stack_brg}

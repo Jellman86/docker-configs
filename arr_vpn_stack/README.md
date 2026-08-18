@@ -57,16 +57,42 @@ Two behaviours were measured on Riker before this was written:
 
 Prowlarr and Byparr are affected differently. Both reach the public web through
 Gluetun's HTTP proxy over the bridge rather than through its namespace, so their
-networking never breaks, but they hold pooled connections to a proxy that has
-gone. Prowlarr then holds its indexers in a failure backoff for far longer than
-the outage lasted, which looks identical to having no connectivity.
+networking never breaks, but they hold pooled connections and cached DNS for a
+proxy that has gone. That matters most when Gluetun returns on a different
+bridge address, which it can after a recreate. Restarting them drops the stale
+state.
+
+Restarting Prowlarr does **not** clear a disabled indexer. Escalation level and
+`DisabledTill` live in the `IndexerStatus` table on disk; rows on Riker carry
+`InitialFailure` dates from before the last container start and are still at
+escalation 9, so that state survives any restart and has to be cleared in
+Prowlarr itself.
+
+Byparr is deliberately excluded from the repair list. A Cloudflare challenge
+solve can occupy it for two minutes, and restarting it mid-solve returns a 408
+to Prowlarr, which records an indexer failure and escalates — the repair would
+manufacture the failure it is supposed to help with. Byparr also resolves
+`gluetun` through Docker's DNS on every request, so it holds no stale address.
+Set `GLUETUN_GUARD_PROXY_DEPENDENTS` if that judgement turns out to be wrong.
+
+## Healthcheck timing
+
+The checks are tuned to notice a broken container quickly without condemning a
+slow start, so each service carries a short `interval` and a long
+`start_period`:
+
+| Service | Interval / retries | `start_period` | Why |
+|---|---|---|---|
+| `qbittorrent` | 30s / 2 | 90s | A dead namespace shows in about a minute, but it must wait for Gluetun and then load its torrent state before the WebUI answers |
+| `byparr` | 1m / 3 | 60s | Answers `/health` roughly fifteen seconds after start on a warm image; a fresh pull needs longer |
+| `gluetun-guard` | 1m / 3 | 60s | On a host reboot it can start before Dockhand does |
 
 `gluetun-guard` watches Gluetun's container identity and start time through
 Dockhand's read-only inspect endpoint and reacts to each case:
 
 | Observed | Repair |
 |---|---|
-| Same container ID, newer `StartedAt` | Restart `qbittorrent`, then `prowlarr` and `byparr`, through Dockhand |
+| Same container ID, newer `StartedAt` | Restart `qbittorrent`, then `prowlarr`, through Dockhand |
 | New container ID | Recreate the stack through Dockhand (`restart?mode=recreate`, which runs `compose stop` then `up -d --force-recreate`) |
 
 It waits for Gluetun to report healthy before repairing, so dependents are not
@@ -100,6 +126,9 @@ Common settings:
 - `PUID`, `PGID`, `TZ`
 - `DOCKERCONFIGPATH`, `DATAPATH`, `NETWORK`
 - Optional image and published-port overrides
+- `BYPARR_SHM_SIZE` (default `1gb`) — shared memory for Byparr's browser.
+  Docker's 64MB default is too small for a browser and shows up as challenges
+  that never finish rather than as a clear failure.
 
 Secrets that belong in Dockhand's encrypted variables:
 
