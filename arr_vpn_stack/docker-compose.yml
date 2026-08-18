@@ -1,6 +1,14 @@
 name: arr_stack
 
-x-gluetun-image: &gluetun-image ${GLUETUN_IMAGE:-qmcgaw/gluetun@sha256:e3272b29a4bc177b389fbdcb54cf9716ccbfc30f04d8b7a35b0a5be9cdb58461}
+# Pinned to a release, and anchored so the same reference reaches qbittorrent's
+# labels below. The reference has to change whenever the image does, which is
+# what makes Compose recreate qbittorrent in the same operation as gluetun —
+# qbittorrent shares gluetun's network namespace and is left with a dead one
+# otherwise. A floating tag (`latest`, `v3`, `v3.41`) is a constant string, so
+# it would silently disable that and leave the repair to gluetun-guard after the
+# fact. `latest` is also built from master rather than a release, which is not
+# what should be enforcing a killswitch unattended.
+x-gluetun-image: &gluetun-image ${GLUETUN_IMAGE:-qmcgaw/gluetun:v3.41.3}
 
 x-logging: &default-logging
   driver: json-file

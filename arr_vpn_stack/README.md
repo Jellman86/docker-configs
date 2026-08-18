@@ -75,6 +75,27 @@ manufacture the failure it is supposed to help with. Byparr also resolves
 `gluetun` through Docker's DNS on every request, so it holds no stale address.
 Set `GLUETUN_GUARD_PROXY_DEPENDENTS` if that judgement turns out to be wrong.
 
+## Why Gluetun's image is pinned to a release
+
+`GLUETUN_IMAGE` is pinned to a specific release tag and anchored so the same
+reference reaches qBittorrent's `com.jellman86.gluetun-image` label. That label
+is load-bearing: it puts the image reference into qBittorrent's Compose config
+hash, so changing the reference changes the hash and Compose recreates
+qBittorrent in the same operation that recreates Gluetun. Since qBittorrent
+shares Gluetun's namespace, that is what makes an image update atomic instead of
+leaving a dead namespace behind. Measured with `docker compose config --hash`:
+two different digests produce two different qBittorrent hashes.
+
+A floating tag breaks this. `latest`, `v3` and `v3.41` are constant strings, so
+the label never changes even when the underlying image does — Compose would
+recreate Gluetun alone and leave qBittorrent broken until `gluetun-guard`
+noticed. `latest` is also built from master rather than from a release, which is
+not what should be enforcing a killswitch on an unattended overnight update.
+
+Bump it by editing the tag, reviewing, and deploying through Dockhand. Do not
+replace it with a floating tag without also removing the label and accepting
+that recovery becomes reactive.
+
 ## Healthcheck timing
 
 The checks are tuned to notice a broken container quickly without condemning a
