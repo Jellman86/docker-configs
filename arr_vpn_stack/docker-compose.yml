@@ -350,6 +350,8 @@ services:
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 return response.status, response.read().decode("utf-8", "replace")
 
+        QUIET = {"failing": False}
+
         def anchor():
             # Identity and liveness of the container whose namespace is shared. Id
             # distinguishes a recreate from a restart; StartedAt is the only field a
@@ -358,10 +360,15 @@ services:
                 status, body = call("GET", "/api/containers/" + ANCHOR + "/inspect?env=" + ENV_ID, 20)
                 payload = json.loads(body) if status == 200 else None
             except Exception as error:
-                log("inspect " + ANCHOR + " failed: " + repr(error))
+                if not QUIET["failing"]:
+                    log("inspect " + ANCHOR + " failed, will keep trying quietly: " + repr(error))
+                    QUIET["failing"] = True
                 return None
             if payload is None:
                 return None
+            if QUIET["failing"]:
+                log("inspect " + ANCHOR + " recovered")
+                QUIET["failing"] = False
             state = payload.get("State") or {}
             return {
                 "id": payload.get("Id") or "",
@@ -382,12 +389,18 @@ services:
             log("gave up waiting for " + ANCHOR + " to report healthy; repairing anyway")
 
         def restart(names):
+            # Returns False if any dependent was not repaired, so the caller can keep
+            # the old baseline and try again rather than record a repair that failed.
+            ok = True
             for name in names:
                 try:
                     status, body = call("POST", "/api/containers/" + name + "/restart?env=" + ENV_ID, 300)
                     log("restart " + name + ": HTTP " + str(status) + " " + body.strip()[:120])
+                    ok = ok and status == 200
                 except Exception as error:
                     log("restart " + name + " failed: " + repr(error))
+                    ok = False
+            return ok
 
         def recreate_stack():
             # The only repair for a stale namespace reference. Dockhand runs
@@ -397,14 +410,19 @@ services:
                 path = "/api/stacks/" + STACK + "/restart?env=" + ENV_ID + "&mode=recreate"
                 status, body = call("POST", path, 1800)
                 log("recreate " + STACK + ": HTTP " + str(status) + " " + body.strip()[-200:])
+                return status == 200
             except Exception as error:
                 log("recreate " + STACK + " failed: " + repr(error))
+                return False
 
         baseline = None
+        announced = False
         while baseline is None:
             baseline = anchor()
             if baseline is None:
-                log("waiting for Dockhand and " + ANCHOR)
+                if not announced:
+                    log("waiting for Dockhand and " + ANCHOR)
+                    announced = True
                 time.sleep(POLL)
         log("watching " + ANCHOR + " id=" + baseline["id"][:12] + " started=" + baseline["started"])
 
@@ -417,15 +435,17 @@ services:
                 log(ANCHOR + " recreated (" + baseline["id"][:12] + " -> " + current["id"][:12]
                     + "); namespace references are stale")
                 wait_until_ready()
-                recreate_stack()
+                repaired = recreate_stack()
                 time.sleep(COOLDOWN)
-                baseline = anchor() or current
+                if repaired:
+                    baseline = anchor() or current
             elif current["started"] != baseline["started"]:
                 log(ANCHOR + " restarted in place at " + current["started"])
                 wait_until_ready()
-                restart(NAMESPACE_DEPS + PROXY_DEPS)
+                repaired = restart(NAMESPACE_DEPS + PROXY_DEPS)
                 time.sleep(COOLDOWN)
-                baseline = anchor() or current
+                if repaired:
+                    baseline = anchor() or current
     healthcheck:
       # Healthy only while it can reach the control plane it repairs through.
       # A guard that has quietly lost Dockhand is a safety net that is not there.
