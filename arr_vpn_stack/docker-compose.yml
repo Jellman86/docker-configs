@@ -54,8 +54,22 @@ services:
       DNS_CACHING: ${DNS_CACHING:-on}
       DNS_UPSTREAM_IPV6: ${DNS_UPSTREAM_IPV6:-off}
       BLOCK_MALICIOUS: ${BLOCK_MALICIOUS:-off}
-      BLOCK_SURVEILLANCE: ${BLOCK_SURVEILLANCE:-off}
-      BLOCK_ADS: ${BLOCK_ADS:-off}
+      # On, because Byparr browses through this proxy and hands Prowlarr every
+      # cookie the page set — including third-party ad cookies. Prowlarr loads
+      # them with System.Net.CookieContainer, which rejects a value containing
+      # an unquoted comma and then abandons the whole jar, cf_clearance with it:
+      #
+      #   Invalid cookie in https://kickass.ws/new/?field=time_add&sorder=desc
+      #   CookieException: The 'Value'='iqoption.com,iqtrading.asia' part of the
+      #   cookie is invalid.  at CookieContainer.Add
+      #
+      # The solve succeeded; the retry still gets challenged because it carries
+      # no clearance, and Prowlarr records an indexer failure. Ad hostnames that
+      # never resolve set no cookies. This is partial cover — the list holds
+      # mc.yandex.ru but not the rotating hosts kickass.ws also loads — so treat
+      # it as removing an avoidable failure mode, not as a fix for that indexer.
+      # No indexer or stack hostname appears in the list; checked before enabling.
+      BLOCK_ADS: ${BLOCK_ADS:-on}
       HTTPPROXY: ${HTTPPROXY:-on}
       HTTPPROXY_LISTENING_ADDRESS: ${HTTPPROXY_LISTENING_ADDRESS:-:8888}
       HTTPPROXY_STEALTH: ${HTTPPROXY_STEALTH:-on}
