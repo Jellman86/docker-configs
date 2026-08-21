@@ -75,6 +75,52 @@ manufacture the failure it is supposed to help with. Byparr also resolves
 `gluetun` through Docker's DNS on every request, so it holds no stale address.
 Set `GLUETUN_GUARD_PROXY_DEPENDENTS` if that judgement turns out to be wrong.
 
+## DNS ad blocking and Byparr's cookie jar
+
+`BLOCK_ADS` is on. Byparr reaches the web through Gluetun's HTTP proxy, so the
+proxy resolves every hostname the browser asks for and Gluetun's filtering
+applies to the pages Byparr renders.
+
+It is on for a specific failure. Byparr returns the browser's whole cookie jar,
+third-party ad cookies included, and Prowlarr loads that into
+`System.Net.CookieContainer`. A cookie value holding an unquoted comma is
+rejected, and Prowlarr's `InitializeRequestCookies` abandons the entire jar
+rather than the one cookie — taking `cf_clearance` with it. Measured on Riker,
+twice, identically:
+
+```
+|Debug|FlareSolverr|Cloudflare Detected, Applying FlareSolverr Proxy to https://kickass.ws/new/?field=time_add&sorder=desc
+|Debug|HttpClient|Invalid cookie in https://kickass.ws/new/?field=time_add&sorder=desc
+  System.Net.CookieException: The 'Value'='iqoption.com,iqtrading.asia' part of the cookie is invalid.
+     at System.Net.CookieContainer.Add(Uri uri, Cookie cookie)
+|Error|Cardigann|CloudFlareProtectionException: Unable to access kickass.ws, blocked by CloudFlare Protection
+```
+
+The solve had already succeeded — a direct Byparr call returns HTTP 200, the
+real page, and a valid `cf_clearance`. The retry fails only because it carries
+no clearance, and Prowlarr books that as an indexer failure. A hostname that
+does not resolve sets no cookie, which is what `BLOCK_ADS` buys.
+
+Treat it as partial cover, not a fix. Gluetun's list carries `mc.yandex.ru` but
+not `mylink.cloud`, `s99i.org`, or the rotating `sh.*` host that kickass.ws also
+loads, and the offending cookie appears only on some ad rotations. The durable
+fix is upstream: Byparr should scope returned cookies to the target domain.
+
+Do not reach for `DNS_BLOCK_IPS` to cover the rest. `mylink.cloud` and
+`json.vpncheck.info` sit on shared Cloudflare addresses, so blocking those
+resolves to blocking most of the indexers too.
+
+None of the indexer or stack hostnames appear in Gluetun's ads or malicious
+lists; that was checked against `qdm12/files` before enabling. `BLOCK_SURVEILLANCE`
+is gone — current Gluetun logs `BLOCK_SURVEILLANCE is obsolete because its DNS
+block lists are not longer maintained` on every start and ignores it.
+
+A Cloudflare `error code: 1006` is a different thing entirely and no proxy fixes
+it: the site has banned the exit IP. Byparr fetching 1337x through the VPN
+returns `Access denied | 1337x.to used Cloudflare to restrict access`, while the
+same URL from a residential IP returns an ordinary `Just a moment...` challenge.
+Rotate the exit or drop the indexer.
+
 ## Why Gluetun's image is pinned to a release
 
 `GLUETUN_IMAGE` is pinned to a specific release tag and anchored so the same
@@ -150,6 +196,9 @@ Common settings:
 - `BYPARR_SHM_SIZE` (default `1gb`) — shared memory for Byparr's browser.
   Docker's 64MB default is too small for a browser and shows up as challenges
   that never finish rather than as a clear failure.
+- `BLOCK_ADS` (default `on`) — Gluetun DNS ad filtering. Keep it on unless an
+  indexer is shown to be on the block list; see the section above for why it
+  matters to Byparr.
 
 Secrets that belong in Dockhand's encrypted variables:
 
