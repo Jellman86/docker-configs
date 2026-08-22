@@ -31,6 +31,74 @@ All variants attach services to the external `general_brg` network.
 
 Create the selected manifest's external networks before first deployment.
 
+## Remote access and tailnet DNS
+
+Both hosts run a Tailscale container that advertises the LAN as subnet routes, so tailnet
+clients reach services by their normal `*.pownet.uk` names over the existing Nginx Proxy
+Manager ingress and its `*.pownet.uk` wildcard certificate. No exit node is required; subnet
+routes apply passively to any client with accept-routes enabled.
+
+| Host | Advertised routes | Role |
+|---|---|---|
+| `quark` | `192.168.213.0/24`, `192.168.214.0/24`, `0.0.0.0/0`, `::/0` | subnet router (primary) + exit node |
+| `riker` | `192.168.213.0/24`, `192.168.214.0/24`, `0.0.0.0/0`, `::/0` | subnet router (standby) + exit node |
+
+Both hosts' routes are approved, so route failover between them is automatic.
+
+### Split DNS (required for off-LAN access)
+
+`*.pownet.uk` records exist only in local DNS; public resolvers return nothing. Without a
+split-DNS route, remote clients can reach `192.168.213.0/24` but cannot resolve any service
+name. The tailnet therefore maps the zone to the LAN resolver, which is itself inside an
+advertised route:
+
+```text
+pownet.uk -> 192.168.213.254
+```
+
+This is control-plane state, not Compose state. Manage it through the Tailscale API:
+
+```sh
+# inspect
+curl -H "Authorization: Bearer $TS_API_KEY" \
+  https://api.tailscale.com/api/v2/tailnet/-/dns/split-dns
+
+# set (PATCH is a partial update; it leaves other domains untouched)
+curl -X PATCH -H "Authorization: Bearer $TS_API_KEY" \
+  -H 'Content-Type: application/json' \
+  --data '{"pownet.uk":["192.168.213.254"]}' \
+  https://api.tailscale.com/api/v2/tailnet/-/dns/split-dns
+
+# remove
+curl -X PATCH -H "Authorization: Bearer $TS_API_KEY" \
+  -H 'Content-Type: application/json' \
+  --data '{"pownet.uk":null}' \
+  https://api.tailscale.com/api/v2/tailnet/-/dns/split-dns
+```
+
+Global nameservers stay empty and MagicDNS stays enabled, so only `pownet.uk` queries are
+redirected and general internet DNS is unaffected.
+
+### Route auto-approval
+
+The tailnet ACL auto-approves both subnet routes and exit-node advertisements. Without this,
+recreating a Tailscale container without its `${DOCKERCONFIGPATH}/tailscale` state directory
+produces a node whose routes sit unapproved, which breaks remote access silently and presents
+as a DNS failure:
+
+```json
+"autoApprovers": {
+  "routes": {
+    "192.168.213.0/24": ["Jellman86@github"],
+    "192.168.214.0/24": ["Jellman86@github"]
+  },
+  "exitNode": ["Jellman86@github"]
+}
+```
+
+Tailscale cannot issue wildcard certificates for `*.ts.net`, so MagicDNS node names are not a
+substitute for the NPM ingress and its `*.pownet.uk` wildcard.
+
 ## Persistent storage
 
 | Host path | Purpose |
