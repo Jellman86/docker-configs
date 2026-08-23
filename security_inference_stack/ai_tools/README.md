@@ -15,7 +15,6 @@ memory or invalidate configured clients.
 | Service | Role | Network exposure |
 |---|---|---|
 | `playwright-mcp` | Isolated interactive browser MCP | `general_brg` and the private research network; no host port |
-| `research-egress` | Squid public-web policy gateway | Private research networks plus isolated egress |
 | `openviking` | Shared hierarchical memory and MCP | Private OpenViking network and `npm_proxy_backends` |
 | `openviking-bootstrap` | One-shot least-privilege tenant provisioning | Private OpenViking network only |
 | `openviking-ollama` | Private embedding model server | Private OpenViking network only |
@@ -23,8 +22,7 @@ memory or invalidate configured clients.
 | `rusty-imap-mcp` | iCloud IMAP/SMTP MCP with non-destructive limits | `general_brg` and a dedicated private network; no host port |
 
 No service publishes a host port. `general_brg` and `npm_proxy_backends` are
-external networks. The stack-owned `ai_tools_research_private` network carries the browser and
-the egress proxy.
+external networks. Playwright reaches the public web directly over `general_brg`.
 
 ## Host preparation
 
@@ -104,9 +102,11 @@ Rusty IMAP MCP is available to trusted containers on `general_brg` at:
 http://rusty-imap-mcp:8080/mcp
 ```
 
-Public web traffic from Playwright crosses the non-caching Squid gateway, which
-denies private, loopback, link-local, metadata, multicast, reserved, and
-Docker-internal destinations after DNS resolution.
+Playwright reaches the public web directly. The Squid egress gateway that
+previously denied private, loopback, link-local, metadata, multicast, reserved
+and Docker-internal destinations was removed on 2026-08-23, so the browser can
+now reach the local network. Its remaining boundary is `--isolated`, the
+`--allowed-hosts` list and `--block-service-workers`.
 
 OpenViking remains available through the existing private-LAN compatibility URL:
 
@@ -121,8 +121,8 @@ tenant migration is completed. Never configure a client with the root key.
 
 ## Security boundaries
 
-- Playwright MCP owns an isolated ephemeral browser and forces browser egress
-  through Squid.
+- Playwright MCP owns an isolated ephemeral browser with a restricted
+  `--allowed-hosts` list. Browser egress is no longer proxy-confined.
 - Browser, mail, memory, and embedding services publish no host
   ports and mount neither a host workspace nor the Docker socket.
 - Persistent OpenViking data remains under `/mnt/apps/docker`; removing the old
@@ -153,7 +153,6 @@ and only after stopping the affected service through Dockhand.
 3. Confirm `openviking-ollama-model` and `openviking-bootstrap` exit successfully.
 4. Confirm OpenViking rejects unauthenticated requests and accepts an
    authenticated memory search/remember request through the compatibility URL.
-5. Confirm Playwright can load a harmless public page but private, loopback,
-   link-local, and metadata targets fail.
+5. Confirm Playwright can load a harmless public page.
 6. Confirm the IMAP MCP health endpoint responds from a trusted `general_brg`
    client and message body fetches do not set `\\Seen`.

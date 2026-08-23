@@ -13,16 +13,11 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-    depends_on:
-      research-egress:
-        condition: service_healthy
     command:
       - --host=0.0.0.0
       - --port=8931
       - --allowed-hosts=playwright-mcp,playwright-mcp:8931,quark.pownet.uk
       - --isolated
-      - --proxy-server=http://research-egress:3128
-      - --proxy-bypass=<-loopback>
       - --block-service-workers
       - --output-mode=stdout
     tmpfs:
@@ -32,9 +27,6 @@ services:
       - "8931"
     networks:
       general_brg:
-        aliases:
-          - playwright-mcp
-      research_private:
         aliases:
           - playwright-mcp
     healthcheck:
@@ -49,43 +41,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  research-egress:
-    platform: linux/amd64
-    image: ubuntu/squid:6.6-24.04_edge@sha256:8a3baed477e2c282ab8aa5edad442f69873246964f225c5c2ae8364b6610963c
-    container_name: research-egress
-    restart: unless-stopped
-    init: true
-    user: "13:13"
-    read_only: true
-    pids_limit: 128
-    mem_limit: "${RESEARCH_EGRESS_MEMORY_LIMIT:-256m}"
-    cpus: "${RESEARCH_EGRESS_CPUS:-0.50}"
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
-    entrypoint: ["/usr/sbin/squid"]
-    command: ["-f", "/etc/squid/squid.conf", "-NYCd", "1"]
-    volumes:
-      - ./web-research/squid.conf:/etc/squid/squid.conf:ro
-    tmpfs:
-      - /tmp:rw,nosuid,nodev,noexec,size=32m,mode=0700,uid=13,gid=13
-    networks:
-      research_private:
-        aliases:
-          - research-egress
-      research_egress:
-    healthcheck:
-      test: ["CMD-SHELL", "/bin/bash -c 'exec 3<>/dev/tcp/127.0.0.1/3128'"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-    logging:
-      driver: json-file
-      options:
-        max-size: "5m"
-        max-file: "3"
 
   openviking:
     platform: linux/amd64
@@ -334,9 +289,4 @@ networks:
   rusty_imap_mcp:
     driver: bridge
   openviking_private:
-    driver: bridge
-  research_private:
-    driver: bridge
-    internal: true
-  research_egress:
     driver: bridge
