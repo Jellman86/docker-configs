@@ -16,9 +16,6 @@ memory or invalidate configured clients.
 |---|---|---|
 | `playwright-mcp` | Isolated interactive browser MCP | `general_brg` and the private research network; no host port |
 | `research-egress` | Squid public-web policy gateway | Private research networks plus isolated egress |
-| `spider-chromium` | Spider-only rendered-page browser/CDP | Private Spider browser network only |
-| `spider-mcp` | Bounded scrape, link-map, and crawl MCP | Private Spider/research networks |
-| `searxng` | Search JSON API | Private search/research networks |
 | `openviking` | Shared hierarchical memory and MCP | Private OpenViking network and `npm_proxy_backends` |
 | `openviking-bootstrap` | One-shot least-privilege tenant provisioning | Private OpenViking network only |
 | `openviking-ollama` | Private embedding model server | Private OpenViking network only |
@@ -26,8 +23,8 @@ memory or invalidate configured clients.
 | `rusty-imap-mcp` | iCloud IMAP/SMTP MCP with non-destructive limits | `general_brg` and a dedicated private network; no host port |
 
 No service publishes a host port. `general_brg` and `npm_proxy_backends` are
-external networks. The stack-owned `ai_tools_research_private` network is also
-used by autoFPL so it can reuse Spider and the research egress layer.
+external networks. The stack-owned `ai_tools_research_private` network carries the browser and
+the egress proxy.
 
 ## Host preparation
 
@@ -61,7 +58,7 @@ Create or migrate the Git stack with:
 - Force recreation: enabled for deliberate upgrades
 
 Copy the required values from the ignored `.env` into Dockhand's stack-variable
-panel. Mark `RUSTY_IMAP_MCP_IMAP_PASSWORD`, `SEARXNG_SECRET`,
+panel. Mark `RUSTY_IMAP_MCP_IMAP_PASSWORD`,
 `OPENVIKING_ROOT_API_KEY`, `OPENROUTER_API_KEY`, both OpenViking key seeds, and
 both derived user keys as secrets. Never commit generated keys or `.env.dockhand`.
 
@@ -107,9 +104,7 @@ Rusty IMAP MCP is available to trusted containers on `general_brg` at:
 http://rusty-imap-mcp:8080/mcp
 ```
 
-Spider MCP and SearXNG remain on the private research network. autoFPL consumes
-Spider there without publishing it to the host. Public web traffic from
-Playwright, Spider, and SearXNG crosses the non-caching Squid gateway, which
+Public web traffic from Playwright crosses the non-caching Squid gateway, which
 denies private, loopback, link-local, metadata, multicast, reserved, and
 Docker-internal destinations after DNS resolution.
 
@@ -128,12 +123,7 @@ tenant migration is completed. Never configure a client with the root key.
 
 - Playwright MCP owns an isolated ephemeral browser and forces browser egress
   through Squid.
-- Spider uses a separate Chromium process and cannot enumerate Playwright
-  contexts.
-- The hardened Spider MCP accepts absolute public HTTP/HTTPS URLs only, obeys
-  robots.txt, strips caller-controlled proxy/cookie/browser targets, and caps
-  scrape, link, crawl, depth, concurrency, and output sizes.
-- Browser, mail, memory, search, CDP, and embedding services publish no host
+- Browser, mail, memory, and embedding services publish no host
   ports and mount neither a host workspace nor the Docker socket.
 - Persistent OpenViking data remains under `/mnt/apps/docker`; removing the old
   `/mnt/apps/docker/hermes` directory is a separate manual cleanup decision.
@@ -141,10 +131,16 @@ tenant migration is completed. Never configure a client with the root key.
 ## Deployment and rollback
 
 Deploy only through Dockhand after the Git change has reached the configured
-branch. For the one-time rename, take the old `hermes_agent` Compose project
-down through Dockhand without volumes, update the Git-stack name and Compose
-path, sync, and deploy `ai_tools`. Then redeploy autoFPL so it joins
-`ai_tools_research_private`.
+branch.
+
+Changing the embedding model or its dimension invalidates the existing vector
+collection: OpenViking refuses to start with
+`EmbeddingRebuildRequiredError`. Stop the service, move
+`data/vectordb/context` aside, start it so a fresh collection is created at the
+new dimension, then rebuild vectors with
+`POST /api/v1/content/reindex` (`mode: vectors_only`) against
+`viking://user/<user>/peers/<user>`. Memory content under `data/viking` is not
+touched by this.
 
 Rollback by reverting the relevant Git change and repeating the Dockhand
 sync/deploy workflow. Restore a persistent store only from a verified backup
@@ -157,9 +153,7 @@ and only after stopping the affected service through Dockhand.
 3. Confirm `openviking-ollama-model` and `openviking-bootstrap` exit successfully.
 4. Confirm OpenViking rejects unauthenticated requests and accepts an
    authenticated memory search/remember request through the compatibility URL.
-5. Confirm autoFPL is attached to `ai_tools_research_private` and can reach
-   `spider-mcp:8080`.
-6. Confirm Playwright can load a harmless public page but private, loopback,
+5. Confirm Playwright can load a harmless public page but private, loopback,
    link-local, and metadata targets fail.
-7. Confirm the IMAP MCP health endpoint responds from a trusted `general_brg`
+6. Confirm the IMAP MCP health endpoint responds from a trusted `general_brg`
    client and message body fetches do not set `\\Seen`.
