@@ -12,13 +12,21 @@ from pathlib import Path
 
 CONFIG_PATH = Path(os.environ.get("OPENVIKING_CONFIG_FILE", "/app/.openviking/ov.conf"))
 ROOT_API_KEY = os.environ.get("OPENVIKING_ROOT_API_KEY", "").strip()
-VLM_MODEL = os.environ.get("OPENVIKING_VLM_MODEL", "gpt-5.6-luna").strip()
+VLM_MODEL = os.environ.get("OPENVIKING_VLM_MODEL", "nvidia/nemotron-3-nano-30b-a3b:free").strip()
+VLM_PROVIDER = os.environ.get("OPENVIKING_VLM_PROVIDER", "openrouter").strip()
+VLM_API_BASE = os.environ.get("OPENVIKING_VLM_API_BASE", "").strip()
+EMBED_MODEL = os.environ.get("OPENVIKING_EMBED_MODEL", "qwen3-embedding:0.6b").strip()
+EMBED_DIMENSION = int(os.environ.get("OPENVIKING_EMBED_DIMENSION", "1024"))
 
 PLACEHOLDER_API_KEY = "replace-with-64-random-hex-characters"
 if ROOT_API_KEY == PLACEHOLDER_API_KEY or re.fullmatch(r"[0-9a-fA-F]{64}", ROOT_API_KEY) is None:
     raise SystemExit("OPENVIKING_ROOT_API_KEY must contain exactly 64 hexadecimal characters")
-if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}", VLM_MODEL) is None:
+if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}", VLM_MODEL) is None:
     raise SystemExit("OPENVIKING_VLM_MODEL must contain a valid model identifier")
+if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}", EMBED_MODEL) is None:
+    raise SystemExit("OPENVIKING_EMBED_MODEL must contain a valid model identifier")
+if not 32 <= EMBED_DIMENSION <= 4096:
+    raise SystemExit("OPENVIKING_EMBED_DIMENSION must be between 32 and 4096")
 
 config = {
     "server": {
@@ -42,20 +50,20 @@ config = {
     "embedding": {
         "dense": {
             "provider": "ollama",
-            "model": "nomic-embed-text",
+            "model": EMBED_MODEL,
             "api_base": "http://openviking-ollama:11434/v1",
-            "dimension": 768,
+            "dimension": EMBED_DIMENSION,
             "input": "text",
         },
         "text_source": "content_only",
         "max_input_tokens": 4096,
     },
     "vlm": {
-        "provider": "openai-codex",
+        "provider": VLM_PROVIDER,
         "model": VLM_MODEL,
-        "api_base": "https://chatgpt.com/backend-api/codex",
         "temperature": 0.0,
         "max_retries": 2,
+        "extra_request_body": {"reasoning": {"exclude": True}},
     },
     "retrieval": {
         "hotness_alpha": 0.0,
@@ -83,6 +91,9 @@ config = {
         "rotation": False,
     },
 }
+
+if VLM_API_BASE:
+    config["vlm"]["api_base"] = VLM_API_BASE
 
 CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
 fd, temporary_name = tempfile.mkstemp(prefix="ov.conf.", dir=CONFIG_PATH.parent)

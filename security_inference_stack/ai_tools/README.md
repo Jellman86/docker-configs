@@ -62,8 +62,8 @@ Create or migrate the Git stack with:
 
 Copy the required values from the ignored `.env` into Dockhand's stack-variable
 panel. Mark `RUSTY_IMAP_MCP_IMAP_PASSWORD`, `SEARXNG_SECRET`,
-`OPENVIKING_ROOT_API_KEY`, both OpenViking key seeds, and both derived user keys
-as secrets. Never commit generated keys or `.env.dockhand`.
+`OPENVIKING_ROOT_API_KEY`, `OPENROUTER_API_KEY`, both OpenViking key seeds, and
+both derived user keys as secrets. Never commit generated keys or `.env.dockhand`.
 
 The OpenViking account and shared user still use the historical `hermes` names.
 This is a data-compatibility identifier, not a running Hermes service. Changing
