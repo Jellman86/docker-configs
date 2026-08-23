@@ -17,6 +17,7 @@ VLM_PROVIDER = os.environ.get("OPENVIKING_VLM_PROVIDER", "openrouter").strip()
 VLM_API_BASE = os.environ.get("OPENVIKING_VLM_API_BASE", "").strip()
 EMBED_MODEL = os.environ.get("OPENVIKING_EMBED_MODEL", "qwen3-embedding:0.6b").strip()
 EMBED_DIMENSION = int(os.environ.get("OPENVIKING_EMBED_DIMENSION", "1024"))
+VLM_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
 
 PLACEHOLDER_API_KEY = "replace-with-64-random-hex-characters"
 if ROOT_API_KEY == PLACEHOLDER_API_KEY or re.fullmatch(r"[0-9a-fA-F]{64}", ROOT_API_KEY) is None:
@@ -27,6 +28,10 @@ if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}", EMBED_MODEL) is None:
     raise SystemExit("OPENVIKING_EMBED_MODEL must contain a valid model identifier")
 if not 32 <= EMBED_DIMENSION <= 4096:
     raise SystemExit("OPENVIKING_EMBED_DIMENSION must be between 32 and 4096")
+# openai-codex authenticated from codex_auth.json; every other provider needs
+# the key in the config, and the server refuses to start without it.
+if VLM_PROVIDER != "openai-codex" and not VLM_API_KEY:
+    raise SystemExit("OPENROUTER_API_KEY is required unless the VLM provider is openai-codex")
 
 config = {
     "server": {
@@ -61,6 +66,7 @@ config = {
     "vlm": {
         "provider": VLM_PROVIDER,
         "model": VLM_MODEL,
+        "api_key": VLM_API_KEY,
         "temperature": 0.0,
         "max_retries": 2,
         "extra_request_body": {"reasoning": {"exclude": True}},
