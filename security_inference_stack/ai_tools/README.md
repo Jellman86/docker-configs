@@ -108,16 +108,18 @@ and Docker-internal destinations was removed on 2026-08-23, so the browser can
 now reach the local network. Its remaining boundary is `--isolated`, the
 `--allowed-hosts` list and `--block-service-workers`.
 
-OpenViking remains available through the existing private-LAN compatibility URL:
+OpenViking is reached on the private LAN at:
 
 ```text
-https://hermes.pownet.uk/mcp
+https://openviking.pownet.uk/mcp
 ```
 
-Only the `/mcp` route is retained; the former dashboard route no longer has a
-backend. Existing clients should continue to use the shared least-privilege key
-and `X-OpenViking-Agent: hermes` header until a separately planned endpoint and
-tenant migration is completed. Never configure a client with the root key.
+The `hermes.pownet.uk` compatibility URL was retired on 2026-08-23; its DNS
+record and proxy host are gone. Clients use the shared least-privilege key and
+the `X-OpenViking-Agent: hermes` header. That header and the `hermes/hermes`
+account are a data-compatibility identity, not a hostname, and must not be
+renamed - doing so makes existing encrypted memory unreadable. Never configure
+a client with the root key.
 
 ## Security boundaries
 
