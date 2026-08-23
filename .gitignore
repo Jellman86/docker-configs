@@ -8,3 +8,7 @@ traefik.yaml
 stack.env
 *stack.env
 .agents/
+
+# Python bytecode from running the stack policy tests
+__pycache__/
+*.pyc
