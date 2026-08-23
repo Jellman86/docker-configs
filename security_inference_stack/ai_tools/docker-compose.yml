@@ -264,7 +264,11 @@ services:
       OPENVIKING_CLI_CONFIG_FILE: /app/.openviking/ovcli.conf
       OPENVIKING_CODEX_AUTH_PATH: /app/.openviking/codex_auth.json
       OPENVIKING_ROOT_API_KEY: "${OPENVIKING_ROOT_API_KEY:?OpenViking root API key is required}"
-      OPENVIKING_VLM_MODEL: "${OPENVIKING_VLM_MODEL:-gpt-5.6-luna}"
+      OPENVIKING_VLM_MODEL: "${OPENVIKING_VLM_MODEL:-nvidia/nemotron-3-nano-30b-a3b:free}"
+      OPENVIKING_VLM_PROVIDER: "${OPENVIKING_VLM_PROVIDER:-openrouter}"
+      OPENVIKING_EMBED_MODEL: "${OPENVIKING_EMBED_MODEL:-qwen3-embedding:0.6b}"
+      OPENVIKING_EMBED_DIMENSION: "${OPENVIKING_EMBED_DIMENSION:-1024}"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:?OpenRouter API key is required}"
       OPENVIKING_WITH_BOT: "0"
     volumes:
       - type: bind
@@ -349,7 +353,7 @@ services:
     user: "${PUID:-1000}:${PGID:-1000}"
     read_only: true
     pids_limit: 256
-    mem_limit: "${OPENVIKING_OLLAMA_MEMORY_LIMIT:-2g}"
+    mem_limit: "${OPENVIKING_OLLAMA_MEMORY_LIMIT:-4g}"
     cpus: "${OPENVIKING_OLLAMA_CPUS:-1.0}"
     cap_drop:
       - ALL
@@ -403,7 +407,7 @@ services:
     environment:
       HOME: /tmp
       OLLAMA_HOST: http://openviking-ollama:11434
-    command: ["pull", "nomic-embed-text"]
+    command: ["pull", "${OPENVIKING_EMBED_MODEL:-qwen3-embedding:0.6b}"]
     tmpfs:
       - /tmp:rw,nosuid,nodev,noexec,size=32m,mode=1777
     networks:
