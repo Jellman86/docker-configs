@@ -9,10 +9,6 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 COMPOSE = ROOT / "docker-compose.yml"
 SQUID = ROOT / "web-research" / "squid.conf"
-CHROMIUM_LAUNCHER = ROOT / "web-research" / "chromium-launcher.js"
-SEARXNG = ROOT / "web-research" / "searxng" / "settings.yml"
-PATCH = ROOT / "web-research" / "spider-mcp" / "hardening.patch"
-SPIDER_DOCKERFILE = ROOT / "web-research" / "spider-mcp" / "Dockerfile"
 
 
 class ResearchStackPolicyTests(unittest.TestCase):
@@ -24,12 +20,11 @@ class ResearchStackPolicyTests(unittest.TestCase):
 
     def test_required_services_exist(self) -> None:
         self.assertTrue(
-            {"research-egress", "searxng", "spider-chromium", "spider-mcp"}
-            <= self.services.keys()
+            {"research-egress", "playwright-mcp"} <= self.services.keys()
         )
 
     def test_no_research_service_publishes_ports_or_mounts_docker_socket(self) -> None:
-        for name in ("research-egress", "searxng", "spider-chromium", "spider-mcp"):
+        for name in ("research-egress", "playwright-mcp"):
             service = self.services[name]
             self.assertNotIn("ports", service, name)
             for mount in service.get("volumes", []):
@@ -41,30 +36,15 @@ class ResearchStackPolicyTests(unittest.TestCase):
 
     def test_networks_force_browser_search_and_crawler_through_proxy(self) -> None:
         self.assertTrue(self.networks["research_private"]["internal"])
-        self.assertTrue(self.networks["spider_browser_private"]["internal"])
-        self.assertTrue(self.networks["spider_mcp_private"]["internal"])
-        self.assertTrue(self.networks["search_private"]["internal"])
         self.assertFalse(self.networks["research_egress"].get("internal", False))
 
         self.assertEqual(
-            set(self.services["spider-chromium"]["networks"]),
-            {"spider_browser_private"},
-        )
-        self.assertEqual(
-            set(self.services["searxng"]["networks"]),
-            {"search_private", "research_private"},
-        )
-        self.assertEqual(
-            set(self.services["spider-mcp"]["networks"]),
-            {"spider_mcp_private", "spider_browser_private", "research_private"},
-        )
-        self.assertEqual(
             set(self.services["research-egress"]["networks"]),
-            {"research_private", "spider_browser_private", "research_egress"},
+            {"research_private", "research_egress"},
         )
 
     def test_services_are_hardened_and_bounded(self) -> None:
-        for name in ("research-egress", "searxng", "spider-chromium", "spider-mcp"):
+        for name in ("research-egress", "playwright-mcp"):
             service = self.services[name]
             self.assertTrue(service.get("read_only"), name)
             self.assertEqual(service.get("cap_drop"), ["ALL"], name)
@@ -75,13 +55,10 @@ class ResearchStackPolicyTests(unittest.TestCase):
             self.assertIn("healthcheck", service, name)
 
     def test_images_and_build_inputs_are_immutable(self) -> None:
-        for name in ("research-egress", "searxng", "spider-chromium"):
+        for name in ("research-egress", "playwright-mcp"):
             image = self.services[name]["image"]
             self.assertIn("@sha256:", image, name)
             self.assertNotIn(":latest@", image, name)
-        build_args = self.services["spider-mcp"]["build"]["args"]
-        self.assertRegex(build_args["SPIDER_COMMIT"], r"^[0-9a-f]{40}$")
-        self.assertRegex(build_args["SPIDER_SOURCE_SHA256"], r"^[0-9a-f]{64}$")
 
     def test_playwright_owns_an_isolated_proxy_forced_browser(self) -> None:
         service = self.services["playwright-mcp"]
@@ -90,29 +67,9 @@ class ResearchStackPolicyTests(unittest.TestCase):
         self.assertIn("--isolated", command)
         self.assertIn("--proxy-server=http://research-egress:3128", command)
         self.assertIn("--proxy-bypass=<-loopback>", command)
-        self.assertNotIn("spider_browser_private", service["networks"])
         self.assertIn("research-egress", service["depends_on"])
 
-    def test_spider_browser_is_not_shared_with_playwright(self) -> None:
-        self.assertIn("spider_browser_private", self.services["spider-chromium"]["networks"])
-        self.assertNotIn("research_private", self.services["spider-chromium"]["networks"])
-        self.assertIn("spider_browser_private", self.services["spider-mcp"]["networks"])
-        self.assertNotIn("spider_browser_private", self.services["playwright-mcp"]["networks"])
 
-    def test_spider_chromium_uses_playwright_managed_launcher(self) -> None:
-        service = self.services["spider-chromium"]
-        self.assertEqual(service["entrypoint"], ["node", "/opt/ai-tools/chromium-launcher.js"])
-        self.assertIn(
-            "./web-research/chromium-launcher.js:/opt/ai-tools/chromium-launcher.js:ro",
-            service["volumes"],
-        )
-        launcher = CHROMIUM_LAUNCHER.read_text()
-        self.assertIn("chromium.launch", launcher)
-        self.assertIn("remote-debugging-port=${INTERNAL_CDP_PORT}", launcher)
-        self.assertIn("server.listen(EXTERNAL_CDP_PORT, '0.0.0.0'", launcher)
-        self.assertIn("ws://spider-chromium:${EXTERNAL_CDP_PORT}", launcher)
-        self.assertIn("http://research-egress:3128", launcher)
-        self.assertIn("<-loopback>", launcher)
 
     def test_retired_agent_runtime_is_absent(self) -> None:
         self.assertNotIn("hermes-agent", self.services)
@@ -122,8 +79,6 @@ class ResearchStackPolicyTests(unittest.TestCase):
     def test_shared_tool_endpoints_remain_available_to_trusted_consumers(self) -> None:
         self.assertIn("general_brg", self.services["playwright-mcp"]["networks"])
         self.assertIn("general_brg", self.services["rusty-imap-mcp"]["networks"])
-        self.assertIn("spider_mcp_private", self.services["spider-mcp"]["networks"])
-        self.assertIn("search_private", self.services["searxng"]["networks"])
         self.assertIn("npm_proxy_backends", self.services["openviking"]["networks"])
 
     def test_squid_denies_all_private_special_ranges_before_allow(self) -> None:
@@ -161,7 +116,7 @@ class ResearchStackPolicyTests(unittest.TestCase):
         )
 
     def test_bind_mounted_configs_are_readable_by_non_root_services(self) -> None:
-        for path in (SQUID, SEARXNG, CHROMIUM_LAUNCHER):
+        for path in (SQUID,):
             self.assertEqual(path.stat().st_mode & 0o444, 0o444, str(path))
 
     def test_squid_healthcheck_uses_available_bash_tcp_probe(self) -> None:
@@ -181,45 +136,5 @@ class ResearchStackPolicyTests(unittest.TestCase):
     def test_squid_config_has_no_noncompliant_via_override(self) -> None:
         self.assertNotIn("\nvia off\n", SQUID.read_text())
 
-    def test_searxng_json_api_and_proxy_are_forced(self) -> None:
-        settings = yaml.safe_load(SEARXNG.read_text())
-        self.assertEqual(settings["search"]["formats"], ["json"])
-        self.assertEqual(settings["server"]["bind_address"], "0.0.0.0")
-        self.assertFalse(settings["server"]["limiter"])
-        self.assertEqual(
-            settings["outgoing"]["proxies"]["all://"],
-            ["http://research-egress:3128"],
-        )
-        self.assertIsInstance(settings["outgoing"]["extra_proxy_timeout"], int)
-        self.assertNotIn("secret_key", settings["server"])
-        required_value = self.services["searxng"]["environment"]["SEARXNG_SECRET"]
-        self.assertTrue(required_value.startswith("${SEARXNG_SECRET:?"))
-
-    def test_spider_patch_removes_bypass_fields_and_enforces_caps(self) -> None:
-        patch = PATCH.read_text()
-        for removed in ("pub proxy:", "pub cookie:", "pub external_domains:", "pub respect_robots_txt:"):
-            self.assertRegex(patch, rf"(?m)^-\s+{removed}")
-        self.assertIn("MAX_CRAWL_PAGES: u32 = 10", patch)
-        self.assertIn("MAX_CRAWL_DEPTH: usize = 3", patch)
-        self.assertIn("with_respect_robots_txt(true)", patch)
-        self.assertIn("deny_unknown_fields", patch)
-        self.assertIn("untrusted_remote_content", patch)
-
-    def test_spider_enforces_single_request_concurrency_and_bounded_links(self) -> None:
-        patch = PATCH.read_text()
-        self.assertGreaterEqual(patch.count("with_concurrency_limit(Some(1))"), 3)
-        self.assertIn("MAX_LINKS: usize = 100", patch)
-        self.assertIn("Semaphore::new(1)", patch)
-        self.assertIn("TOOL_TIMEOUT", patch)
-        self.assertGreaterEqual(patch.count("AbortOnDrop"), 3)
-        self.assertIn("CRAWL_DEADLINE", patch)
-        environment = self.services["spider-mcp"]["environment"]
-        self.assertEqual(environment["SPIDER_RESPECT_CONCURRENCY_UNDER_LOAD"], "true")
-
-    def test_spider_builder_installs_the_rustfmt_component_it_executes(self) -> None:
-        dockerfile = SPIDER_DOCKERFILE.read_text()
-        self.assertIn("rustup component add rustfmt", dockerfile)
 
 
-if __name__ == "__main__":
-    unittest.main()
