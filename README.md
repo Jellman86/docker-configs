@@ -9,6 +9,7 @@ values provided via a local `.env` file.
 - [`management/`](management/README.md) - Dockhand control plane.
 - [`media_related_stack/`](media_related_stack/README.md) - Plex, Jellyfin, and Optimisarr.
 - [`monitoring_management/`](monitoring_management/README.md) - Prometheus, SNMP Exporter, Unpoller, and Grafana.
+- [`stirling_pdf/`](stirling_pdf/README.md) - self-hosted PDF toolkit on Riker.
 - [`security_inference_stack/`](security_inference_stack/README.md) - Frigate, BirdNET-Go, Mosquitto, YA-WAMF, and Home Assistant.
 - [`security_inference_stack/ai_tools/`](security_inference_stack/ai_tools/README.md) - independently deployed OpenViking, mail, browser, and web-research services.
 - [`web_services/`](web_services/README.md) - host-specific Nginx Proxy Manager, Cloudflare Tunnel, and Tailscale stacks.
@@ -21,7 +22,7 @@ runtime state ever differ.
 ## Current host layout
 
 - `riker.pownet.uk` / TrueNAS N100 NAS keeps the storage-local media stack:
-  `arr_vpn_stack`, `media_related_stack`, and `web_services`.
+  `arr_vpn_stack`, `media_related_stack`, `stirling_pdf`, and `web_services`.
 - `dell-compute` / Fedora Core Ultra box runs compute-heavy and management
   stacks: `autofpl`, `security_inference_stack`,
   `security_inference_stack/ai_tools`, `management` / Dockhand, and the

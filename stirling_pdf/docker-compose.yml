@@ -1,0 +1,72 @@
+---
+services:
+#-----------------------------------------------
+    stirling-pdf:
+      image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
+      container_name: stirling-pdf
+      restart: unless-stopped
+      environment:
+        - PUID=${PUID:-568}
+        - PGID=${PGID:-568}
+        - TZ=${TZ:-Europe/London}
+        # Stirling ships optional OCR language packs. English only keeps the
+        # image small; add more codes here if other languages are ever needed.
+        - LANGS=${STIRLING_LANGS:-en_GB}
+        # Login is off because the stack publishes no host port and is only
+        # reachable through Nginx Proxy Manager on the trusted LAN.
+        - DISABLE_ADDITIONAL_FEATURES=${STIRLING_DISABLE_EXTRA:-true}
+        - SYSTEM_DEFAULTLOCALE=${STIRLING_LOCALE:-en-GB}
+        # Uploads are processed then discarded; nothing is retained server side.
+        - SYSTEM_ENABLEANALYTICS=false
+      volumes:
+        # Custom OCR training data and per-installation config persist here so a
+        # container recreate does not lose them.
+        - type: bind
+          source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/stirling-pdf/trainingData
+          target: /usr/share/tessdata
+          bind:
+            create_host_path: true
+        - type: bind
+          source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/stirling-pdf/configs
+          target: /configs
+          bind:
+            create_host_path: true
+        - type: bind
+          source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/stirling-pdf/customFiles
+          target: /customFiles
+          bind:
+            create_host_path: true
+      # Stirling writes working copies while converting; a tmpfs keeps that churn
+      # off the pool and guarantees the scratch area is cleared on restart.
+      tmpfs:
+        - /tmp:rw,nosuid,nodev,size=1g
+      # No host port. Nginx Proxy Manager reaches the container by name on
+      # general_brg, matching every other proxied service on Riker.
+      expose:
+        - "8080"
+      networks:
+        general_brg:
+          aliases:
+            - stirling-pdf
+      security_opt:
+        - no-new-privileges:true
+      mem_limit: "${STIRLING_MEMORY_LIMIT:-2g}"
+      cpus: "${STIRLING_CPUS:-2.0}"
+      healthcheck:
+        test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/v1/info/status >/dev/null || exit 1"]
+        interval: 1m
+        timeout: 10s
+        retries: 3
+        start_period: 2m
+      logging:
+        driver: json-file
+        options:
+          max-size: "10m"
+          max-file: "3"
+
+networks:
+  # Shared cross-host bridge that Nginx Proxy Manager already sits on; declared
+  # external so this stack joins it rather than trying to own it.
+  general_brg:
+    name: ${NETWORK:-general_brg}
+    external: true
