@@ -62,6 +62,7 @@ required for this stack.
 | `DOCKERCONFIGPATH` | `/mnt/apps/docker` | Persistent config root on Riker |
 | `NETWORK` | `general_brg` | External bridge shared with Nginx Proxy Manager |
 | `STIRLING_LANGS` | `en_GB` | OCR language packs to install |
+| `STIRLING_ENABLE_LOGIN` | `false` | Upstream defaults login on; the container returns 401 until disabled |
 | `STIRLING_LOCALE` | `en-GB` | Application default locale |
 | `STIRLING_MEMORY_LIMIT` | `2g` | Memory bound; OCR is the heaviest operation |
 | `STIRLING_CPUS` | `2.0` | CPU bound |
