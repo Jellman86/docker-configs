@@ -12,9 +12,11 @@ services:
         # Stirling ships optional OCR language packs. English only keeps the
         # image small; add more codes here if other languages are ever needed.
         - LANGS=${STIRLING_LANGS:-en_GB}
-        # Login is off because the stack publishes no host port and is only
-        # reachable through Nginx Proxy Manager on the trusted LAN.
-        - DISABLE_ADDITIONAL_FEATURES=${STIRLING_DISABLE_EXTRA:-true}
+        # Login defaults to ON upstream and the container answers 401 until it
+        # is turned off. This instance publishes no host port and is reachable
+        # only through Nginx Proxy Manager on the trusted LAN, so the account
+        # layer adds a credential to manage without adding a boundary.
+        - SECURITY_ENABLELOGIN=${STIRLING_ENABLE_LOGIN:-false}
         - SYSTEM_DEFAULTLOCALE=${STIRLING_LOCALE:-en-GB}
         # Uploads are processed then discarded; nothing is retained server side.
         - SYSTEM_ENABLEANALYTICS=false
