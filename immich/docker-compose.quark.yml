@@ -40,7 +40,11 @@ services:
       - "${IMMICH_ML_BIND_ADDR:-192.168.213.102}:${IMMICH_ML_PORT:-3003}:3003"
     security_opt:
       - no-new-privileges:true
-    mem_limit: "${IMMICH_ML_MEMORY_LIMIT:-6g}"
+    # 8g, not 6g: CLIP (ViT-B-16-SigLIP-512), buffalo_l faces and PP-OCRv5
+    # are all resident at once while a backlog drains, which measured 5.4GiB
+    # against a 6g cap. Models unload after 300s idle, so this is headroom
+    # for the burst rather than steady-state use.
+    mem_limit: "${IMMICH_ML_MEMORY_LIMIT:-8g}"
     cpus: "${IMMICH_ML_CPUS:-8.0}"
     healthcheck:
       disable: false
