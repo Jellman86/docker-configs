@@ -1,0 +1,193 @@
+---
+# Immich - self-hosted photo and video library on Riker.
+#
+# The service shape tracks the official v3 release compose file at
+# https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml
+# with four deliberate deviations, each explained in README.md:
+#
+#   1. No published host port. Nginx Proxy Manager reaches the server over
+#      general_brg by name, matching every other proxied service on Riker.
+#   2. Hardware acceleration is inlined instead of pulled in through upstream's
+#      hwaccel.transcoding.yml / hwaccel.ml.yml overlays, because Dockhand
+#      deploys a single compose path and would never load a second file.
+#   3. Machine learning sits behind a Compose profile and does not start by
+#      default. Riker has ~3 GB free of 15 GB with no swap; the ML worker needs
+#      2-4 GB resident and would push ZFS ARC out or trip the OOM killer.
+#   4. Postgres and Valkey stay on an internal bridge. Only the server joins
+#      general_brg, so the database is never reachable from the proxy network.
+#
+# Immich requires Postgres with a vector extension - it has no SQLite mode and
+# stock Postgres will not work. Upstream's image bundles VectorChord, so both
+# infrastructure images are digest-pinned exactly as upstream ships them.
+
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-v3}
+    container_name: immich-server
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-Europe/London}
+      - DB_HOSTNAME=${IMMICH_DB_HOSTNAME:-immich-database}
+      - DB_USERNAME=${IMMICH_DB_USERNAME:-postgres}
+      # Supplied by Dockhand's secret store. This repository is public, so the
+      # value must never gain a default here. Immich builds a connection URL
+      # from it, so the password must be A-Za-z0-9 only.
+      - DB_PASSWORD=${IMMICH_DB_PASSWORD}
+      - DB_DATABASE_NAME=${IMMICH_DB_NAME:-immich}
+      - REDIS_HOSTNAME=${IMMICH_REDIS_HOSTNAME:-immich-redis}
+      # Without this every request appears to originate from the proxy and the
+      # audit log loses the real client address.
+      - IMMICH_TRUSTED_PROXIES=${IMMICH_TRUSTED_PROXIES:-172.16.0.0/12}
+      # Points at the local worker when the machine-learning profile is on, or
+      # at a remote worker on another host when it is not.
+      - IMMICH_MACHINE_LEARNING_URL=${IMMICH_ML_URL:-http://immich-machine-learning:3003}
+    volumes:
+      # Bulk media on the spinning pool. Thumbnails and transcodes add roughly
+      # 10-20% on top of the originals, and the whole tree must stay on one
+      # mount so Immich's own backups stay consistent.
+      - type: bind
+        source: ${IMMICH_UPLOAD_PATH:-/mnt/tank/photos}
+        target: /data
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
+    devices:
+      # Alder Lake-N iGPU for QSV/VA-API transcoding. Upstream ships this as
+      # hwaccel.transcoding.yml service "quicksync".
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${RENDER_GID:-107}"
+    expose:
+      - "2283"
+    networks:
+      general_brg:
+        aliases:
+          - immich-server
+      immich_backend: {}
+    depends_on:
+      - immich-database
+      - immich-redis
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: "${IMMICH_SERVER_MEMORY_LIMIT:-3g}"
+    cpus: "${IMMICH_SERVER_CPUS:-3.0}"
+    # The image ships its own healthcheck; this only declines to disable it.
+    healthcheck:
+      disable: false
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  immich-machine-learning:
+    # OpenVINO build so CLIP and face recognition run on the iGPU rather than
+    # the four cores Plex also shares. The tag suffix is required - the default
+    # image has no OpenVINO runtime.
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-v3}-openvino
+    container_name: immich-machine-learning
+    restart: unless-stopped
+    # Off by default. Start it with `--profile machine-learning` once Riker has
+    # the headroom, or run this worker on Quark and set IMMICH_ML_URL instead.
+    profiles:
+      - machine-learning
+    environment:
+      - TZ=${TZ:-Europe/London}
+    volumes:
+      - model-cache:/cache
+    devices:
+      - /dev/dri:/dev/dri
+    # Required by upstream's openvino profile for iGPU inference.
+    device_cgroup_rules:
+      - "c 189:* rmw"
+    group_add:
+      - "${RENDER_GID:-107}"
+    networks:
+      immich_backend: {}
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: "${IMMICH_ML_MEMORY_LIMIT:-4g}"
+    cpus: "${IMMICH_ML_CPUS:-3.0}"
+    healthcheck:
+      disable: false
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  immich-redis:
+    # Valkey, digest-pinned exactly as upstream ships it. The job queue is
+    # intentionally ephemeral, so this service has no volume.
+    image: docker.io/valkey/valkey:9@sha256:8e8d64b405ce18f41b8e5ee20aa4687a8ed0022d1298f2ce31cdcf3a76e09411
+    container_name: immich-redis
+    restart: unless-stopped
+    networks:
+      immich_backend: {}
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: "${IMMICH_REDIS_MEMORY_LIMIT:-512m}"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  immich-database:
+    # Postgres 14 plus VectorChord. Immich stores CLIP and face embeddings and
+    # runs vector similarity search in the database, so a stock Postgres image
+    # cannot serve this stack.
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    container_name: immich-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${IMMICH_DB_PASSWORD}
+      POSTGRES_USER: ${IMMICH_DB_USERNAME:-postgres}
+      POSTGRES_DB: ${IMMICH_DB_NAME:-immich}
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      # Deliberately on the NVMe apps pool, never the media pool or a share.
+      # Upstream states network shares are unsupported for the database and
+      # this repository keeps database-heavy state local to its host.
+      - type: bind
+        source: ${IMMICH_DB_PATH:-/mnt/apps/docker/immich/postgres}
+        target: /var/lib/postgresql/data
+        bind:
+          create_host_path: true
+    shm_size: 128mb
+    networks:
+      immich_backend: {}
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: "${IMMICH_DB_MEMORY_LIMIT:-2g}"
+    healthcheck:
+      disable: false
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  # Re-downloadable model weights; a named volume keeps them off the bind tree.
+  model-cache:
+
+networks:
+  # Shared cross-host bridge that Nginx Proxy Manager already sits on.
+  general_brg:
+    name: ${NETWORK:-general_brg}
+    external: true
+  # Private bridge for the database, cache, and ML worker. Not internal-only:
+  # the ML worker downloads model weights and the server fetches reverse
+  # geocoding data on first run.
+  immich_backend:
+    name: ${IMMICH_BACKEND_NETWORK:-immich_backend}
+    driver: bridge

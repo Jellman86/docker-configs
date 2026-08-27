@@ -6,6 +6,7 @@ values provided via a local `.env` file.
 ## Repo layout
 - [`autofpl/`](autofpl/README.md) - private, stateless autoFPL API on Quark.
 - [`arr_vpn_stack/`](arr_vpn_stack/README.md) - Gluetun, qBittorrent, Prowlarr, Radarr, Sonarr, Byparr, Cleanuparr, Seerr, and the Gluetun restart guard.
+- [`immich/`](immich/README.md) - self-hosted photo and video library on Riker.
 - [`management/`](management/README.md) - Dockhand control plane.
 - [`media_related_stack/`](media_related_stack/README.md) - Plex, Jellyfin, and Optimisarr.
 - [`monitoring_management/`](monitoring_management/README.md) - Prometheus, SNMP Exporter, Unpoller, and Grafana.
@@ -22,7 +23,8 @@ runtime state ever differ.
 ## Current host layout
 
 - `riker.pownet.uk` / TrueNAS N100 NAS keeps the storage-local media stack:
-  `arr_vpn_stack`, `media_related_stack`, `stirling_pdf`, and `web_services`.
+  `arr_vpn_stack`, `media_related_stack`, `stirling_pdf`, `immich`, and
+  `web_services`.
 - `dell-compute` / Fedora Core Ultra box runs compute-heavy and management
   stacks: `autofpl`, `security_inference_stack`,
   `security_inference_stack/ai_tools`, `management` / Dockhand, and the
