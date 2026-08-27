@@ -1,0 +1,56 @@
+---
+# Immich machine-learning worker - Quark variant.
+#
+# Immich's server runs on Riker next to the photo library, but Riker is a 15 GB
+# N100 already carrying Plex, Jellyfin, and the ARR stack, with no swap. The ML
+# worker holds 2-4 GB resident, so running it there squeezes ZFS ARC to its
+# floor. Quark has 22.9 GB and 14 cores, so inference lives here instead and the
+# server reaches it over the trusted LAN.
+#
+# Riker's stack keeps its own immich-machine-learning definition behind the
+# "machine-learning" profile. Only one of the two should ever be active: point
+# IMMICH_ML_URL on Riker at this worker and leave that profile switched off.
+
+services:
+  immich-machine-learning:
+    # OpenVINO build for the Arrow Lake-S iGPU. The tag suffix is required - the
+    # default image carries no OpenVINO runtime.
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-v3}-openvino
+    container_name: immich-machine-learning
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-Europe/London}
+      # Model weights are large; keeping the worker single-threaded per request
+      # avoids it competing with the inference stack for the same cores.
+      - MACHINE_LEARNING_WORKERS=${IMMICH_ML_WORKERS:-1}
+    volumes:
+      - model-cache:/cache
+    devices:
+      - /dev/dri:/dev/dri
+    device_cgroup_rules:
+      - "c 189:* rmw"
+    group_add:
+      # Quark's render group is 105; Riker's is 107. Do not hard-code either.
+      - "${RENDER_GID:-105}"
+    # Bound to Quark's LAN address rather than 0.0.0.0. The server on Riker is
+    # on another host, so this is the one service in the Immich deployment that
+    # must cross hosts. Immich's ML API has no authentication of its own, so the
+    # bind address is the boundary - keep it off any untrusted interface.
+    ports:
+      - "${IMMICH_ML_BIND_ADDR:-192.168.213.102}:${IMMICH_ML_PORT:-3003}:3003"
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: "${IMMICH_ML_MEMORY_LIMIT:-6g}"
+    cpus: "${IMMICH_ML_CPUS:-8.0}"
+    healthcheck:
+      disable: false
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  # Re-downloadable model weights, cached on Quark so a container recreate does
+  # not re-fetch several GB.
+  model-cache:

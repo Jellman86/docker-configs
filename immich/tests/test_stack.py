@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -8,6 +9,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ROOT / "docker-compose.yml"
+QUARK = ROOT / "docker-compose.quark.yml"
 README = ROOT / "README.md"
 
 
@@ -120,6 +122,53 @@ class ImmichStackPolicyTests(unittest.TestCase):
         self.assertIn("client_max_body_size", text)
         self.assertIn("proxy_request_buffering", text)
         self.assertIn("Websockets", text)
+
+
+class ImmichQuarkWorkerTests(unittest.TestCase):
+    """The machine-learning worker deployed on Quark, not Riker."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.compose = yaml.safe_load(QUARK.read_text(encoding="utf-8"))
+        cls.ml = cls.compose["services"]["immich-machine-learning"]
+
+    def test_quark_file_carries_only_the_worker(self) -> None:
+        self.assertEqual({"immich-machine-learning"}, set(self.compose["services"]))
+
+    def test_worker_uses_the_openvino_image_on_the_same_major(self) -> None:
+        image = self.ml["image"]
+        self.assertTrue(image.endswith("-openvino"), image)
+        # Server and worker must share a major version.
+        self.assertIn("${IMMICH_VERSION:-v3}", image)
+
+    def test_worker_uses_quarks_render_group_not_rikers(self) -> None:
+        # Quark is 105, Riker is 107. Hard-coding either breaks the other host.
+        self.assertIn("${RENDER_GID:-105}", self.ml["group_add"])
+        self.assertIn("/dev/dri:/dev/dri", self.ml["devices"])
+        self.assertIn("c 189:* rmw", self.ml["device_cgroup_rules"])
+
+    def test_worker_port_is_bound_to_a_lan_address_not_all_interfaces(self) -> None:
+        # Immich's ML API is unauthenticated, so the bind address is the only
+        # boundary. A bare "3003:3003" would publish it on every interface.
+        published = self.ml["ports"]
+        self.assertEqual(1, len(published))
+        # Resolve ${VAR:-default} first - the defaults themselves contain colons.
+        resolved = re.sub(r"\$\{[A-Za-z0-9_]+:-([^}]*)\}", r"\1", published[0])
+        self.assertEqual(3, len(resolved.split(":")), resolved)
+        bind_addr = resolved.split(":")[0]
+        self.assertNotEqual("0.0.0.0", bind_addr)
+        self.assertTrue(bind_addr.startswith("192.168."), bind_addr)
+        self.assertTrue(resolved.endswith(":3003"), resolved)
+
+    def test_worker_is_hardened_and_bounded(self) -> None:
+        self.assertIn("no-new-privileges:true", self.ml["security_opt"])
+        self.assertIn("mem_limit", self.ml)
+        self.assertEqual("unless-stopped", self.ml["restart"])
+        self.assertEqual("json-file", self.ml["logging"]["driver"])
+
+    def test_worker_has_no_profile_so_it_actually_starts(self) -> None:
+        # The Riker copy is profile-gated off; this one is the live worker.
+        self.assertNotIn("profiles", self.ml)
 
 
 if __name__ == "__main__":

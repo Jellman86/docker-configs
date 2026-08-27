@@ -9,7 +9,7 @@ Alder Lake-N iGPU handles transcoding without borrowing Quark's compute.
 | Service | Role | Network exposure |
 |---|---|---|
 | `immich-server` | API, web UI, and all background workers | `general_brg` + `immich_backend`; no host port |
-| `immich-machine-learning` | CLIP search, face recognition, OCR | `immich_backend` only; **off by default** |
+| `immich-machine-learning` | CLIP search, face recognition, OCR | `immich_backend` only; **off by default - runs on Quark instead** |
 | `immich-redis` | Valkey job queue and cache | `immich_backend` only |
 | `immich-database` | Postgres 14 + VectorChord | `immich_backend` only |
 
@@ -27,11 +27,15 @@ stack's own `immich_backend` bridge and are unreachable from the proxy network.
 worker downloads model weights and the server fetches reverse geocoding data on
 first run.
 
-Compose path for the Dockhand Git stack:
+Compose paths for the Dockhand Git stacks:
 
 ```text
-immich/docker-compose.yml
+immich/docker-compose.yml         # Riker  - server, database, cache
+immich/docker-compose.quark.yml   # Quark  - machine-learning worker
 ```
+
+The worker is a separate stack on a separate host with its own Dockhand, which
+is why it is a host variant rather than another service in the Riker file.
 
 ## Private application access
 
@@ -133,28 +137,38 @@ Transcoding acceleration is low-risk and always on. OpenVINO inference is the
 more fragile of the two on Alder Lake-N; if it misbehaves, drop the `-openvino`
 suffix to fall back to CPU inference, which only slows the initial library scan.
 
-## Machine learning is opt-in
+## Machine learning runs on Quark
 
-`immich-machine-learning` sits behind the `machine-learning` Compose profile and
-**does not start by default**.
+Inference is deliberately **not** on Riker. Immich's documented minimum is 6 GB
+RAM and the worker alone holds 2-4 GB resident. Riker has 15 GB total with
+roughly 1.4 GB free after the server stack, **no swap**, and already serves
+Plex, Jellyfin, and the ARR stack. Starting the worker there forces ZFS ARC to
+its floor or trips the OOM killer against services that matter more.
 
-Immich's documented minimum is 6 GB RAM, 8 GB recommended, and the ML worker
-alone holds 2-4 GB resident. Riker has 15 GB total with roughly 3 GB available
-and **no swap**, already serving Plex, Jellyfin, and the ARR stack. Starting the
-worker there would either force ZFS ARC down to its floor or trip the OOM
-killer against services that matter more.
+Quark has 22.9 GB with ~13.8 GB free, 14 cores, and an Arrow Lake-S iGPU, so the
+worker lives there and Riker's server reaches it across the LAN:
 
-Three ways forward, in preference order:
+| | Riker | Quark |
+|---|---|---|
+| Compose | `docker-compose.yml` | `docker-compose.quark.yml` |
+| Render GID | 107 | 105 |
+| Role | server, database, cache | machine-learning only |
 
-1. **Leave it off.** Everything except smart search, face recognition, and OCR
-   works. This is the deployed default.
-2. **Run inference on Quark** (22.9 GB RAM, 14 cores, its own `/dev/dri`).
-   Deploy the worker there and set `IMMICH_ML_URL` on Riker to point at it.
-   This is the best option if smart search matters.
-3. **Enable it locally** once Riker has headroom, by deploying with the
-   `machine-learning` profile active.
+`IMMICH_ML_URL` on the Riker stack points at
+`http://192.168.213.102:3003`. The worker publishes that port bound to Quark's
+LAN address specifically, not `0.0.0.0`.
 
-Search and Explore are noticeably poorer without it; nothing else is affected.
+**Immich's ML API has no authentication of its own.** The bind address is the
+only boundary, so the port must never be published on an untrusted interface,
+proxied publicly, or routed through Cloudflare Tunnel.
+
+Riker's own `immich-machine-learning` definition stays in place behind the
+`machine-learning` profile as a fallback. **Only one worker should be active at
+a time** - if you enable the local profile, clear `IMMICH_ML_URL` so the server
+stops pointing at Quark.
+
+With the worker down, everything except smart search, face recognition, and OCR
+continues to work; the server degrades rather than failing.
 
 ## Companion tools
 
@@ -186,6 +200,11 @@ the variable.
 
 The Git stack has `repullImages` enabled, so a Dockhand deploy pulls the current
 `v3` images and recreates the containers.
+
+The worker is a second Git stack on **Quark's** Dockhand (port `3000`, not
+Riker's `30328`) with compose path `immich/docker-compose.quark.yml`. Keep both
+stacks on the same `IMMICH_VERSION`: the server and worker must share a major
+version.
 
 ## Rollback
 
