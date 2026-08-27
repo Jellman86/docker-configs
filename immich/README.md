@@ -111,7 +111,7 @@ The filesystem must be Unix-compatible with real ownership. ZFS qualifies.
 | `RENDER_GID` | `107` | Riker's `render` group, owner of `/dev/dri/renderD128` |
 | `TZ` | `Europe/London` | Container timezone |
 | `IMMICH_SERVER_MEMORY_LIMIT` | `3g` | Server bound |
-| `IMMICH_ML_MEMORY_LIMIT` | `4g` | ML bound; the worker is the memory-hungry component |
+| `IMMICH_ML_MEMORY_LIMIT` | `8g` (Quark) / `4g` (Riker fallback) | ML bound. Measured 5.4GiB with CLIP, face and OCR models resident together |
 | `IMMICH_DB_MEMORY_LIMIT` | `2g` | Database bound |
 | `IMMICH_REDIS_MEMORY_LIMIT` | `512m` | Cache bound |
 
