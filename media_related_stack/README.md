@@ -68,6 +68,8 @@ tone-mapping test on this host.
 |---|---|
 | `${CONFIG_PATH:-/mnt/apps/docker/pms}` | Plex configuration, metadata, and identity |
 | `${MEDIA_PATH:-/mnt/tank/media}` | Plex library at `/library` |
+| `${IMMICH_PHOTOS_PATH:-/mnt/tank/photos}/library` | Immich storage-template originals, read-only in Plex at `/immich/library` |
+| `${IMMICH_PHOTOS_PATH:-/mnt/tank/photos}/upload` | Immich non-template originals, read-only in Plex at `/immich/upload` |
 | `${MEDIA_PATH}/transcode` | Plex transcode workspace |
 | `${DOCKERCONFIGPATH:-/mnt/apps/docker}/jellyfin` | Jellyfin configuration, database, metadata, cache, and identity at `/config` |
 | `${MEDIA_PATH:-/mnt/tank/media}` | The same media tree mounted read-only in Jellyfin at `/library` |
@@ -77,6 +79,14 @@ tone-mapping test on this host.
 | `${OPTIMISARR_TRASHPATH:-/mnt/tank/.optimisarr/trash}` | Optimisarr quarantine/trash area |
 
 Optimisarr's `/data`, `/work`, and `/trash` paths must remain on the same filesystem so replacement uses atomic moves rather than copy-and-delete. Preserve the Plex and Jellyfin config directories to retain their server identities and libraries.
+
+Plex receives only Immich's two original-asset trees, both read-only. Its
+`Photos` library should include both `/immich/library` and `/immich/upload`.
+Do not expose Immich's `thumbs`, `encoded-video`, `backups`, or `profile`
+directories: those are generated or application-internal data, not photo
+library sources. Plex may display Immich's UUID/hash folders in its folder
+view; Immich remains the system of record and files must not be changed through
+Plex.
 
 Jellyfin deliberately receives the shared media tree read-only. Playback,
 scanning, metadata stored under `/config`, and transcoding still work, while a
@@ -89,7 +99,7 @@ access requires a separate review and explicit removal of `read_only: true`.
 Common settings:
 
 - `PUID`, `PGID`, `TZ`, `UMASK`
-- `CONFIG_PATH`, `MEDIA_PATH`, `DOCKERCONFIGPATH`, `DATAPATH`
+- `CONFIG_PATH`, `MEDIA_PATH`, `IMMICH_PHOTOS_PATH`, `DOCKERCONFIGPATH`, `DATAPATH`
 - `ARR_NETWORK`, `RENDER_GID`, `LIBVA_DRIVER_NAME`
 - Optimisarr image, port, logging, work, and trash overrides
 
@@ -102,6 +112,9 @@ Use the repository-level Git/Dockhand procedure in the [root README](../README.m
 After deployment, verify:
 
 1. Plex responds at `/identity`, retains its libraries, and can access `/dev/dri`.
+   Confirm `/immich/library` and `/immich/upload` are present as read-only
+   mounts, then create or retain one `Photos` library named `Immich Photos`
+   with both paths and scan it.
 2. Jellyfin reaches `http://localhost:8096/health`, completes its setup wizard,
    and adds the existing folders below `/library` without changing them.
 3. `https://jellyfin.pownet.uk/health` returns `Healthy`, the certificate is

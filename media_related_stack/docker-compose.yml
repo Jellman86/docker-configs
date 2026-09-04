@@ -21,6 +21,21 @@ services:
           target: /library
           bind:
             create_host_path: false
+        # Immich originals can live in either directory depending on whether
+        # its storage-template feature was enabled. Expose only originals to
+        # Plex; generated thumbnails and encoded derivatives stay private.
+        - type: bind
+          source: ${IMMICH_PHOTOS_PATH:-/mnt/tank/photos}/library
+          target: /immich/library
+          read_only: true
+          bind:
+            create_host_path: false
+        - type: bind
+          source: ${IMMICH_PHOTOS_PATH:-/mnt/tank/photos}/upload
+          target: /immich/upload
+          read_only: true
+          bind:
+            create_host_path: false
         - type: bind
           source: ${MEDIA_PATH:-/mnt/tank/media}/transcode
           target: /transcode

@@ -50,6 +50,32 @@ class MediaStackPolicyTests(unittest.TestCase):
         self.assertTrue(jellyfin_media["read_only"])
         self.assertFalse(jellyfin_media["bind"]["create_host_path"])
 
+    def test_plex_reads_only_immich_originals(self) -> None:
+        immich_mounts = {
+            volume["target"]: volume
+            for volume in self.plex["volumes"]
+            if volume["target"].startswith("/immich/")
+        }
+        self.assertEqual({"/immich/library", "/immich/upload"}, set(immich_mounts))
+        self.assertEqual(
+            "${IMMICH_PHOTOS_PATH:-/mnt/tank/photos}/library",
+            immich_mounts["/immich/library"]["source"],
+        )
+        self.assertEqual(
+            "${IMMICH_PHOTOS_PATH:-/mnt/tank/photos}/upload",
+            immich_mounts["/immich/upload"]["source"],
+        )
+        for volume in immich_mounts.values():
+            self.assertTrue(volume["read_only"])
+            self.assertFalse(volume["bind"]["create_host_path"])
+
+        sources = {volume["source"] for volume in self.plex["volumes"]}
+        self.assertNotIn("${IMMICH_PHOTOS_PATH:-/mnt/tank/photos}", sources)
+        for generated_directory in ("thumbs", "encoded-video", "backups", "profile"):
+            self.assertFalse(
+                any(source.endswith(f"/{generated_directory}") for source in sources)
+            )
+
     def test_jellyfin_state_is_persistent_and_separate_from_plex(self) -> None:
         config = next(
             volume
