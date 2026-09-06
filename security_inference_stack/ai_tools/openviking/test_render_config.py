@@ -23,6 +23,8 @@ class RenderConfigTests(unittest.TestCase):
                 **os.environ,
                 "OPENVIKING_CONFIG_FILE": str(output),
                 "OPENVIKING_ROOT_API_KEY": "a" * 64,
+                "OPENROUTER_API_KEY": "test-only-placeholder",
+                "OPENVIKING_VLM_PROVIDER": "openrouter",
             }
             environment.pop("OPENVIKING_VLM_MODEL", None)
             if model is not None:
@@ -38,7 +40,8 @@ class RenderConfigTests(unittest.TestCase):
 
     def test_supported_default_model(self) -> None:
         config = self.render()
-        self.assertEqual(config["vlm"]["model"], "gpt-5.6-luna")
+        self.assertEqual(config["vlm"]["model"], "nvidia/nemotron-3-nano-30b-a3b:free")
+        self.assertEqual(config["vlm"]["provider"], "openrouter")
         self.assertNotIn("reasoning_effort", config["vlm"])
 
     def test_model_can_be_overridden_without_editing_the_renderer(self) -> None:

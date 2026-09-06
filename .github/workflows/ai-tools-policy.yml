@@ -1,0 +1,23 @@
+name: AI tools policy checks
+on:
+  push:
+    paths:
+      - security_inference_stack/ai_tools/**
+      - .github/workflows/ai-tools-policy.yml
+  pull_request:
+    paths:
+      - security_inference_stack/ai_tools/**
+      - .github/workflows/ai-tools-policy.yml
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install PyYAML==6.0.2
+      - run: python -m unittest discover -s security_inference_stack/ai_tools/tests -v
+      - run: python -m unittest discover -s security_inference_stack/ai_tools/openviking -v

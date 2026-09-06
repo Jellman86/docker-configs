@@ -1,4 +1,78 @@
 services:
+  hermes-agent:
+    image: nousresearch/hermes-agent:v2026.8.31@sha256:64923faeae267792bf9bf87fe3b4c4869e35004e360c7df01730ad801b74d524
+    platform: linux/amd64
+    container_name: hermes-agent
+    restart: unless-stopped
+    command: ["gateway", "run"]
+    stop_grace_period: 60s
+    shm_size: "1gb"
+    cpus: "${HERMES_CPUS:-2.0}"
+    mem_limit: "${HERMES_MEMORY_LIMIT:-4g}"
+    pids_limit: 512
+    # The official s6 bootstrap remaps UID/GID before dropping to hermes.
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      TZ: "${TZ:-Europe/London}"
+      HERMES_TIMEZONE: "${TZ:-Europe/London}"
+      HERMES_MANAGED_DIR: /etc/hermes
+      HERMES_DASHBOARD: "1"
+      HERMES_DASHBOARD_HOST: 0.0.0.0
+      HERMES_DASHBOARD_PORT: "9119"
+      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: "${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:?Hermes dashboard username required}"
+      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: "${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:?Hermes dashboard password required}"
+      HERMES_DASHBOARD_BASIC_AUTH_SECRET: "${HERMES_DASHBOARD_BASIC_AUTH_SECRET:?Hermes session secret required}"
+      API_SERVER_ENABLED: "false"
+      TERMINAL_ENV: ssh
+      TERMINAL_SSH_HOST: host.docker.internal
+      TERMINAL_SSH_USER: "${TERMINAL_SSH_USER:-jellman86}"
+      TERMINAL_SSH_PORT: "22"
+      TERMINAL_SSH_KEY: /opt/data/host-control/id_ed25519
+      TERMINAL_SSH_PERSISTENT: "true"
+      HERMES_HOST_WORKDIR: "${HERMES_HOST_WORKDIR:-/home/jellman86}"
+      OPENVIKING_ENDPOINT: http://openviking:1933
+      OPENVIKING_API_KEY: "${OPENVIKING_API_KEY:?shared OpenViking user key required}"
+      OPENVIKING_AGENT: hermes
+      HASS_URL: http://host.docker.internal:8123
+      HASS_TOKEN: "${HASS_TOKEN:-}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - type: bind
+        source: "${DOCKERCONFIGPATH:-/mnt/apps/docker}/hermes"
+        target: /opt/data
+        bind:
+          create_host_path: false
+      - ./managed:/etc/hermes:ro
+    expose:
+      - "9119"
+    networks:
+      general_brg: {}
+      npm_proxy_backends:
+        aliases: [hermes-dashboard]
+      openviking_private: {}
+    depends_on:
+      playwright-mcp:
+        condition: service_healthy
+      rusty-imap-mcp:
+        condition: service_healthy
+      openviking-bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9119/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
   playwright-mcp:
     image: mcr.microsoft.com/playwright/mcp:v0.0.78@sha256:3d871c22ea2d4cca0966e2cfb1860e1cb03eb7353725a3d6cffd133296fb04eb
     container_name: playwright-mcp

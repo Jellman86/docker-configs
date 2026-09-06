@@ -18,7 +18,7 @@ class AiToolsPolicyTests(unittest.TestCase):
 
     def test_required_services_exist(self) -> None:
         self.assertTrue(
-            {"playwright-mcp", "openviking", "openviking-ollama", "rusty-imap-mcp"}
+            {"hermes-agent", "playwright-mcp", "openviking", "openviking-ollama", "rusty-imap-mcp"}
             <= self.services.keys()
         )
 
@@ -69,12 +69,43 @@ class AiToolsPolicyTests(unittest.TestCase):
         self.assertIn("OPENVIKING_EMBED_DIMENSION", env)
 
     def test_retired_runtimes_are_absent(self) -> None:
-        for name in ("hermes-agent", "searxng", "spider-mcp", "spider-chromium",
+        for name in ("searxng", "spider-mcp", "spider-chromium",
                      "research-egress"):
             self.assertNotIn(name, self.services)
-        self.assertFalse((ROOT / "managed").exists())
         self.assertFalse((ROOT / "skills").exists())
         self.assertFalse((ROOT / "web-research").exists())
+
+    def test_hermes_auth_networks_and_secret_boundary(self) -> None:
+        service = self.services["hermes-agent"]
+        env = service["environment"]
+        self.assertEqual(env["API_SERVER_ENABLED"], "false")
+        for key in ("HERMES_DASHBOARD_BASIC_AUTH_USERNAME",
+                    "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD",
+                    "HERMES_DASHBOARD_BASIC_AUTH_SECRET", "OPENVIKING_API_KEY"):
+            self.assertIn(":?", env[key])
+        for key in ("OPENVIKING_ROOT_API_KEY", "OPENVIKING_CODEX_API_KEY",
+                    "SUDO_PASSWORD", "TELEGRAM_BOT_TOKEN", "DISCORD_BOT_TOKEN"):
+            self.assertNotIn(key, env)
+        self.assertEqual(service["networks"]["npm_proxy_backends"]["aliases"],
+                         ["hermes-dashboard"])
+        self.assertIn("./managed:/etc/hermes:ro", service["volumes"])
+        self.assertIn("no-new-privileges:true", service["security_opt"])
+        self.assertEqual(service["volumes"][0]["bind"]["create_host_path"], False)
+
+    def test_hermes_preserves_memory_and_requires_manual_approvals(self) -> None:
+        config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
+        self.assertEqual(config["approvals"]["mode"], "manual")
+        self.assertEqual(config["approvals"]["cron_mode"], "deny")
+        self.assertEqual(config["memory"]["openviking"]["agent"], "hermes")
+        memory = config["mcp_servers"]["openviking"]
+        self.assertEqual(memory["headers"]["X-OpenViking-Agent"], "hermes")
+        self.assertEqual(memory["headers"]["Authorization"], "Bearer ${OPENVIKING_API_KEY}")
+        self.assertFalse(config["mcp_servers"]["spider"]["enabled"])
+        mail = config["mcp_servers"]["rusty_imap"]["tools"]["include"]
+        for tool in ("export_messages", "expunge", "delete_folder"):
+            self.assertNotIn(tool, mail)
+        for channel in config["platforms"].values():
+            self.assertFalse(channel["enabled"])
 
     def test_shared_tool_endpoints_remain_available_to_trusted_consumers(self) -> None:
         self.assertIn("general_brg", self.services["playwright-mcp"]["networks"])

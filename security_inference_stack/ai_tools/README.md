@@ -1,19 +1,58 @@
 # AI tools on Quark
 
-This standalone Git-backed Dockhand stack provides shared AI support services
-without running an agent runtime. It is intentionally separate from
+This standalone Git-backed Dockhand stack runs Hermes and shared AI support
+services. It is intentionally separate from
 `security_inference_stack/docker-compose.yml`, so tool upgrades do not recreate
 Frigate, Home Assistant, BirdNET-Go, Mosquitto, or YA-WAMF.
 
-The stack was renamed from `hermes_agent` to `ai_tools` when the Hermes Agent
-service was retired. OpenViking's existing data directories and least-privilege
-tenant keys are deliberately retained, so the rename does not discard shared
-memory or invalidate configured clients.
+The stack was renamed from `hermes_agent` to `ai_tools` when Hermes was retired.
+Hermes was restored on 2026-09-06 using its retained state and model login;
+OpenViking's existing data directories and least-privilege tenant keys are unchanged.
+
+## Hermes dashboard and integrations
+
+- Private URL: `https://hermes.pownet.uk`; UniFi static A record points to Quark
+  at `192.168.213.102`. Do not add a public DNS record or Cloudflare Tunnel route.
+- Quark NPM terminates TLS with the existing `*.pownet.uk` certificate and proxies
+  HTTP/WebSockets to `hermes-dashboard:9119` on `npm_proxy_backends`. This alias
+  ensures requests arrive from the dedicated proxy network trusted by Hermes.
+- Hermes enforces its own password login. NPM additionally restricts the route
+  to private LAN and Tailscale source ranges. API server and messaging adapters
+  remain disabled. Existing dashboard credentials are stored in Dockhand.
+- The pinned upstream image runs s6 bootstrap as root, then gateway/dashboard
+  as UID/GID 1000. It is resource-limited, has no host ports or Docker socket,
+  and keeps state at `/mnt/apps/docker/hermes`. Never share this directory
+  with a second gateway. Back it up before upgrades.
+- Read-only managed config in `managed/config.yaml` supplies operational rules,
+  manual approvals, the existing SSH terminal backend, browser/mail/memory MCP,
+  native OpenViking memory and optional native Home Assistant tools. SSH uses
+  the existing dedicated key; its account permissions remain a trust boundary,
+  not a read-only sandbox. No sudo password is injected.
+- `HASS_TOKEN` is a dedicated Home Assistant long-lived token supplied through
+  Dockhand secrets. It enables the native `ha_*` tools, not the HA messaging
+  adapter. Do not test it by toggling devices.
+- The historical `hermes/hermes` identity and `hermes` agent scope remain fixed.
+  MCP additionally sends `X-OpenViking-Agent: hermes`. Never pass root/recovery
+  keys or seeds to Hermes. SearXNG and Spider remain retired.
+- Before publishing: run both unittest suites below, render Compose with
+  placeholder secrets, verify the pinned image manifest, and review the diff.
+  Deploy only through Dockhand. On 1.0.44, the running route implementation was
+  checked: sync via `POST /api/git/stacks/{id}/sync`, then deploy via
+  `POST /api/git/stacks/{id}/deploy` with `Accept: application/json`. Keep the
+  connection open and require `success: true`; verify stack revision and health.
+  The environment API accepts a replacement `variables` array, so GET/merge/PUT
+  the full set and preserve secret flags. Revalidate these routes after upgrades.
+
+```bash
+python -m unittest discover -s security_inference_stack/ai_tools/tests -v
+python -m unittest discover -s security_inference_stack/ai_tools/openviking -v
+```
 
 ## Services
 
 | Service | Role | Network exposure |
 |---|---|---|
+| `hermes-agent` | Authenticated agent dashboard, tools and shared memory | Private proxy network and internal tool networks; no host port |
 | `playwright-mcp` | Isolated interactive browser MCP | `general_brg` and the private research network; no host port |
 | `openviking` | Shared hierarchical memory and MCP | Private OpenViking network and `npm_proxy_backends` |
 | `openviking-bootstrap` | One-shot least-privilege tenant provisioning | Private OpenViking network only |
@@ -61,7 +100,7 @@ panel. Mark `RUSTY_IMAP_MCP_IMAP_PASSWORD`,
 both derived user keys as secrets. Never commit generated keys or `.env.dockhand`.
 
 The OpenViking account and shared user still use the historical `hermes` names.
-This is a data-compatibility identifier, not a running Hermes service. Changing
+This is a data-compatibility identifier independent of the running agent. Changing
 it would make existing encrypted memory and client credentials inaccessible.
 The bootstrap job creates or repairs the least-privilege `hermes/hermes` shared
 user and the `hermes/codex` recovery user. The root key remains confined to
@@ -114,8 +153,9 @@ OpenViking is reached on the private LAN at:
 https://openviking.pownet.uk/mcp
 ```
 
-The `hermes.pownet.uk` compatibility URL was retired on 2026-08-23; its DNS
-record and proxy host are gone. Clients use the shared least-privilege key and
+The old `hermes.pownet.uk` memory compatibility URL was retired on 2026-08-23;
+that hostname now serves the authenticated Hermes dashboard, not OpenViking.
+Memory clients use `openviking.pownet.uk`, the shared least-privilege key and
 the `X-OpenViking-Agent: hermes` header. That header and the `hermes/hermes`
 account are a data-compatibility identity, not a hostname, and must not be
 renamed - doing so makes existing encrypted memory unreadable. Never configure
@@ -150,11 +190,13 @@ and only after stopping the affected service through Dockhand.
 
 ## Verification
 
-1. Confirm `hermes-agent` is absent and no service publishes a host port.
+1. Confirm exactly one `hermes-agent` runs and no service publishes a host port.
 2. Confirm all long-running services are running and healthy.
 3. Confirm `openviking-ollama-model` and `openviking-bootstrap` exit successfully.
 4. Confirm OpenViking rejects unauthenticated requests and accepts an
-   authenticated memory search/remember request through the compatibility URL.
+   authenticated memory search/remember request through `openviking.pownet.uk`.
 5. Confirm Playwright can load a harmless public page.
 6. Confirm the IMAP MCP health endpoint responds from a trusted `general_brg`
    client and message body fetches do not set `\\Seen`.
+7. Confirm DNS resolves to Quark, TLS validates, anonymous dashboard API requests
+   are denied, login works, and browser/mail/memory/HA tools are available.
