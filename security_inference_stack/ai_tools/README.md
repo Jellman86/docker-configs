@@ -17,8 +17,8 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
   HTTP/WebSockets to `hermes-dashboard:9119` on `npm_proxy_backends`. This alias
   ensures requests arrive from the dedicated proxy network trusted by Hermes.
 - Hermes enforces its own password login. NPM additionally restricts the route
-  to private LAN and Tailscale source ranges. API server and messaging adapters
-  remain disabled. Existing dashboard credentials are stored in Dockhand.
+  to private LAN and Tailscale source ranges. API server and external messaging
+  adapters remain disabled. Existing dashboard credentials are stored in Dockhand.
 - The pinned upstream image runs s6 bootstrap as root, then gateway/dashboard
   as UID/GID 1000. It is resource-limited, has no host ports or Docker socket,
   and keeps state at `/mnt/apps/docker/hermes`. Never share this directory
@@ -29,11 +29,18 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
   the existing dedicated key; its account permissions remain a trust boundary,
   not a read-only sandbox. No sudo password is injected.
 - `HASS_TOKEN` is a dedicated Home Assistant long-lived token supplied through
-  Dockhand secrets. It enables the native `ha_*` tools, not the HA messaging
-  adapter. Do not test it by toggling devices.
+  Dockhand secrets. It enables the native `ha_*` tools. Upstream v2026.8.31 also
+  forces an idle HA event connection despite `enabled: false`; its lazy platform
+  loader bypasses plugin disabling. Pinned empty event filters and `watch_all:
+  false` drop all events, preventing unsolicited agent runs. Do not test it by
+  toggling devices.
 - The historical `hermes/hermes` identity and `hermes` agent scope remain fixed.
   MCP additionally sends `X-OpenViking-Agent: hermes`. Never pass root/recovery
   keys or seeds to Hermes. SearXNG and Spider remain retired.
+- A Git deploy does not restart a container just because a read-only bind-mounted
+  config changed. After such a change, use Dockhand's discovered container
+  `POST /api/containers/{id}/restart?env={environmentId}` endpoint, then verify
+  its new start time and effective config. Never use a direct Docker restart.
 - Before publishing: run both unittest suites below, render Compose with
   placeholder secrets, verify the pinned image manifest, and review the diff.
   Deploy only through Dockhand. On 1.0.44, the running route implementation was

@@ -1,4 +1,5 @@
 # Credentials live only in Dockhand secrets and the retained Hermes auth store.
+timezone: Europe/London
 model:
   provider: openai-codex
   default: gpt-5.6-sol
@@ -54,10 +55,6 @@ approvals:
     - "docker container rm*"
 security:
   redact_secrets: true
-plugins:
-  # v2026.8.31 auto-enables this adapter when HASS_TOKEN is present even when
-  # platforms.homeassistant.enabled is false. Native ha_* tools are separate.
-  disabled: [platforms/homeassistant]
 tool_loop_guardrails:
   warnings_enabled: true
   hard_stop_enabled: true
@@ -77,7 +74,15 @@ platforms:
   discord: {enabled: false}
   slack: {enabled: false}
   whatsapp: {enabled: false}
-  homeassistant: {enabled: false}
+  # Upstream v2026.8.31 forces an HA connection when HASS_TOKEN is supplied.
+  # Its lazy platform loader also bypasses plugins.disabled. Empty, pinned
+  # event filters ensure the connection cannot trigger unsolicited agent runs.
+  homeassistant:
+    enabled: false
+    extra:
+      watch_all: false
+      watch_domains: []
+      watch_entities: []
   api_server: {enabled: false}
 mcp_servers:
   playwright:

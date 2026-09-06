@@ -101,7 +101,11 @@ class AiToolsPolicyTests(unittest.TestCase):
         self.assertEqual(memory["headers"]["X-OpenViking-Agent"], "hermes")
         self.assertEqual(memory["headers"]["Authorization"], "Bearer ${OPENVIKING_API_KEY}")
         self.assertFalse(config["mcp_servers"]["spider"]["enabled"])
-        self.assertIn("platforms/homeassistant", config["plugins"]["disabled"])
+        ha_events = config["platforms"]["homeassistant"]["extra"]
+        self.assertFalse(ha_events["watch_all"])
+        self.assertEqual(ha_events["watch_domains"], [])
+        self.assertEqual(ha_events["watch_entities"], [])
+        self.assertEqual(config["timezone"], "Europe/London")
         mail = config["mcp_servers"]["rusty_imap"]["tools"]["include"]
         for tool in ("export_messages", "expunge", "delete_folder"):
             self.assertNotIn(tool, mail)
