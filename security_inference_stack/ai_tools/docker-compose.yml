@@ -17,7 +17,7 @@ services:
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-1000}"
       TZ: "${TZ:-Europe/London}"
-      HERMES_TIMEZONE: "${TZ:-Europe/London}"
+      HERMES_TIMEZONE: Europe/London
       HERMES_MANAGED_DIR: /etc/hermes
       HERMES_DASHBOARD: "1"
       HERMES_DASHBOARD_HOST: 0.0.0.0

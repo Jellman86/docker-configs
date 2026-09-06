@@ -54,6 +54,10 @@ approvals:
     - "docker container rm*"
 security:
   redact_secrets: true
+plugins:
+  # v2026.8.31 auto-enables this adapter when HASS_TOKEN is present even when
+  # platforms.homeassistant.enabled is false. Native ha_* tools are separate.
+  disabled: [platforms/homeassistant]
 tool_loop_guardrails:
   warnings_enabled: true
   hard_stop_enabled: true
@@ -121,7 +125,7 @@ mcp_servers:
     timeout: 120
     sampling: {enabled: false}
     tools:
-      include: [search, read, ls, tree, stat, remember]
+      include: [search, read, remember]
       resources: false
       prompts: false
   spider: {enabled: false}
