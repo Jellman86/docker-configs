@@ -24,7 +24,7 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
   and keeps state at `/mnt/apps/docker/hermes`. Never share this directory
   with a second gateway. Back it up before upgrades.
 - Read-only managed config in `managed/config.yaml` supplies operational rules,
-  manual approvals, the existing SSH terminal backend, browser/mail/memory MCP,
+  manual approvals, the existing SSH terminal backend, GitHub/browser/mail/memory MCP,
   native OpenViking memory and optional native Home Assistant tools. SSH uses
   the existing dedicated key; its account permissions remain a trust boundary,
   not a read-only sandbox. No sudo password is injected.
@@ -37,6 +37,24 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
 - The historical `hermes/hermes` identity and `hermes` agent scope remain fixed.
   MCP additionally sends `X-OpenViking-Agent: hermes`. Never pass root/recovery
   keys or seeds to Hermes. SearXNG and Spider remain retired.
+- Dashboard **MCP** (`/mcp`) lists `github`, `openviking`, `rusty_imap` (email)
+  and `playwright`. Native OpenViking memory is separately selected under
+  **Plugins** (`/plugins`), in the memory-provider section. Endpoint and API-key
+  configuration come from the container environment; a blank secret input does
+  not mean the key is missing. Account/user overrides are unnecessary with the
+  authenticated shared user key.
+- GitHub uses the official remote MCP endpoint and Quark's existing authorized
+  GitHub account, passed only to Hermes as encrypted `HERMES_GITHUB_TOKEN`.
+  Its 23-tool allowlist covers repository reads, issues, pull requests and CI;
+  repository creation/deletion and account administration are not exposed.
+  GitHub and email use `trust: untrusted`: write-capable MCP calls require
+  runtime consent, and missing read-only annotations also require consent.
+  This is an MCP approval gate, not a sandbox for the existing SSH account.
+- Shared-host tuning caps delegation at two children, 60 turns each, one level
+  deep, without automatic approvals. Deterministic old-result pruning starts
+  above 48,000 history tokens, preserves the last 20 messages and only commits
+  when it saves at least 4,096 tokens. Model/reasoning, memory identity and
+  existing CPU/RAM limits are unchanged.
 - A Git deploy does not restart a container just because a read-only bind-mounted
   config changed. After such a change, use Dockhand's discovered container
   `POST /api/containers/{id}/restart?env={environmentId}` endpoint, then verify

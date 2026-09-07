@@ -81,7 +81,8 @@ class AiToolsPolicyTests(unittest.TestCase):
         self.assertEqual(env["API_SERVER_ENABLED"], "false")
         for key in ("HERMES_DASHBOARD_BASIC_AUTH_USERNAME",
                     "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD",
-                    "HERMES_DASHBOARD_BASIC_AUTH_SECRET", "OPENVIKING_API_KEY"):
+                    "HERMES_DASHBOARD_BASIC_AUTH_SECRET", "OPENVIKING_API_KEY",
+                    "HERMES_GITHUB_TOKEN"):
             self.assertIn(":?", env[key])
         for key in ("OPENVIKING_ROOT_API_KEY", "OPENVIKING_CODEX_API_KEY",
                     "SUDO_PASSWORD", "TELEGRAM_BOT_TOKEN", "DISCORD_BOT_TOKEN"):
@@ -116,6 +117,38 @@ class AiToolsPolicyTests(unittest.TestCase):
         self.assertIn("general_brg", self.services["playwright-mcp"]["networks"])
         self.assertIn("general_brg", self.services["rusty-imap-mcp"]["networks"])
         self.assertIn("npm_proxy_backends", self.services["openviking"]["networks"])
+
+    def test_github_and_mail_writes_require_runtime_consent(self) -> None:
+        config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
+        servers = config["mcp_servers"]
+        for name in ("github", "rusty_imap"):
+            self.assertEqual(servers[name]["trust"], "untrusted")
+            self.assertFalse(servers[name]["sampling"]["enabled"])
+            self.assertFalse(servers[name]["supports_parallel_tool_calls"])
+        github = servers["github"]
+        self.assertEqual(github["url"], "https://api.githubcopilot.com/mcp/")
+        self.assertEqual(github["headers"]["Authorization"], "Bearer ${HERMES_GITHUB_TOKEN}")
+        self.assertTrue({"get_me", "get_file_contents", "pull_request_read", "actions_list"}
+                        <= set(github["tools"]["include"]))
+        self.assertFalse({"create_repository", "delete_file", "fork_repository"}
+                         & set(github["tools"]["include"]))
+        self.assertLessEqual(len(github["tools"]["include"]), 25)
+        for name, service in self.services.items():
+            if name != "hermes-agent":
+                self.assertNotIn("HERMES_GITHUB_TOKEN", service.get("environment", {}))
+
+    def test_shared_host_concurrency_and_context_are_bounded(self) -> None:
+        config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
+        delegation = config["delegation"]
+        self.assertEqual(delegation["max_concurrent_children"], 2)
+        self.assertEqual(delegation["max_iterations"], 60)
+        self.assertEqual(delegation["max_spawn_depth"], 1)
+        self.assertFalse(delegation["subagent_auto_approve"])
+        compression = config["compression"]
+        self.assertEqual(compression["proactive_prune_tokens"], 48000)
+        self.assertGreaterEqual(compression["proactive_prune_min_reclaim_tokens"], 4096)
+        self.assertGreaterEqual(compression["protect_last_n"], 20)
+        self.assertEqual(config["memory"]["provider"], "openviking")
 
     def test_no_orphaned_or_undeclared_networks(self) -> None:
         declared = set(self.networks)
