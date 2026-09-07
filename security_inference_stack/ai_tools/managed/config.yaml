@@ -3,6 +3,13 @@ timezone: Europe/London
 model:
   provider: openai-codex
   default: gpt-5.6-sol
+auxiliary:
+  title_generation:
+    # Titles are lightweight; keep summaries, vision and agent work on Sol.
+    provider: openai-codex
+    model: gpt-5.6-luna
+    reasoning_effort: low
+    max_concurrency: 2
 agent:
   reasoning_effort: high
   system_prompt: |

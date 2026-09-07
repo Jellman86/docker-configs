@@ -150,6 +150,15 @@ class AiToolsPolicyTests(unittest.TestCase):
         self.assertGreaterEqual(compression["protect_last_n"], 20)
         self.assertEqual(config["memory"]["provider"], "openviking")
 
+    def test_only_lightweight_titles_use_luna(self) -> None:
+        config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
+        self.assertEqual(config["model"], {"provider": "openai-codex", "default": "gpt-5.6-sol"})
+        self.assertEqual(config["agent"]["reasoning_effort"], "high")
+        self.assertEqual(config["auxiliary"], {"title_generation": {
+            "provider": "openai-codex", "model": "gpt-5.6-luna",
+            "reasoning_effort": "low", "max_concurrency": 2,
+        }})
+
     def test_no_orphaned_or_undeclared_networks(self) -> None:
         declared = set(self.networks)
         used: set[str] = set()

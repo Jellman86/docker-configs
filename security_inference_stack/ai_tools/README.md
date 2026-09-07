@@ -55,6 +55,11 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
   above 48,000 history tokens, preserves the last 20 messages and only commits
   when it saves at least 4,096 tokens. Model/reasoning, memory identity and
   existing CPU/RAM limits are unchanged.
+- Conversation titles alone use `gpt-5.6-luna` with low reasoning and at most
+  two concurrent title calls, through the existing ChatGPT login. Main work
+  stays on `gpt-5.6-sol` / high; summaries and vision continue inheriting Sol.
+  No prompt, API transport, embedding or OpenViking extraction model changes
+  accompany this lightweight-task routing override.
 - A Git deploy does not restart a container just because a read-only bind-mounted
   config changed. After such a change, use Dockhand's discovered container
   `POST /api/containers/{id}/restart?env={environmentId}` endpoint, then verify
