@@ -148,6 +148,11 @@ services:
       - MQTT_PASSWORD=${MQTT_PASSWORD:?MQTT_PASSWORD is required}
     networks:
       - general_brg
+    # Home Assistant runs with network_mode: host, so it cannot use the
+    # container name and the bridge IP changes on every recreate. Publish the
+    # broker on the host loopback only; nothing on the LAN can reach it.
+    ports:
+      - "127.0.0.1:1883:1883"
     volumes:
       - type: bind
         source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/mosquitto/config

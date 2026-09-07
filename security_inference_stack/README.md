@@ -10,7 +10,7 @@ Shared AI support services are deployed as a separate nested stack; see [`ai_too
 |---|---|---|
 | `frigate` | Camera NVR, object detection, RTSP restream, and WebRTC | `8971`, `8554`, `8555/tcp`, `8555/udp` |
 | `birdnet-go` | Bird-audio classification | `${BN_WEBPORT:-8080}` |
-| `mosquitto` | Authenticated MQTT broker for stack-local messaging | No host port |
+| `mosquitto` | Authenticated MQTT broker for stack-local messaging | `127.0.0.1:1883` (host loopback only, for Home Assistant) |
 | `yawamf` | Frigate/BirdNET event aggregation and Intel inference | `9852` → container `8080` |
 | `homeassistant` | Home automation and discovery | Host network; normally `8123` |
 
