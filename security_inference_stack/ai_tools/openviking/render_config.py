@@ -12,12 +12,14 @@ from pathlib import Path
 
 CONFIG_PATH = Path(os.environ.get("OPENVIKING_CONFIG_FILE", "/app/.openviking/ov.conf"))
 ROOT_API_KEY = os.environ.get("OPENVIKING_ROOT_API_KEY", "").strip()
-VLM_MODEL = os.environ.get("OPENVIKING_VLM_MODEL", "nvidia/nemotron-3-nano-30b-a3b:free").strip()
-VLM_PROVIDER = os.environ.get("OPENVIKING_VLM_PROVIDER", "openrouter").strip()
+VLM_MODEL = os.environ.get("OPENVIKING_VLM_MODEL", "gpt-5.6-sol").strip()
+VLM_PROVIDER = os.environ.get("OPENVIKING_VLM_PROVIDER", "openai-codex").strip()
 VLM_API_BASE = os.environ.get("OPENVIKING_VLM_API_BASE", "").strip()
 EMBED_MODEL = os.environ.get("OPENVIKING_EMBED_MODEL", "qwen3-embedding:0.6b").strip()
 EMBED_DIMENSION = int(os.environ.get("OPENVIKING_EMBED_DIMENSION", "1024"))
-VLM_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
+# CodexVLM treats any explicit api_key as an override of its ChatGPT login.
+# Never accidentally send a leftover OpenRouter secret to the Codex endpoint.
+VLM_API_KEY = "" if VLM_PROVIDER == "openai-codex" else os.environ.get("OPENROUTER_API_KEY", "").strip()
 
 PLACEHOLDER_API_KEY = "replace-with-64-random-hex-characters"
 if ROOT_API_KEY == PLACEHOLDER_API_KEY or re.fullmatch(r"[0-9a-fA-F]{64}", ROOT_API_KEY) is None:
@@ -69,7 +71,7 @@ config = {
         "api_key": VLM_API_KEY,
         "temperature": 0.0,
         "max_retries": 2,
-        "extra_request_body": {"reasoning": {"exclude": True}},
+        "extra_request_body": {"reasoning": {"exclude": True}} if VLM_PROVIDER == "openrouter" else {},
     },
     "retrieval": {
         "hotness_alpha": 0.0,

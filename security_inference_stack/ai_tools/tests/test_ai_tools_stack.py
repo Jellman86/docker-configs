@@ -67,6 +67,9 @@ class AiToolsPolicyTests(unittest.TestCase):
         env = self.services["openviking"]["environment"]
         self.assertIn("OPENVIKING_EMBED_MODEL", env)
         self.assertIn("OPENVIKING_EMBED_DIMENSION", env)
+        self.assertEqual(env["OPENVIKING_VLM_PROVIDER"], "${OPENVIKING_VLM_PROVIDER:-openai-codex}")
+        self.assertEqual(env["OPENVIKING_VLM_MODEL"], "${OPENVIKING_VLM_MODEL:-gpt-5.6-sol}")
+        self.assertNotIn("OPENROUTER_API_KEY", env)
 
     def test_retired_runtimes_are_absent(self) -> None:
         for name in ("searxng", "spider-mcp", "spider-chromium",

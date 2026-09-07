@@ -58,8 +58,16 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
 - Conversation titles alone use `gpt-5.6-luna` with low reasoning and at most
   two concurrent title calls, through the existing ChatGPT login. Main work
   stays on `gpt-5.6-sol` / high; summaries and vision continue inheriting Sol.
-  No prompt, API transport, embedding or OpenViking extraction model changes
-  accompany this lightweight-task routing override.
+  No prompt or Hermes API transport changes accompany this routing override.
+- OpenViking extraction uses `gpt-5.6-sol` through its own retained ChatGPT
+  login (`codex_auth.json`), not a shared live Hermes auth file. Its old
+  OpenRouter Nemotron Nano free endpoint returned 404 during a session-commit
+  test on 2026-09-07. Free hosted replacements are unsuitable for private
+  memories; the existing authenticated Codex backend replaces that route.
+  This consumes ChatGPT/Codex allowance. OpenRouter keys are not injected into
+  OpenViking or sent to Codex. Local Qwen embeddings and existing vectors stay
+  unchanged. Check a commit's background task result, not just HTTP 200 or
+  `/ready`: archival success does not prove memory extraction succeeded.
 - A Git deploy does not restart a container just because a read-only bind-mounted
   config changed. After such a change, use Dockhand's discovered container
   `POST /api/containers/{id}/restart?env={environmentId}` endpoint, then verify
