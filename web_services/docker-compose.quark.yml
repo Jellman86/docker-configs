@@ -28,14 +28,6 @@ services:
         target: /etc/letsencrypt
         bind:
           create_host_path: true
-      # Access logs record the request path, never the query string: apps behind
-      # this proxy have carried credentials there. Reference copy: web_services/npm/log-proxy.conf
-      - type: bind
-        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/nginx-proxy-manager/data/nginx/custom/log-proxy.conf
-        target: /etc/nginx/conf.d/include/log-proxy.conf
-        read_only: true
-        bind:
-          create_host_path: false
     healthcheck:
       test: ["CMD", "/usr/bin/check-health"]
       interval: 120s
