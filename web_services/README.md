@@ -84,3 +84,19 @@ Revert the relevant Git or image change, push, and redeploy the same host-specif
 - Review every proxy host and Cloudflare route for intended public versus LAN-only exposure.
 - Tailscale is a privileged network boundary; advertise only explicitly approved routes.
 - Never publish private backend MCP/CDP ports merely to make them easier to proxy.
+
+## Why NPM's access-log format is not overridden (2026-09-08)
+
+NPM's shipped `proxy` and `standard` formats log `"$request_uri"`, so any credential an
+application carries in a query string lands in `/data/logs/proxy-host-*_access.log`. An
+attempt to fix that by bind-mounting a redacted copy of `/etc/nginx/conf.d/include/log-proxy.conf`
+(`read_only: true`) took the proxy down for about three minutes: NPM's s6 `prepare` step runs
+`chown -R $PUID:$PGID /etc/nginx/conf.d` on every fresh container under `set -e`, and `chown`
+fails with EROFS on a read-only bind, so the container came up half-initialised (`s6-rc: warning:
+unable to start service prepare`). Reverted in `1d2959e`.
+
+A read-write bind of a file already owned by `$PUID:$PGID` would most likely pass that `chown`,
+but proving it means another live deploy of the only proxy in front of every service here. The
+application that put credentials in query strings (YA-WAMF) has stopped doing so, which is the
+real fix, so this is deliberately left alone. If it is ever revisited: test the bind on a
+throwaway NPM container first, never on this one.
