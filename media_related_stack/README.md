@@ -102,6 +102,9 @@ Common settings:
 - `CONFIG_PATH`, `MEDIA_PATH`, `IMMICH_PHOTOS_PATH`, `DOCKERCONFIGPATH`, `DATAPATH`
 - `ARR_NETWORK`, `RENDER_GID`, `LIBVA_DRIVER_NAME`
 - Optimisarr image, port, logging, work, and trash overrides
+- `OPTIMISARR_EXPERIMENTAL_REMOTE_WORKERS` (default `true` here): enables Optimisarr's preview of
+  remote transcoding workers, so the macOS sidecar can be paired from Settings › Workers. Set it to
+  `false` to hide the whole surface again; the server still verifies and replaces everything itself.
 
 `PLEX_CLAIM` is sensitive and normally needed only when claiming a new Plex server. Store it as a Dockhand secret and remove or rotate it after use according to Plex guidance.
 

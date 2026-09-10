@@ -133,6 +133,11 @@ services:
         # Optional built-in bearer-token backstop. Store the value as an encrypted
         # Dockhand stack secret rather than committing it to this repository.
         OPTIMISARR_ADMIN_TOKEN: ${OPTIMISARR_ADMIN_TOKEN:-}
+        # Remote transcoding workers are a preview. This flag reveals the Remote workers
+        # switch and the Workers tab and lets paired sidecars (the macOS menu-bar app) take
+        # video re-encodes; without it every worker route answers 403. Verification and
+        # replacement always stay on this server whatever a worker does.
+        OPTIMISARR_EXPERIMENTAL_REMOTE_WORKERS: ${OPTIMISARR_EXPERIMENTAL_REMOTE_WORKERS:-true}
         LIBVA_DRIVER_NAME: ${LIBVA_DRIVER_NAME:-iHD}
       volumes:
         - type: bind
