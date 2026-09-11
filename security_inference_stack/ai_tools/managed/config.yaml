@@ -90,7 +90,9 @@ web:
   # Replace the retained config's retired SearXNG selection; no API key needed.
   search_backend: ddgs
 platforms:
-  telegram: {enabled: false}
+  telegram:
+    enabled: true
+    gateway_restart_notification: false
   discord: {enabled: false}
   slack: {enabled: false}
   whatsapp: {enabled: false}

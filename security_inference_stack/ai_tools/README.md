@@ -17,8 +17,10 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
   HTTP/WebSockets to `hermes-dashboard:9119` on `npm_proxy_backends`. This alias
   ensures requests arrive from the dedicated proxy network trusted by Hermes.
 - Hermes enforces its own password login. NPM additionally restricts the route
-  to private LAN and Tailscale source ranges. API server and external messaging
-  adapters remain disabled. Existing dashboard credentials are stored in Dockhand.
+  to private LAN and Tailscale source ranges. The API server remains disabled.
+  Telegram uses outbound long polling with no webhook or published port and is
+  restricted to the operator's numeric user ID. Existing dashboard and Telegram
+  credentials are stored in Dockhand.
 - The pinned upstream image runs s6 bootstrap as root, then gateway/dashboard
   as UID/GID 1000. It is resource-limited, has no host ports or Docker socket,
   and keeps state at `/mnt/apps/docker/hermes`. Never share this directory
@@ -55,6 +57,11 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
   above 48,000 history tokens, preserves the last 20 messages and only commits
   when it saves at least 4,096 tokens. Model/reasoning, memory identity and
   existing CPU/RAM limits are unchanged.
+- Telegram is enabled through `TELEGRAM_BOT_TOKEN` and the required
+  `TELEGRAM_ALLOWED_USERS` allowlist. `TELEGRAM_ALLOW_ALL_USERS` is pinned false;
+  do not add group or chat-wide authorization without an explicit security review.
+  The token and user ID are encrypted Dockhand variables and must never be
+  committed or copied into the managed config.
 - Conversation titles alone use `gpt-5.6-luna` with low reasoning and at most
   two concurrent title calls, through the existing ChatGPT login. Main work
   stays on `gpt-5.6-sol` / high; summaries and vision continue inheriting Sol.
@@ -133,9 +140,10 @@ Create or migrate the Git stack with:
 - Force recreation: enabled for deliberate upgrades
 
 Copy the required values from the ignored `.env` into Dockhand's stack-variable
-panel. Mark `RUSTY_IMAP_MCP_IMAP_PASSWORD`,
-`OPENVIKING_ROOT_API_KEY`, `OPENROUTER_API_KEY`, both OpenViking key seeds, and
-both derived user keys as secrets. Never commit generated keys or `.env.dockhand`.
+panel. Mark `RUSTY_IMAP_MCP_IMAP_PASSWORD`, `TELEGRAM_BOT_TOKEN`,
+`TELEGRAM_ALLOWED_USERS`, `OPENVIKING_ROOT_API_KEY`, `OPENROUTER_API_KEY`, both
+OpenViking key seeds, and both derived user keys as secrets. Never commit
+generated keys or `.env.dockhand`.
 
 The OpenViking account and shared user still use the historical `hermes` names.
 This is a data-compatibility identifier independent of the running agent. Changing

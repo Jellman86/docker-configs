@@ -85,11 +85,13 @@ class AiToolsPolicyTests(unittest.TestCase):
         for key in ("HERMES_DASHBOARD_BASIC_AUTH_USERNAME",
                     "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD",
                     "HERMES_DASHBOARD_BASIC_AUTH_SECRET", "OPENVIKING_API_KEY",
-                    "HERMES_GITHUB_TOKEN"):
+                    "HERMES_GITHUB_TOKEN", "TELEGRAM_BOT_TOKEN",
+                    "TELEGRAM_ALLOWED_USERS"):
             self.assertIn(":?", env[key])
         for key in ("OPENVIKING_ROOT_API_KEY", "OPENVIKING_CODEX_API_KEY",
-                    "SUDO_PASSWORD", "TELEGRAM_BOT_TOKEN", "DISCORD_BOT_TOKEN"):
+                    "SUDO_PASSWORD", "DISCORD_BOT_TOKEN"):
             self.assertNotIn(key, env)
+        self.assertEqual(env["TELEGRAM_ALLOW_ALL_USERS"], "false")
         self.assertEqual(service["networks"]["npm_proxy_backends"]["aliases"],
                          ["hermes-dashboard"])
         self.assertIn("./managed:/etc/hermes:ro", service["volumes"])
@@ -113,8 +115,12 @@ class AiToolsPolicyTests(unittest.TestCase):
         mail = config["mcp_servers"]["rusty_imap"]["tools"]["include"]
         for tool in ("export_messages", "expunge", "delete_folder"):
             self.assertNotIn(tool, mail)
-        for channel in config["platforms"].values():
-            self.assertFalse(channel["enabled"])
+        telegram = config["platforms"]["telegram"]
+        self.assertTrue(telegram["enabled"])
+        self.assertFalse(telegram["gateway_restart_notification"])
+        for name, channel in config["platforms"].items():
+            if name != "telegram":
+                self.assertFalse(channel["enabled"])
 
     def test_shared_tool_endpoints_remain_available_to_trusted_consumers(self) -> None:
         self.assertIn("general_brg", self.services["playwright-mcp"]["networks"])

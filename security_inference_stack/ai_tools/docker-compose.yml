@@ -34,6 +34,9 @@ services:
       TERMINAL_SSH_PERSISTENT: "true"
       HERMES_HOST_WORKDIR: "${HERMES_HOST_WORKDIR:-/home/jellman86}"
       HERMES_GITHUB_TOKEN: "${HERMES_GITHUB_TOKEN:?GitHub MCP token required}"
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:?Telegram bot token required}"
+      TELEGRAM_ALLOWED_USERS: "${TELEGRAM_ALLOWED_USERS:?Telegram user allowlist required}"
+      TELEGRAM_ALLOW_ALL_USERS: "false"
       OPENVIKING_ENDPOINT: http://openviking:1933
       OPENVIKING_API_KEY: "${OPENVIKING_API_KEY:?shared OpenViking user key required}"
       OPENVIKING_AGENT: hermes
