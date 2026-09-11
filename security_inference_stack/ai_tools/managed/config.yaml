@@ -18,9 +18,10 @@ fallback_providers:
   - provider: openrouter
     model: qwen/qwen3.8-flash
 auxiliary:
-  # Prevent any unconfigured auxiliary auto-route from silently selecting a
-  # paid OpenRouter default. Explicit paid roles below are deliberate.
-  free_only: true
+  # Hermes applies this switch even to explicitly selected paid auxiliary
+  # roles, so leave it off. Every model-backed role is pinned below, and the
+  # generic auto fallback itself remains pinned to a free model.
+  free_only: false
   openrouter_model: inclusionai/ling-3.0-flash-vl:free
   background_review:
     # OpenViking already performs session extraction. A second post-turn agent

@@ -181,7 +181,10 @@ class AiToolsPolicyTests(unittest.TestCase):
         )
 
         auxiliary = config["auxiliary"]
-        self.assertTrue(auxiliary["free_only"])
+        # This global switch also blocks explicitly selected paid auxiliaries;
+        # cost control comes from pinning every role and using a free auto SKU.
+        self.assertFalse(auxiliary["free_only"])
+        self.assertTrue(auxiliary["openrouter_model"].endswith(":free"))
         self.assertFalse(auxiliary["background_review"]["enabled"])
         expected = {
             "compression": "deepseek/deepseek-v4.1-flash",
