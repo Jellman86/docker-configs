@@ -37,6 +37,7 @@ services:
       TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:?Telegram bot token required}"
       TELEGRAM_ALLOWED_USERS: "${TELEGRAM_ALLOWED_USERS:?Telegram user allowlist required}"
       TELEGRAM_ALLOW_ALL_USERS: "false"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:?OpenRouter API key required}"
       OPENVIKING_ENDPOINT: http://openviking:1933
       OPENVIKING_API_KEY: "${OPENVIKING_API_KEY:?shared OpenViking user key required}"
       OPENVIKING_AGENT: hermes
@@ -145,8 +146,10 @@ services:
       OPENVIKING_CLI_CONFIG_FILE: /app/.openviking/ovcli.conf
       OPENVIKING_CODEX_AUTH_PATH: /app/.openviking/codex_auth.json
       OPENVIKING_ROOT_API_KEY: "${OPENVIKING_ROOT_API_KEY:?OpenViking root API key is required}"
-      OPENVIKING_VLM_MODEL: "${OPENVIKING_VLM_MODEL:-gpt-5.6-sol}"
-      OPENVIKING_VLM_PROVIDER: "${OPENVIKING_VLM_PROVIDER:-openai-codex}"
+      OPENVIKING_VLM_MODEL: "${OPENVIKING_VLM_MODEL:-inclusionai/ling-3.0-flash-vl:free}"
+      OPENVIKING_VLM_PROVIDER: "${OPENVIKING_VLM_PROVIDER:-openrouter}"
+      OPENVIKING_VLM_API_BASE: "${OPENVIKING_VLM_API_BASE:-https://openrouter.ai/api/v1}"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:?OpenRouter API key required}"
       OPENVIKING_EMBED_MODEL: "${OPENVIKING_EMBED_MODEL:-qwen3-embedding:0.6b}"
       OPENVIKING_EMBED_DIMENSION: "${OPENVIKING_EMBED_DIMENSION:-1024}"
       OPENVIKING_WITH_BOT: "0"

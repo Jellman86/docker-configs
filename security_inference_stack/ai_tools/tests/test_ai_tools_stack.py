@@ -61,15 +61,22 @@ class AiToolsPolicyTests(unittest.TestCase):
             "playwright must restrict the Host headers it will serve",
         )
 
-    def test_openviking_embedding_stays_local(self) -> None:
-        # OpenRouter's free tier allows 50 requests a day; OpenViking issues
-        # roughly 2,900, so the embedder must not be pointed at a remote API.
+    def test_openviking_embedding_stays_local_and_extraction_is_free(self) -> None:
+        # Even funded OpenRouter accounts allow 1,000 free requests a day;
+        # OpenViking can issue roughly 2,900, so embeddings must stay local.
         env = self.services["openviking"]["environment"]
         self.assertIn("OPENVIKING_EMBED_MODEL", env)
         self.assertIn("OPENVIKING_EMBED_DIMENSION", env)
-        self.assertEqual(env["OPENVIKING_VLM_PROVIDER"], "${OPENVIKING_VLM_PROVIDER:-openai-codex}")
-        self.assertEqual(env["OPENVIKING_VLM_MODEL"], "${OPENVIKING_VLM_MODEL:-gpt-5.6-sol}")
-        self.assertNotIn("OPENROUTER_API_KEY", env)
+        self.assertEqual(env["OPENVIKING_VLM_PROVIDER"], "${OPENVIKING_VLM_PROVIDER:-openrouter}")
+        self.assertEqual(
+            env["OPENVIKING_VLM_MODEL"],
+            "${OPENVIKING_VLM_MODEL:-inclusionai/ling-3.0-flash-vl:free}",
+        )
+        self.assertEqual(
+            env["OPENVIKING_VLM_API_BASE"],
+            "${OPENVIKING_VLM_API_BASE:-https://openrouter.ai/api/v1}",
+        )
+        self.assertIn(":?", env["OPENROUTER_API_KEY"])
 
     def test_retired_runtimes_are_absent(self) -> None:
         for name in ("searxng", "spider-mcp", "spider-chromium",
@@ -86,7 +93,7 @@ class AiToolsPolicyTests(unittest.TestCase):
                     "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD",
                     "HERMES_DASHBOARD_BASIC_AUTH_SECRET", "OPENVIKING_API_KEY",
                     "HERMES_GITHUB_TOKEN", "TELEGRAM_BOT_TOKEN",
-                    "TELEGRAM_ALLOWED_USERS"):
+                    "TELEGRAM_ALLOWED_USERS", "OPENROUTER_API_KEY"):
             self.assertIn(":?", env[key])
         for key in ("OPENVIKING_ROOT_API_KEY", "OPENVIKING_CODEX_API_KEY",
                     "SUDO_PASSWORD", "DISCORD_BOT_TOKEN"):
@@ -159,14 +166,58 @@ class AiToolsPolicyTests(unittest.TestCase):
         self.assertGreaterEqual(compression["protect_last_n"], 20)
         self.assertEqual(config["memory"]["provider"], "openviking")
 
-    def test_only_lightweight_titles_use_luna(self) -> None:
+    def test_openrouter_models_are_split_by_role_without_codex(self) -> None:
         config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
-        self.assertEqual(config["model"], {"provider": "openai-codex", "default": "gpt-5.6-sol"})
+        self.assertEqual(
+            config["model"],
+            {"provider": "openrouter", "default": "deepseek/deepseek-v4.1-flash"},
+        )
         self.assertEqual(config["agent"]["reasoning_effort"], "high")
-        self.assertEqual(config["auxiliary"], {"title_generation": {
-            "provider": "openai-codex", "model": "gpt-5.6-luna",
-            "reasoning_effort": "low", "max_concurrency": 2,
-        }})
+        self.assertEqual(config["provider_routing"]["data_collection"], "deny")
+        self.assertTrue(config["provider_routing"]["require_parameters"])
+        self.assertEqual(
+            [entry["model"] for entry in config["fallback_providers"]],
+            ["z-ai/glm-5.3-flash", "qwen/qwen3.8-flash"],
+        )
+
+        auxiliary = config["auxiliary"]
+        self.assertTrue(auxiliary["free_only"])
+        self.assertFalse(auxiliary["background_review"]["enabled"])
+        expected = {
+            "compression": "deepseek/deepseek-v4.1-flash",
+            "vision": "qwen/qwen3.8-flash",
+            "title_generation": "qwen/qwen3.7-flash",
+            "approval": "qwen/qwen3.8-flash",
+            "mcp": "qwen/qwen3.8-flash",
+            "goal_judge": "qwen/qwen3.8-flash",
+            "triage_specifier": "qwen/qwen3.8-flash",
+            "kanban_decomposer": "qwen/qwen3.8-flash",
+            "review": "z-ai/glm-5.3-flash",
+        }
+        for role, model in expected.items():
+            self.assertEqual(auxiliary[role]["provider"], "openrouter", role)
+            self.assertEqual(auxiliary[role]["model"], model, role)
+        self.assertEqual(config["delegation"]["provider"], "openrouter")
+        self.assertEqual(config["delegation"]["model"], "z-ai/glm-5.3-flash")
+
+        serialized = (ROOT / "managed/config.yaml").read_text()
+        self.assertNotIn("openai-codex", serialized)
+        self.assertNotIn("gpt-5", serialized)
+        self.assertNotIn("anthropic/", serialized)
+
+    def test_moa_uses_only_inexpensive_chinese_models(self) -> None:
+        config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
+        preset = config["moa"]["presets"]["default"]
+        models = [entry["model"] for entry in preset["reference_models"]]
+        models.append(preset["aggregator"]["model"])
+        self.assertEqual(
+            models,
+            [
+                "z-ai/glm-5.3-flash",
+                "qwen/qwen3.8-flash",
+                "deepseek/deepseek-v4.1-flash",
+            ],
+        )
 
     def test_no_orphaned_or_undeclared_networks(self) -> None:
         declared = set(self.networks)

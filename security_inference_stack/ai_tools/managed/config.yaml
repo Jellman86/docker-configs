@@ -1,15 +1,134 @@
 # Credentials live only in Dockhand secrets and the retained Hermes auth store.
 timezone: Europe/London
 model:
-  provider: openai-codex
-  default: gpt-5.6-sol
+  # DeepSeek V4.1 Flash is the paid foreground model: it is multimodal,
+  # tool-capable and substantially cheaper than frontier subscription APIs.
+  provider: openrouter
+  default: deepseek/deepseek-v4.1-flash
+provider_routing:
+  # Do not route to endpoints that train on prompts, and require every
+  # parameter/tool feature Hermes sends. Leaving sort unset preserves
+  # OpenRouter's automatic quality-aware routing for tool calls.
+  require_parameters: true
+  data_collection: deny
+fallback_providers:
+  # Cross-vendor fallbacks only activate on provider/capacity failures.
+  - provider: openrouter
+    model: z-ai/glm-5.3-flash
+  - provider: openrouter
+    model: qwen/qwen3.8-flash
 auxiliary:
-  title_generation:
-    # Titles are lightweight; keep summaries, vision and agent work on Sol.
-    provider: openai-codex
-    model: gpt-5.6-luna
+  # Prevent any unconfigured auxiliary auto-route from silently selecting a
+  # paid OpenRouter default. Explicit paid roles below are deliberate.
+  free_only: true
+  openrouter_model: inclusionai/ling-3.0-flash-vl:free
+  background_review:
+    # OpenViking already performs session extraction. A second post-turn agent
+    # fork would duplicate work and can consume a large share of total tokens.
+    enabled: false
+    provider: openrouter
+    model: inclusionai/ling-3.0-flash-vl:free
+  compression:
+    # Compression must understand long agent transcripts; use the main model
+    # at low effort, with bounded concurrency, instead of a weaker cheap model.
+    provider: openrouter
+    model: deepseek/deepseek-v4.1-flash
     reasoning_effort: low
+    max_concurrency: 1
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny, zdr: true}
+  vision:
+    # Qwen is the dedicated paid perception model for images/screenshots.
+    provider: openrouter
+    model: qwen/qwen3.8-flash
+    reasoning_effort: none
     max_concurrency: 2
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny, zdr: true}
+  title_generation:
+    # Qwen 3.7 is sufficient for tiny text-only housekeeping calls.
+    provider: openrouter
+    model: qwen/qwen3.7-flash
+    reasoning_effort: none
+    max_concurrency: 2
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny}
+  memory_query_rewrite:
+    provider: openrouter
+    model: qwen/qwen3.7-flash
+    reasoning_effort: none
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny}
+  skills_hub:
+    provider: openrouter
+    model: qwen/qwen3.7-flash
+    reasoning_effort: none
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny}
+  profile_describer:
+    provider: openrouter
+    model: qwen/qwen3.7-flash
+    reasoning_effort: low
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny}
+  tts_audio_tags:
+    provider: openrouter
+    model: qwen/qwen3.7-flash
+    reasoning_effort: none
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny}
+  monitor:
+    provider: openrouter
+    model: qwen/qwen3.7-flash
+    reasoning_effort: low
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny}
+  curator:
+    provider: openrouter
+    model: qwen/qwen3.7-flash
+    reasoning_effort: low
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny}
+  approval:
+    # These roles require dependable structured output/tool selection, which
+    # Qwen 3.8 supports and Qwen 3.7 does not advertise consistently.
+    provider: openrouter
+    model: qwen/qwen3.8-flash
+    reasoning_effort: low
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny, zdr: true}
+  mcp:
+    provider: openrouter
+    model: qwen/qwen3.8-flash
+    reasoning_effort: low
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny, zdr: true}
+  goal_judge:
+    provider: openrouter
+    model: qwen/qwen3.8-flash
+    reasoning_effort: low
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny, zdr: true}
+  triage_specifier:
+    provider: openrouter
+    model: qwen/qwen3.8-flash
+    reasoning_effort: low
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny, zdr: true}
+  kanban_decomposer:
+    provider: openrouter
+    model: qwen/qwen3.8-flash
+    reasoning_effort: low
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny, zdr: true}
+  review:
+    # Manual/on-demand review uses a different model family to reduce
+    # correlated mistakes without paying for the now-obsolete V4 Pro route.
+    provider: openrouter
+    model: z-ai/glm-5.3-flash
+    reasoning_effort: high
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny, zdr: true}
 agent:
   reasoning_effort: high
   system_prompt: |
@@ -67,11 +186,38 @@ tool_loop_guardrails:
   hard_stop_enabled: true
   non_interactive_hard_stop_enabled: true
 delegation:
+  # A different vendor/model gives child agents useful error diversity. GLM's
+  # mandatory reasoning is reserved for real delegated execution work.
+  provider: openrouter
+  model: z-ai/glm-5.3-flash
+  reasoning_effort: high
+  request_overrides:
+    extra_body:
+      provider: {require_parameters: true, data_collection: deny, zdr: true}
   # Bound fan-out on the shared 2-CPU agent runtime; retain manual approvals.
   max_concurrent_children: 2
   max_iterations: 60
   max_spawn_depth: 1
   subagent_auto_approve: false
+moa:
+  # MoA is opt-in. Keep it entirely on inexpensive Chinese models and reserve
+  # the strongest of the three for aggregation.
+  default_preset: default
+  presets:
+    default:
+      reference_models:
+        - provider: openrouter
+          model: z-ai/glm-5.3-flash
+          reasoning_effort: high
+        - provider: openrouter
+          model: qwen/qwen3.8-flash
+          reasoning_effort: low
+      aggregator:
+        provider: openrouter
+        model: deepseek/deepseek-v4.1-flash
+        reasoning_effort: high
+      max_tokens: 4096
+      enabled: true
 compression:
   # Prune only old bulky results, without an extra model call. Preserve recent
   # context and require substantial savings before breaking the prompt cache.

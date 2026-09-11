@@ -55,26 +55,29 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
 - Shared-host tuning caps delegation at two children, 60 turns each, one level
   deep, without automatic approvals. Deterministic old-result pruning starts
   above 48,000 history tokens, preserves the last 20 messages and only commits
-  when it saves at least 4,096 tokens. Model/reasoning, memory identity and
-  existing CPU/RAM limits are unchanged.
+  when it saves at least 4,096 tokens. Memory identity and existing CPU/RAM
+  limits are unchanged.
 - Telegram is enabled through `TELEGRAM_BOT_TOKEN` and the required
   `TELEGRAM_ALLOWED_USERS` allowlist. `TELEGRAM_ALLOW_ALL_USERS` is pinned false;
   do not add group or chat-wide authorization without an explicit security review.
   The token and user ID are encrypted Dockhand variables and must never be
   committed or copied into the managed config.
-- Conversation titles alone use `gpt-5.6-luna` with low reasoning and at most
-  two concurrent title calls, through the existing ChatGPT login. Main work
-  stays on `gpt-5.6-sol` / high; summaries and vision continue inheriting Sol.
-  No prompt or Hermes API transport changes accompany this routing override.
-- OpenViking extraction uses `gpt-5.6-sol` through its own retained ChatGPT
-  login (`codex_auth.json`), not a shared live Hermes auth file. Its old
-  OpenRouter Nemotron Nano free endpoint returned 404 during a session-commit
-  test on 2026-09-07. Free hosted replacements are unsuitable for private
-  memories; the existing authenticated Codex backend replaces that route.
-  This consumes ChatGPT/Codex allowance. OpenRouter keys are not injected into
-  OpenViking or sent to Codex. Local Qwen embeddings and existing vectors stay
-  unchanged. Check a commit's background task result, not just HTTP 200 or
-  `/ready`: archival success does not prove memory extraction succeeded.
+- Foreground work uses OpenRouter's `deepseek/deepseek-v4.1-flash` at high
+  reasoning. Delegated execution and on-demand review use
+  `z-ai/glm-5.3-flash`; vision and structured helper work use
+  `qwen/qwen3.8-flash`; tiny text-only tasks use `qwen/qwen3.7-flash`.
+  Provider routes must support every requested parameter and may not train on
+  prompts. Auxiliary routes with an available zero-data-retention endpoint
+  require it. Automatic post-turn background review is disabled because
+  OpenViking already extracts sessions and the duplicate fork is token-heavy.
+- OpenViking extraction uses the zero-cost Chinese multimodal route
+  `inclusionai/ling-3.0-flash-vl:free` through OpenRouter, with reasoning
+  disabled, parameter compatibility required, training denied and ZDR
+  required. There is deliberately no paid extraction fallback. The account's
+  funded free-model allowance is sufficient for up to 1,000 free requests per
+  day, while local Qwen embeddings and existing vectors remain unchanged.
+  Check a commit's background task result, not just HTTP 200 or `/ready`:
+  archival success does not prove memory extraction succeeded.
 - A Git deploy does not restart a container just because a read-only bind-mounted
   config changed. After such a change, use Dockhand's discovered container
   `POST /api/containers/{id}/restart?env={environmentId}` endpoint, then verify
@@ -118,15 +121,10 @@ install -d -m 0700 /mnt/apps/docker/openviking
 install -d -m 0700 /mnt/apps/docker/openviking-ollama
 ```
 
-Both directories are owned by UID/GID 1000. OpenViking stores its configuration,
-encrypted context database, and dedicated `codex_auth.json` under the first
-path; Ollama stores the embedding model under the second.
-
-OpenViking uses a separate ChatGPT/Codex device login. Place its token store at:
-
-```text
-/mnt/apps/docker/openviking/codex_auth.json
-```
+Both directories are owned by UID/GID 1000. OpenViking stores its configuration
+and encrypted context database under the first path; Ollama stores the embedding
+model under the second. A historical `codex_auth.json` may remain on disk for
+rollback, but the OpenRouter VLM route does not read or use it.
 
 ## Dockhand stack
 

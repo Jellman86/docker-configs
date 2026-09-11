@@ -16,7 +16,7 @@ SCRIPT = Path(__file__).with_name("render_config.py")
 
 
 class RenderConfigTests(unittest.TestCase):
-    def render(self, model: Optional[str] = None, provider: str = "openai-codex") -> dict:
+    def render(self, model: Optional[str] = None, provider: str = "openrouter") -> dict:
         with tempfile.TemporaryDirectory() as temporary_directory:
             output = Path(temporary_directory) / "ov.conf"
             environment = {
@@ -40,16 +40,30 @@ class RenderConfigTests(unittest.TestCase):
 
     def test_supported_default_model(self) -> None:
         config = self.render()
-        self.assertEqual(config["vlm"]["model"], "gpt-5.6-sol")
-        self.assertEqual(config["vlm"]["provider"], "openai-codex")
-        self.assertEqual(config["vlm"]["api_key"], "")
-        self.assertEqual(config["vlm"]["extra_request_body"], {})
+        self.assertEqual(config["vlm"]["model"], "inclusionai/ling-3.0-flash-vl:free")
+        self.assertEqual(config["vlm"]["provider"], "openrouter")
+        self.assertEqual(config["vlm"]["api_key"], "test-only-placeholder")
+        self.assertEqual(config["vlm"]["extra_request_body"], {
+            "reasoning": {"enabled": False, "exclude": True},
+            "provider": {
+                "require_parameters": True,
+                "data_collection": "deny",
+                "zdr": True,
+            },
+        })
         self.assertNotIn("reasoning_effort", config["vlm"])
 
     def test_openrouter_override_keeps_its_own_key_and_parameters(self) -> None:
         config = self.render("example/model", provider="openrouter")
         self.assertEqual(config["vlm"]["api_key"], "test-only-placeholder")
-        self.assertEqual(config["vlm"]["extra_request_body"], {"reasoning": {"exclude": True}})
+        self.assertEqual(config["vlm"]["extra_request_body"], {
+            "reasoning": {"enabled": False, "exclude": True},
+            "provider": {
+                "require_parameters": True,
+                "data_collection": "deny",
+                "zdr": True,
+            },
+        })
 
     def test_model_can_be_overridden_without_editing_the_renderer(self) -> None:
         self.assertEqual(
