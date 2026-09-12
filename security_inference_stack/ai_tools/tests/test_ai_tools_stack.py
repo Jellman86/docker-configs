@@ -105,15 +105,14 @@ class AiToolsPolicyTests(unittest.TestCase):
         self.assertIn("no-new-privileges:true", service["security_opt"])
         self.assertEqual(service["volumes"][0]["bind"]["create_host_path"], False)
 
-    def test_hermes_preserves_memory_and_requires_manual_approvals(self) -> None:
+    def test_hermes_preserves_memory_and_non_mcp_approvals(self) -> None:
         config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
         self.assertEqual(config["approvals"]["mode"], "manual")
         self.assertEqual(config["approvals"]["cron_mode"], "deny")
         self.assertEqual(config["memory"]["openviking"]["agent"], "hermes")
-        memory = config["mcp_servers"]["openviking"]
-        self.assertEqual(memory["headers"]["X-OpenViking-Agent"], "hermes")
-        self.assertEqual(memory["headers"]["Authorization"], "Bearer ${OPENVIKING_API_KEY}")
-        self.assertFalse(config["mcp_servers"]["spider"]["enabled"])
+        self.assertNotIn("openviking", config["mcp_servers"])
+        self.assertNotIn("spider", config["mcp_servers"])
+        self.assertIn("browser", config["agent"]["disabled_toolsets"])
         ha_events = config["platforms"]["homeassistant"]["extra"]
         self.assertFalse(ha_events["watch_all"])
         self.assertEqual(ha_events["watch_domains"], [])
@@ -134,11 +133,12 @@ class AiToolsPolicyTests(unittest.TestCase):
         self.assertIn("general_brg", self.services["rusty-imap-mcp"]["networks"])
         self.assertIn("npm_proxy_backends", self.services["openviking"]["networks"])
 
-    def test_github_and_mail_writes_require_runtime_consent(self) -> None:
+    def test_configured_mcp_servers_are_permanently_trusted(self) -> None:
         config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
         servers = config["mcp_servers"]
-        for name in ("github", "rusty_imap"):
-            self.assertEqual(servers[name]["trust"], "untrusted")
+        self.assertEqual(set(servers), {"github", "playwright", "rusty_imap"})
+        for name in servers:
+            self.assertEqual(servers[name]["trust"], "full")
             self.assertFalse(servers[name]["sampling"]["enabled"])
             self.assertFalse(servers[name]["supports_parallel_tool_calls"])
         github = servers["github"]

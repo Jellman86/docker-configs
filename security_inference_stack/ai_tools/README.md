@@ -26,7 +26,7 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
   and keeps state at `/mnt/apps/docker/hermes`. Never share this directory
   with a second gateway. Back it up before upgrades.
 - Read-only managed config in `managed/config.yaml` supplies operational rules,
-  manual approvals, the existing SSH terminal backend, GitHub/browser/mail/memory MCP,
+  manual non-MCP approvals, the existing SSH terminal backend, GitHub/browser/mail MCP,
   native OpenViking memory and optional native Home Assistant tools. SSH uses
   the existing dedicated key; its account permissions remain a trust boundary,
   not a read-only sandbox. No sudo password is injected.
@@ -39,8 +39,9 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
 - The historical `hermes/hermes` identity and `hermes` agent scope remain fixed.
   MCP additionally sends `X-OpenViking-Agent: hermes`. Never pass root/recovery
   keys or seeds to Hermes. SearXNG and Spider remain retired.
-- Dashboard **MCP** (`/mcp`) lists `github`, `openviking`, `rusty_imap` (email)
-  and `playwright`. Native OpenViking memory is separately selected under
+- Dashboard **MCP** (`/mcp`) lists `github`, `rusty_imap` (email) and
+  `playwright`. These explicitly allowlisted servers use `trust: full`, so
+  their calls do not pause for per-call approval. Native OpenViking memory is selected under
   **Plugins** (`/plugins`), in the memory-provider section. Endpoint and API-key
   configuration come from the container environment; a blank secret input does
   not mean the key is missing. Account/user overrides are unnecessary with the
@@ -49,9 +50,9 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
   GitHub account, passed only to Hermes as encrypted `HERMES_GITHUB_TOKEN`.
   Its 23-tool allowlist covers repository reads, issues, pull requests and CI;
   repository creation/deletion and account administration are not exposed.
-  GitHub and email use `trust: untrusted`: write-capable MCP calls require
-  runtime consent, and missing read-only annotations also require consent.
-  This is an MCP approval gate, not a sandbox for the existing SSH account.
+  The operator permanently authorized the configured GitHub, Playwright and
+  email allowlists, so they use `trust: full`. Global manual approvals still
+  cover terminal/file operations, and the hard Docker mutation denylist is unchanged.
 - Shared-host tuning caps delegation at two children, 60 turns each, one level
   deep, without automatic approvals. Deterministic old-result pruning starts
   above 48,000 history tokens, preserves the last 20 messages and only commits
@@ -83,6 +84,9 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
   off) because they duplicate indexed recall, add every stored character to
   every prompt, and otherwise force consolidation at 2,200/1,375 characters.
   The existing files remain on persistent storage as a rollback copy.
+- Native `viking_*` tools are the sole Hermes-facing OpenViking interface; the
+  duplicate OpenViking MCP entry and retired Spider entry were removed. The
+  overlapping built-in browser toolset is disabled in favor of Playwright MCP.
 - A Git deploy does not restart a container just because a read-only bind-mounted
   config changed. After such a change, use Dockhand's discovered container
   `POST /api/containers/{id}/restart?env={environmentId}` endpoint, then verify
