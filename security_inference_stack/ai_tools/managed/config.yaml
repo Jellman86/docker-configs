@@ -345,3 +345,7 @@ mcp_servers:
         - rename_folder
       resources: false
       prompts: false
+  # Managed config is deep-merged with retained user config. Keep explicit
+  # tombstones so deleting these blocks cannot resurrect the old servers.
+  openviking: {enabled: false}
+  spider: {enabled: false}

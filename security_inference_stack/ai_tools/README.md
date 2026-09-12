@@ -85,7 +85,8 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
   every prompt, and otherwise force consolidation at 2,200/1,375 characters.
   The existing files remain on persistent storage as a rollback copy.
 - Native `viking_*` tools are the sole Hermes-facing OpenViking interface; the
-  duplicate OpenViking MCP entry and retired Spider entry were removed. The
+  duplicate OpenViking MCP entry and retired Spider entry are explicitly
+  disabled so retained user config cannot resurrect them. The
   overlapping built-in browser toolset is disabled in favor of Playwright MCP.
 - A Git deploy does not restart a container just because a read-only bind-mounted
   config changed. After such a change, use Dockhand's discovered container

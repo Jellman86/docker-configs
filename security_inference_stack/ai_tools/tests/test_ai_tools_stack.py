@@ -110,8 +110,8 @@ class AiToolsPolicyTests(unittest.TestCase):
         self.assertEqual(config["approvals"]["mode"], "manual")
         self.assertEqual(config["approvals"]["cron_mode"], "deny")
         self.assertEqual(config["memory"]["openviking"]["agent"], "hermes")
-        self.assertNotIn("openviking", config["mcp_servers"])
-        self.assertNotIn("spider", config["mcp_servers"])
+        self.assertFalse(config["mcp_servers"]["openviking"]["enabled"])
+        self.assertFalse(config["mcp_servers"]["spider"]["enabled"])
         self.assertIn("browser", config["agent"]["disabled_toolsets"])
         ha_events = config["platforms"]["homeassistant"]["extra"]
         self.assertFalse(ha_events["watch_all"])
@@ -136,8 +136,7 @@ class AiToolsPolicyTests(unittest.TestCase):
     def test_configured_mcp_servers_are_permanently_trusted(self) -> None:
         config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
         servers = config["mcp_servers"]
-        self.assertEqual(set(servers), {"github", "playwright", "rusty_imap"})
-        for name in servers:
+        for name in ("github", "playwright", "rusty_imap"):
             self.assertEqual(servers[name]["trust"], "full")
             self.assertFalse(servers[name]["sampling"]["enabled"])
             self.assertFalse(servers[name]["supports_parallel_tool_calls"])
