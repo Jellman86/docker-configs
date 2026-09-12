@@ -78,6 +78,11 @@ OpenViking's existing data directories and least-privilege tenant keys are uncha
   day, while local Qwen embeddings and existing vectors remain unchanged.
   Check a commit's background task result, not just HTTP 200 or `/ready`:
   archival success does not prove memory extraction succeeded.
+- OpenViking is the sole writable long-term memory provider. Hermes' bounded
+  `MEMORY.md` and `USER.md` stores are disabled (and their periodic nudge is
+  off) because they duplicate indexed recall, add every stored character to
+  every prompt, and otherwise force consolidation at 2,200/1,375 characters.
+  The existing files remain on persistent storage as a rollback copy.
 - A Git deploy does not restart a container just because a read-only bind-mounted
   config changed. After such a change, use Dockhand's discovered container
   `POST /api/containers/{id}/restart?env={environmentId}` endpoint, then verify

@@ -228,6 +228,13 @@ compression:
   protect_last_n: 20
 memory:
   provider: openviking
+  # OpenViking is the durable store. The legacy Markdown stores are tiny
+  # (2,200/1,375 chars), duplicate every prompt and can force destructive
+  # consolidation. Leave their files on disk as a rollback copy, but stop
+  # exposing them as writable memory and stop periodic local-memory nudges.
+  memory_enabled: false
+  user_profile_enabled: false
+  nudge_interval: 0
   openviking:
     agent: hermes
 dashboard:

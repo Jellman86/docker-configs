@@ -164,7 +164,11 @@ class AiToolsPolicyTests(unittest.TestCase):
         self.assertEqual(compression["proactive_prune_tokens"], 48000)
         self.assertGreaterEqual(compression["proactive_prune_min_reclaim_tokens"], 4096)
         self.assertGreaterEqual(compression["protect_last_n"], 20)
-        self.assertEqual(config["memory"]["provider"], "openviking")
+        memory = config["memory"]
+        self.assertEqual(memory["provider"], "openviking")
+        self.assertFalse(memory["memory_enabled"])
+        self.assertFalse(memory["user_profile_enabled"])
+        self.assertEqual(memory["nudge_interval"], 0)
 
     def test_openrouter_models_are_split_by_role_without_codex(self) -> None:
         config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
