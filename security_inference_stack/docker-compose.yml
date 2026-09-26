@@ -177,7 +177,7 @@ services:
       start_period: 10s
 #-----------------------------------------------
   yawamf:
-    image: ghcr.io/jellman86/yawamf-monalithic:323bfc077945a2ed6f25116c3a06bd4c6b768a72-dev-intel@sha256:5a9c43542c90e7d14424e572a3e053be065c3684ea58a0c22220223f234f9144
+    image: ghcr.io/jellman86/yawamf-monalithic:660a8430c9b0e880c3302c7003af27edfa21a1bd-dev-intel@sha256:986377600718054bbe9caaa49bcab6104fc812bc9a1a37ce2e50e4b8b8aa13b8
     container_name: yawamf-monalithic
     restart: unless-stopped
     logging:
