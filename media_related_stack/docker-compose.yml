@@ -136,8 +136,12 @@ services:
         # Remote transcoding workers are a preview. This flag reveals the Remote workers
         # switch and the Workers tab and lets paired sidecars (the macOS menu-bar app) take
         # video re-encodes; without it every worker route answers 403. Verification and
-        # replacement always stay on this server whatever a worker does.
+        # replacement stays on this server; strict verification runs on the sidecar.
         OPTIMISARR_EXPERIMENTAL_REMOTE_WORKERS: ${OPTIMISARR_EXPERIMENTAL_REMOTE_WORKERS:-true}
+        # Development study: bounded server CPU scoring of v0/v1 samples, including
+        # worker outputs. Existing v0 replacement gates remain authoritative.
+        # Set 0 to disable collection; no sidecar protocol change is required.
+        OPTIMISARR_VMAF_SHADOW_SERVER: ${OPTIMISARR_VMAF_SHADOW_SERVER:-1}
         LIBVA_DRIVER_NAME: ${LIBVA_DRIVER_NAME:-iHD}
       volumes:
         - type: bind
