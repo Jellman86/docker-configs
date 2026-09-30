@@ -1,0 +1,27 @@
+# Isolated NVIDIA acceptance worker. Deploy only through a Git-backed Dockhand stack.
+# The default server cannot accept jobs. Supply an isolated test URL and one-use
+# pairing code in Dockhand; never pair this stack with the production queue.
+services:
+  optimisarr-sidecar-acceptance:
+    image: ${OPTIMISARR_IMAGE:-ghcr.io/jellman86/optimisarr-sidecar:dev}
+    container_name: optimisarr-sidecar-acceptance
+    restart: "no"
+    stop_grace_period: 45s
+    gpus: all
+    mem_limit: 6g
+    memswap_limit: 6g
+    environment:
+      OPTIMISARR_SERVER: ${OPTIMISARR_SERVER:-http://127.0.0.1:1}
+      OPTIMISARR_PAIRING_CODE: ${OPTIMISARR_PAIRING_CODE:-}
+      OPTIMISARR_WORKER_NAME: acceptance-linux-hevc_nvenc
+      OPTIMISARR_ENCODER: hevc_nvenc
+      OPTIMISARR_CONCURRENCY: "1"
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Europe/London
+    ports:
+      - "${OPTIMISARR_ACCEPTANCE_BIND:-127.0.0.1}:18788:8788"
+    tmpfs:
+      - /config:size=16m,mode=0700,uid=1000,gid=1000
+      - /work:size=4g,mode=0700,uid=1000,gid=1000
+      - /tmp:size=256m,mode=1777
