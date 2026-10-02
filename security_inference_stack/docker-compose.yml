@@ -76,6 +76,8 @@ services:
     image: ghcr.io/tphakala/birdnet-go:nightly
     container_name: birdnet-go
     restart: unless-stopped
+    devices:
+      - /dev/dri:/dev/dri            # Intel iGPU (OpenVINO inference; the entrypoint joins the render group)
     ports:
       - "${BN_WEBPORT:-8080}:8080"
     networks:
