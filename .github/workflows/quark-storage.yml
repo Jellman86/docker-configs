@@ -6,6 +6,7 @@ on:
       - arr_vpn_stack/**
       - media_related_stack/**
       - immich/**
+      - stirling_pdf/**
       - .github/workflows/quark-storage.yml
   pull_request:
     paths: *paths
@@ -31,4 +32,5 @@ jobs:
           docker compose -f media_related_stack/docker-compose.quark.yml config --format json > /tmp/quark-media.json
           docker compose -f arr_vpn_stack/docker-compose.quark.yml config --format json > /tmp/quark-arr.json
           docker compose -f immich/docker-compose.quark-server.yml config --format json > /tmp/quark-immich.json
-          python host/quark/tests/check_compose.py /tmp/quark-media.json /tmp/quark-arr.json /tmp/quark-immich.json
+          docker compose -f stirling_pdf/docker-compose.quark.yml config --format json > /tmp/quark-stirling.json
+          python host/quark/tests/check_compose.py /tmp/quark-media.json /tmp/quark-arr.json /tmp/quark-immich.json /tmp/quark-stirling.json
