@@ -19,6 +19,9 @@ for source in sys.argv[1:]:
         assert qbit['depends_on']['gluetun']['condition'] == 'service_healthy'
         assert not model['networks']['vpn_stack_brg'].get('external', False)
         assert 'gluetun-guard' not in model['services'], 'Ungated repair watchdog must be excluded from normal deployment'
+        for name in ['gluetun', 'radarr', 'sonarr', 'prowlarr', 'cleanuparr', 'seerr']:
+            assert 'npm_proxy_backends' in model['services'][name]['networks'], (name, 'unreachable from Quark NPM')
+            assert model['services'][name]['networks']['vpn_stack_brg']['gw_priority'] == 1
     if 'immich-server' in model['services']:
         assert 'immich-machine-learning' not in model['services']
         assert model['services']['immich-database']['volumes'][0]['source'] == '/mnt/services/docker/immich/postgres'

@@ -3,33 +3,54 @@ services:
   gluetun:
     extends: {file: docker-compose.yml, service: gluetun}
     restart: "no"
+    networks:
+      vpn_stack_brg: {gw_priority: 1}
+      npm_proxy_backends: {}
   qbittorrent:
     extends: {file: docker-compose.yml, service: qbittorrent}
     restart: "no"
   radarr:
     extends: {file: docker-compose.yml, service: radarr}
     restart: "no"
+    networks:
+      vpn_stack_brg: {gw_priority: 1}
+      npm_proxy_backends: {}
   sonarr:
     extends: {file: docker-compose.yml, service: sonarr}
     restart: "no"
+    networks:
+      vpn_stack_brg: {gw_priority: 1}
+      npm_proxy_backends: {}
   prowlarr:
     extends: {file: docker-compose.yml, service: prowlarr}
     restart: "no"
+    networks:
+      vpn_stack_brg: {gw_priority: 1}
+      npm_proxy_backends: {}
   byparr:
     extends: {file: docker-compose.yml, service: byparr}
     restart: "no"
   cleanuparr:
     extends: {file: docker-compose.yml, service: cleanuparr}
     restart: "no"
+    networks:
+      vpn_stack_brg: {gw_priority: 1}
+      npm_proxy_backends: {}
   seerr:
     extends: {file: docker-compose.yml, service: seerr}
     restart: "no"
+    networks:
+      vpn_stack_brg: {gw_priority: 1}
+      npm_proxy_backends: {}
   gluetun-guard:
     extends: {file: docker-compose.yml, service: gluetun-guard}
     restart: "no"
     profiles: [manual-network-repair]
 
 networks:
+  npm_proxy_backends:
+    name: npm_proxy_backends
+    external: true
   vpn_stack_brg:
     name: ${NETWORK:-arr_stack_brg}
     driver: bridge
