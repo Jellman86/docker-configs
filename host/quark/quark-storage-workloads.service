@@ -1,0 +1,19 @@
+[Unit]
+Description=Start migrated media workloads through Dockhand after storage verification
+Wants=network-online.target mnt-tank.mount mnt-services.mount
+After=network-online.target docker.service mnt-tank.mount mnt-services.mount
+Requires=docker.service
+ConditionPathExists=/etc/quark-storage-workloads.json
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/quark-storage-workloads
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=2h15m
+User=root
+UMask=0077
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

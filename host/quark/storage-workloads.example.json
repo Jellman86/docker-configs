@@ -1,0 +1,30 @@
+{
+  "dockhand": "http://127.0.0.1:3000",
+  "environment": 1,
+  "enabled_file": "/etc/quark-storage-workloads.enabled",
+  "storage": [
+    {"mount": "/mnt/tank", "fstype": "btrfs", "uuid": "REPLACE_WITH_MEDIA_UUID", "serials": ["ZCT13WZ3", "WCT3GZLF"]},
+    {"mount": "/mnt/services", "fstype": "xfs", "uuid": "REPLACE_WITH_APPS_UUID", "serials": ["QGS084B002570P1129"]}
+  ],
+  "start_order": [
+    {"name": "immich-database"},
+    {"name": "immich-redis"},
+    {"name": "gluetun", "stop_before_start": ["qbittorrent", "prowlarr"]},
+    {"name": "plex"},
+    {"name": "jellyfin"},
+    {"name": "radarr"},
+    {"name": "sonarr"},
+    {"name": "cleanuparr"},
+    {"name": "seerr"},
+    {"name": "qbittorrent", "healthy_dependencies": ["gluetun"]},
+    {"name": "prowlarr", "healthy_dependencies": ["gluetun"]},
+    {"name": "byparr", "healthy_dependencies": ["gluetun"]},
+    {"name": "immich-server", "healthy_dependencies": ["immich-database", "immich-redis"]},
+    {"name": "optimisarr", "healthy_dependencies": ["plex", "jellyfin", "radarr", "sonarr"]}
+  ],
+  "stop_order": [
+    "gluetun-guard", "cleanuparr", "seerr", "radarr", "sonarr", "prowlarr",
+    "byparr", "qbittorrent", "gluetun", "plex", "jellyfin", "immich-server",
+    "immich-database", "immich-redis", "optimisarr"
+  ]
+}

@@ -1,0 +1,35 @@
+name: arr_stack
+services:
+  gluetun:
+    extends: {file: docker-compose.yml, service: gluetun}
+    restart: "no"
+  qbittorrent:
+    extends: {file: docker-compose.yml, service: qbittorrent}
+    restart: "no"
+  radarr:
+    extends: {file: docker-compose.yml, service: radarr}
+    restart: "no"
+  sonarr:
+    extends: {file: docker-compose.yml, service: sonarr}
+    restart: "no"
+  prowlarr:
+    extends: {file: docker-compose.yml, service: prowlarr}
+    restart: "no"
+  byparr:
+    extends: {file: docker-compose.yml, service: byparr}
+    restart: "no"
+  cleanuparr:
+    extends: {file: docker-compose.yml, service: cleanuparr}
+    restart: "no"
+  seerr:
+    extends: {file: docker-compose.yml, service: seerr}
+    restart: "no"
+  gluetun-guard:
+    extends: {file: docker-compose.yml, service: gluetun-guard}
+    restart: "no"
+    profiles: [manual-network-repair]
+
+networks:
+  vpn_stack_brg:
+    name: ${NETWORK:-arr_stack_brg}
+    driver: bridge
