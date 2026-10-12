@@ -1,0 +1,34 @@
+name: Quark storage migration checks
+on:
+  push:
+    paths: &paths
+      - host/quark/**
+      - arr_vpn_stack/**
+      - media_related_stack/**
+      - immich/**
+      - .github/workflows/quark-storage.yml
+  pull_request:
+    paths: *paths
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest discover -s host/quark/tests -v
+      - name: Validate merged deployment variants
+        env:
+          DOCKERCONFIGPATH: /mnt/services/docker
+          CONFIG_PATH: /mnt/services/docker/pms
+          IMMICH_DB_PATH: /mnt/services/docker/immich/postgres
+          IMMICH_DB_PASSWORD: ci-placeholder-only
+          TZ: Europe/London
+        run: |
+          docker compose -f media_related_stack/docker-compose.quark.yml config --format json > /tmp/quark-media.json
+          docker compose -f arr_vpn_stack/docker-compose.quark.yml config --format json > /tmp/quark-arr.json
+          docker compose -f immich/docker-compose.quark-server.yml config --format json > /tmp/quark-immich.json
+          python host/quark/tests/check_compose.py /tmp/quark-media.json /tmp/quark-arr.json /tmp/quark-immich.json
