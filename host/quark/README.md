@@ -8,7 +8,9 @@ use filesystem UUIDs and the guard also verifies the actual ATA member serials.
 
 The Quark variants extend the existing service definitions:
 
-- `arr_vpn_stack/docker-compose.quark.yml` owns `arr_stack_brg`.
+- `arr_vpn_stack/docker-compose.quark.yml` owns `arr_stack_brg` and joins the
+  proxied services to Quark's existing `npm_proxy_backends`. The arr network
+  retains default-gateway priority, including for Gluetun.
 - `media_related_stack/docker-compose.quark.yml` joins that network and Quark's
   existing NPM `general_brg`. Plex transcode temporary files use the SSD.
 - `immich/docker-compose.quark-server.yml` reuses the existing Quark ML worker.
