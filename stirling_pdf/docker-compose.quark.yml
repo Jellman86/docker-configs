@@ -1,0 +1,10 @@
+# Use the restored apps SSD and the same native storage guard as media services.
+services:
+  stirling-pdf:
+    extends: {file: docker-compose.yml, service: stirling-pdf}
+    restart: "no"
+
+networks:
+  general_brg:
+    name: general_brg
+    external: true

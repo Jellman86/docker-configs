@@ -12,6 +12,8 @@ The Quark variants extend the existing service definitions:
 - `media_related_stack/docker-compose.quark.yml` joins that network and Quark's
   existing NPM `general_brg`. Plex transcode temporary files use the SSD.
 - `immich/docker-compose.quark-server.yml` reuses the existing Quark ML worker.
+- `stirling_pdf/docker-compose.quark.yml` preserves the document toolkit's
+  configs, custom files and OCR data on the incoming apps SSD.
 
 Set all application config paths to `/mnt/services/docker`, including Plex's
 `CONFIG_PATH` and Immich's `IMMICH_DB_PATH`. Set `RENDER_GID` from the actual host

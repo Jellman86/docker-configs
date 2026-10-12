@@ -10,6 +10,7 @@
     {"name": "immich-database"},
     {"name": "immich-redis"},
     {"name": "gluetun", "stop_before_start": ["qbittorrent", "prowlarr"]},
+    {"name": "stirling-pdf"},
     {"name": "plex"},
     {"name": "jellyfin"},
     {"name": "radarr"},
@@ -23,7 +24,7 @@
     {"name": "optimisarr", "healthy_dependencies": ["plex", "jellyfin", "radarr", "sonarr"]}
   ],
   "stop_order": [
-    "gluetun-guard", "cleanuparr", "seerr", "radarr", "sonarr", "prowlarr",
+    "gluetun-guard", "stirling-pdf", "cleanuparr", "seerr", "radarr", "sonarr", "prowlarr",
     "byparr", "qbittorrent", "gluetun", "plex", "jellyfin", "immich-server",
     "immich-database", "immich-redis", "optimisarr"
   ]
