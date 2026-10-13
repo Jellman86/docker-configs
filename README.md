@@ -13,7 +13,7 @@ in its encrypted stack variables; never edit generated environment files.
 - [`stirling_pdf/`](stirling_pdf/README.md) - self-hosted PDF toolkit on Quark.
 - [`security_inference_stack/`](security_inference_stack/README.md) - Frigate, BirdNET-Go, Mosquitto, YA-WAMF, and Home Assistant.
 - [`security_inference_stack/ai_tools/`](security_inference_stack/ai_tools/README.md) - independently deployed OpenViking, mail, browser, and web-research services.
-- [`web_services/`](web_services/README.md) - host-specific Nginx Proxy Manager, Cloudflare Tunnel, and Tailscale stacks.
+- [`web_services/`](web_services/README.md) - Nginx Proxy Manager and Cloudflare Tunnel; Tailscale is native on Quark.
 
 Each stack README documents its services, Compose path, host placement, ports,
 networks, storage, variables, security assumptions, deployment checks, and
@@ -126,42 +126,18 @@ Docker's environment file handling is documented here:
 
 ## Networking assumptions
 
-The default cross-host network is:
+The common external bridge is `general_brg`. Quark's web stack also joins
+`npm_proxy_backends` so NPM can reach the migrated application containers.
+Tailscale runs on the host with its own interface and approved subnet/exit
+routes; it has no Docker bridge or Compose service.
 
-- `general_brg`
-
-Stacks should only require host-specific networks when the host actually runs
-the related services. The security inference stack and the Quark web services
-file run on `general_brg` only, which keeps Quark independent from the NAS
-media/ARR networks.
-
-Dockhand deploys one compose file per Git stack. Use the host-specific complete
-compose file, not a multi-file override chain.
-
-On Quark, set the web services Git stack compose path to:
-
-```text
-web_services/docker-compose.quark.yml
-```
-
-On Riker, where Nginx Proxy Manager and Tailscale need to reach ARR/media
-containers directly, use the base web services Compose file (the explicit
-`docker-compose.riker.yml` file is currently equivalent):
-
-```text
-web_services/docker-compose.yml
-```
-
-The Riker file attaches services to:
-
-- `arr_stack_brg` through the internal compose key `vpn_stack_brg`
-- `media_stack_default`
-
-Override `NETWORK` only if the host uses a different ARR external network name.
+Dockhand deploys one complete Compose file per Git stack. For Quark ingress use
+`web_services/docker-compose.quark.yml`. The base and explicit Riker manifests
+retain legacy network defaults for reference; Riker is retired.
 
 ## Configuration Notes
 
 ### Web Services
 When chaining Cloudflare Tunnel (`cloudflared`) with Nginx Proxy Manager (`nginx-pm`), avoid redirect loops:
-- If Nginx Proxy Manager has Force SSL enabled, point Cloudflare Tunnel at `https://nginx-rp:443` and disable TLS verification in Cloudflare.
-- If Cloudflare Tunnel targets `http://nginx-rp:80`, disable Force SSL in Nginx Proxy Manager for that host and let Cloudflare handle edge redirects.
+- When NPM forces HTTPS, use `https://quark.pownet.uk:443` as the tunnel origin, with the public hostname as HTTP Host and TLS server name. Keep TLS verification enabled.
+- If using an HTTP origin instead, avoid an origin redirect back to the same public URL.
