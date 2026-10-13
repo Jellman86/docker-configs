@@ -199,3 +199,19 @@ mounted UUID, RAID1 profiles, both members and device error counters. The monthl
 scrub sets the configured rate on each member explicitly before starting, so the
 limit survives a reboot and does not depend on the observed `scrub limit --all`
 behavior. Enable the monthly timer after the initial resumed scrub has finished.
+
+## Host remote access and log retention
+
+Tailscale runs as the native `tailscaled.service`, with private state on the OS
+filesystem at `/var/lib/tailscale`, so Docker or apps-SSD maintenance does not
+remove remote access. Preserve the existing node identity and route approvals
+during the one-time stopped-container handover. The app backup includes its
+native state and forwarding settings.
+
+Container stdout/stderr logs use bounded Docker rotation. The newly covered
+services retain three 10 MB files each. This does not bound application-specific
+files such as camera recordings or logs an app writes inside its config folder.
+For the manager itself, `management/maintenance-compose.yml` provides a temporary
+loopback-only second Dockhand process. Seed it with a private online database
+backup and encryption key, sync/deploy the manager's Git stack through that
+process, then remove the temporary stack/state through the original manager.

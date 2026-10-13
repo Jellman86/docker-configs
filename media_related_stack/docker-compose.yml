@@ -5,6 +5,11 @@ services:
       image: lscr.io/linuxserver/plex:latest
       container_name: plex
       restart: always
+      logging:
+        driver: json-file
+        options:
+          max-size: "10m"
+          max-file: "3"
       environment:
         - PUID=${PUID:-568}
         - PGID=${PGID:-568}

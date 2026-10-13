@@ -26,8 +26,7 @@
     "/mnt/services/quark/docker/mosquitto/config",
     "/mnt/services/quark/docker/mosquitto/data",
     "/mnt/services/quark/docker/hermes",
-    "/mnt/services/quark/docker/openviking",
-    "/mnt/services/quark/docker/tailscale"
+    "/mnt/services/quark/docker/openviking"
   ],
   "files": [
     "/etc/fstab",
@@ -49,6 +48,9 @@
     "/etc/group",
     "/etc/selinux/targeted/contexts/files/file_contexts.local",
     "/mnt/services/docker/pms/Library/Application Support/Plex Media Server/Preferences.xml",
-    "/mnt/services/docker/pms/Library/Application Support/Plex Media Server/Plug-in Support/Databases/com.plexapp.plugins.library*.db"
+    "/mnt/services/docker/pms/Library/Application Support/Plex Media Server/Plug-in Support/Databases/com.plexapp.plugins.library*.db",
+    "/var/lib/tailscale/tailscaled.state",
+    "/etc/sysctl.d/99-quark-tailscale.conf",
+    "/etc/systemd/system/tailscaled.service.d/10-quark-gro.conf"
   ]
 }

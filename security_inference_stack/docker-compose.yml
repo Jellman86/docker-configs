@@ -3,6 +3,11 @@ services:
   frigate:
     container_name: frigate
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     stop_grace_period: 30s # allow enough time to shut down the various services
     image: ghcr.io/blakeblackshear/frigate:stable
     shm_size: "1024mb" # update for your cameras based on calculation above
@@ -76,6 +81,11 @@ services:
     image: ghcr.io/tphakala/birdnet-go:nightly
     container_name: birdnet-go
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     devices:
       - /dev/dri:/dev/dri            # Intel iGPU (OpenVINO inference; the entrypoint joins the render group)
     ports:
@@ -126,6 +136,11 @@ services:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}
     command:
       - sh
@@ -245,6 +260,11 @@ services:
     image: ghcr.io/home-assistant/home-assistant:stable
     container_name: homeassistant
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     privileged: true
     network_mode: host
     environment:

@@ -7,12 +7,43 @@ on:
       - media_related_stack/**
       - immich/**
       - stirling_pdf/**
+      - management/**
+      - web_services/**
+      - security_inference_stack/docker-compose.yml
+      - optimisarr_sidecar/**
       - .github/workflows/quark-storage.yml
   pull_request:
     paths: *paths
 permissions:
   contents: read
 jobs:
+  container-logging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate resolved log retention for deployed stacks
+        env:
+          MQTT_USERNAME: ci-placeholder
+          MQTT_PASSWORD: ci-placeholder
+          FRIGATE_CAMERA_PASSWORD: ci-placeholder
+          FRIGATE_RTSP_PASSWORD: ci-placeholder
+          BN_LAT: "0"
+          BN_LONG: "0"
+        run: |
+          for source in management/docker-compose.yml management/maintenance-compose.yml web_services/docker-compose.yml web_services/docker-compose.quark.yml security_inference_stack/docker-compose.yml optimisarr_sidecar/docker-compose.yml media_related_stack/docker-compose.quark.yml; do
+            docker compose -f "$source" config --format json > /tmp/logging-model.json
+            python - "$source" <<'PY'
+          import json, re, sys
+          model = json.load(open('/tmp/logging-model.json'))
+          for name, service in model['services'].items():
+              log = service.get('logging', {})
+              options = log.get('options', {})
+              assert log.get('driver') == 'json-file', (sys.argv[1], name, 'missing bounded logging')
+              assert re.fullmatch(r'[1-9][0-9]*[kKmM]', str(options.get('max-size', ''))), (sys.argv[1], name, 'missing file-size limit')
+              assert 1 <= int(options.get('max-file', '0')) <= 5, (sys.argv[1], name, 'unbounded file count')
+          print(sys.argv[1], 'resolved logging policy passed')
+          PY
+          done
   validate:
     runs-on: ubuntu-latest
     steps:
