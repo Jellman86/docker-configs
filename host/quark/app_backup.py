@@ -160,11 +160,16 @@ class Backup:
         for entry in self.config['sources'] + self.config['online_management']:
             args = ['rsync', '-aHAXSx', '--numeric-ids', '--dry-run', '--stats', '--delete']
             args += ['--exclude=' + x for x in entry.get('excludes', [])]
-            p = subprocess.run(args + [entry['path'] + '/', str(self.current / 'files' / entry['name']) + '/'], capture_output=True, text=True, check=True)
+            destination = self.current / 'files' / entry['name']
+            destination.mkdir(parents=True, exist_ok=True)
+            p = subprocess.run(args + [entry['path'] + '/', str(destination) + '/'], capture_output=True, text=True, check=True)
             match = re.search(r'Total file size:\s+([\d,]+) bytes', p.stdout)
             if not match:
                 raise RuntimeError('Cannot estimate the next backup size')
             estimate += int(match.group(1).replace(',', ''))
+        self.prune_for_size(estimate)
+
+    def prune_for_size(self, estimate):
         snapshots = self.root / 'snapshots'
         existing = []
         if snapshots.exists():
@@ -327,6 +332,9 @@ class Backup:
                 self.management()
                 self.manifest()
                 self.storage()
+                # Live files may have grown after the estimate. Recheck the complete
+                # cold working tree before creating another counted recovery snapshot.
+                self.prune_for_size(self.usage(self.current))
                 stamp = datetime.datetime.now(datetime.timezone.utc).strftime('backup-%Y%m%dT%H%M%SZ')
                 snapshots = self.root / 'snapshots'
                 snapshots.mkdir(mode=0o700, exist_ok=True)
