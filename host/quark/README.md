@@ -154,3 +154,57 @@ Validate `testparm`, authenticated share listing and a disposable write/read/
 delete round trip in each share before declaring acceptance. Use `smb://quark.pownet.uk`
 on macOS or `\\quark.pownet.uk\media` on Windows. Preserve the existing login;
 clients need to reconnect to the new hostname. Retain the independent ZFS backup.
+
+## Application recovery backups
+
+Install `app_backup.py` as `/usr/local/sbin/quark-app-backup` and its service/timer
+in `/etc/systemd/system`. Fill `app-backup.example.json` with the verified mount
+UUIDs and save it root-only as `/etc/quark-app-backup.json`. Verify the first run
+before enabling the nightly 03:10 timer. The first migration run also requires
+the retained full cold app recovery copy to have passed its checksum comparisons.
+
+The job pre-copies files live, then stops stateful apps through Dockhand and the
+storage guard. SMB stops natively. It compares the authoritative cold files with
+full checksums, creates a read-only Btrfs recovery snapshot, and restores services
+even if copying fails. Nightly maintenance briefly interrupts those applications
+and SMB. NPM, Dockhand, VPN transport and remote access remain available. Their
+management databases use SQLite's online backup API, with integrity checks,
+rather than copying a live database without its committed WAL transactions.
+Dockhand's encryption key and generated stack configuration are included privately.
+Snapshots include a private container inventory and selected host recovery files.
+
+Retention is bounded by both seven successful snapshots and a 200 GiB routine
+backup budget, including the working copy. Shared snapshot extents are counted
+separately for a conservative estimate. Before copying, the job forecasts the
+next working copy and snapshot and removes only older verified snapshots when
+needed. It preserves at least two existing recovery snapshots; if a new backup
+cannot fit, it fails rather than consuming unbounded space. Rate-limited copying
+also checks actual apparent usage with 4 GiB of reserved detection headroom.
+The fixed full migration recovery copy is separate from this routine allowance.
+An interrupted
+maintenance record blocks another run until the recorded services are recovered.
+The job defers while Optimisarr is encoding, while a media scrub is running, or
+until the migration cold backup is verified. Low space, a missing mount or a
+wrong UUID blocks backup. Mount protection also applies when recovering services.
+The backup status is recorded separately from migration and scrub completion.
+
+These snapshots recover the apps SSD onto replacement storage. They are on
+Quark's media mirror and are **not an independent or off-site backup**. Keep the
+read-only ZFS migration disk intact. Current media, Immich originals/uploads,
+personal files and VMs need a separate ongoing backup destination. Do not reuse
+or overwrite the independent migration disk to obtain one during this migration.
+
+Nightly application snapshots exclude container images, downloadable models,
+Frigate recordings/clips/exports, media caches and historical test backups. The
+full retained migration recovery copy preserves their cutover state. These
+exclusions do not delete the live files. Immich's PostgreSQL directory is copied
+with its server stopped; restore it with the matching PostgreSQL image. Use a
+logical `pg_dump` for cross-version recovery and test it in a disposable database.
+For a restore, disable the workload guard, stop writers through Dockhand, restore
+the selected snapshot's `files` trees with numeric ownership/ACLs/xattrs, apply
+host SELinux labels with `restorecon`, then validate databases and start through
+Dockhand. Restore NPM/Dockhand management data only with their writers stopped.
+
+Primary references: [SQLite online backups](https://sqlite.org/backup.html),
+[PostgreSQL backup and restore](https://www.postgresql.org/docs/current/backup-dump.html),
+and [Btrfs scrub and resumption](https://btrfs.readthedocs.io/en/latest/btrfs-scrub.html).

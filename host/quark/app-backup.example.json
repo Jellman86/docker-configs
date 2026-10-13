@@ -1,0 +1,56 @@
+{
+  "dockhand": "http://127.0.0.1:3000",
+  "environment": 1,
+  "destination": "/mnt/tank/backups/quark-apps",
+  "state_file": "/mnt/services/host/app-backup/status.json",
+  "guard_config": "/etc/quark-storage-workloads.json",
+  "guard_enabled_file": "/etc/quark-storage-workloads.enabled",
+  "wait_for_cold_backup_state": "/root/quark-migration-20261012/quark-apps-cold-backup-state.json",
+  "minimum_free_bytes": 107374182400,
+  "keep_snapshots": 7,
+  "minimum_snapshots": 2,
+  "maximum_backup_bytes": 214748364800,
+  "budget_headroom_bytes": 4294967296,
+  "mount_uuids": {
+    "/mnt/tank": "ACTUAL_MEDIA_UUID",
+    "/mnt/services": "ACTUAL_APPS_UUID",
+    "/mnt/apps/docker": "ACTUAL_APPS_UUID",
+    "/var/lib/samba": "ACTUAL_APPS_UUID"
+  },
+  "sources": [
+    {"name": "riker/docker", "path": "/mnt/services/docker"},
+    {"name": "quark/docker", "path": "/mnt/services/quark/docker", "excludes": [
+      "/dockhand/***", "/nginx-proxy-manager/***", "/tailscale/***",
+      "/frigate/media/***", "/frigate/models/***", "/openviking-ollama/***",
+      "/yawamf/data/models/***", "/yawamf/data/backups/***",
+      "/yawamf/config/media_cache/***", "/yawamf/config/loadtest-backup-*/***",
+      "/hermes-backup-*/***", "/dockhand-backups/***"
+    ]},
+    {"name": "quark/compose", "path": "/mnt/services/quark/compose"},
+    {"name": "quark/security_inference_stack", "path": "/mnt/services/quark/security_inference_stack", "excludes": ["/frigate/clips/***", "/frigate/exports/***"]},
+    {"name": "host/samba", "path": "/mnt/services/host/samba"}
+  ],
+  "online_management": [
+    {"name": "quark/docker/dockhand", "path": "/mnt/services/quark/docker/dockhand"},
+    {"name": "quark/docker/nginx-proxy-manager", "path": "/mnt/services/quark/docker/nginx-proxy-manager"}
+  ],
+  "extra_stop_order": ["hermes-agent", "openviking", "yawamf-monalithic", "frigate", "birdnet-go", "homeassistant", "mosquitto"],
+  "extra_start_order": ["mosquitto", "homeassistant", "frigate", "yawamf-monalithic", "birdnet-go", "openviking", "hermes-agent"],
+  "host_files": [
+    "/etc/fstab", "/etc/docker/daemon.json", "/etc/quark-storage-workloads.json",
+    "/etc/quark-app-backup.json", "/etc/quark-media.conf", "/etc/samba/smb.conf",
+    "/usr/local/sbin/quark-storage-workloads", "/usr/local/sbin/quark-app-backup",
+    "/usr/local/sbin/quark-media-maintain",
+    "/etc/systemd/system/quark-storage-workloads.service",
+    "/etc/systemd/system/quark-app-backup.service", "/etc/systemd/system/quark-app-backup.timer",
+    "/etc/systemd/system/docker.service.d/95-quark-apps-ssd.conf",
+    "/etc/systemd/system/containerd.service.d/95-quark-apps-ssd.conf",
+    "/etc/systemd/system/smb.service.d/95-quark-storage.conf"
+  ],
+  "excluded_rebuildable_data": [
+    "Docker/containerd images and model caches; retain the verified full migration recovery copy",
+    "Frigate recordings/clips/exports, YA-WAMF model/media caches and historical test backups",
+    "Tailscale running state; reauthenticate if the migration recovery state is no longer usable",
+    "Media, Immich originals/uploads, home data and VM images are outside this application-only backup"
+  ]
+}
