@@ -119,6 +119,24 @@ class BackupTests(unittest.TestCase):
         existing = [(str(i), 1) for i in range(7)]
         self.assertEqual(module.retention_plan(existing, 7, 1, 1000), ['0'])
 
+    def test_growth_after_precopy_is_rejected_before_snapshot(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = {'destination': directory, 'state_file': directory + '/state',
+                      'maximum_backup_bytes': 200, 'budget_headroom_bytes': 4}
+            backup = module.Backup(config)
+            snapshots = Path(directory) / 'snapshots'
+            snapshots.mkdir()
+            for stamp in ['20261012T031000Z', '20261013T031000Z']:
+                p = snapshots / ('backup-' + stamp)
+                p.mkdir()
+                (p / 'recovery-manifest.json').write_text('{}')
+            backup.usage = lambda p: 190 if p == backup.root else 100 if p == backup.current else 45
+            deleted = []
+            backup.run = lambda command, **kwargs: deleted.append(command)
+            with self.assertRaises(RuntimeError):
+                backup.prune_for_size(100)
+            self.assertEqual(deleted, [])
+
 
 if __name__ == '__main__':
     unittest.main()
