@@ -122,3 +122,35 @@ administration/SSH name. Migrated services keep their existing canonical names,
 with NPM and private DNS pointing at Quark. Retarget the existing public Seerr
 Cloudflare tunnel origin separately through an authorized management credential;
 its connector token cannot edit tunnel ingress. Do not expose new services.
+
+## Native SMB shares
+
+`smb.conf` preserves the three enabled source shares: `media`, `downloads` and
+`home`. There were no NFS exports. Only authenticated `media-apps` group members
+can connect, and existing POSIX ACLs still control each directory. Private home
+data retains its user-specific ACL; group membership alone does not grant access.
+SMB1, guest access, printing and NetBIOS ports are not enabled. Allow TCP 445 only
+from the existing trusted LAN and Tailscale ranges in the host firewall.
+
+Install Fedora's native Samba packages, import the existing SMB password hash
+through `pdbedit` from a root-only migration file, and verify the imported hash
+without printing it. Map the source username to its actual Quark Unix UID. Keep
+the original TrueNAS export and secret seed private; neither belongs in Git.
+
+Samba's persistent state belongs on the apps SSD at `/mnt/services/host/samba`,
+bind-mounted onto `/var/lib/samba`, with an SELinux equivalence to the canonical
+directory. Install `smb-storage.conf` as a drop-in under `smb.service.d` so it
+requires the actual storage mounts and verifies UUIDs, member identities and
+mirror health before startup. Retain the original state before activating a bind.
+
+Use the standard `samba_share_t` label for the mirror root and the three exported
+trees. Photos, Optimisarr work, backups and other unshared trees keep their
+existing labels. Quark's current Docker workloads run as `spc_t`; verify their
+access again after relabeling. Enabling Docker SELinux confinement later requires
+qualifying a shared-label policy before changing that setting. Do not enable
+global Samba export booleans or disable enforcing mode to resolve a denial.
+
+Validate `testparm`, authenticated share listing and a disposable write/read/
+delete round trip in each share before declaring acceptance. Use `smb://quark.pownet.uk`
+on macOS or `\\quark.pownet.uk\media` on Windows. Preserve the existing login;
+clients need to reconnect to the new hostname. Retain the independent ZFS backup.
