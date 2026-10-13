@@ -173,9 +173,9 @@ Files retain ownership and permissions for restoration.
 
 Archives live at `/mnt/tank/backups/apps`. Keep three successful archives, each
 limited to 4 GiB. Including one temporary staging tree and one candidate archive,
-maximum routine data is 20 GiB, below the user's 200 GiB allowance. Only a valid
+maximum routine data is 20 GiB. Only a valid
 new candidate permits rotation; a failed backup keeps existing recovery points.
-This does not include the fixed one-off recovery copy. Container images, models,
+The separate offline ZFS backup reader is fixed in size. Container images, models,
 recordings, artwork, caches and historical backups are excluded from the routine.
 The job performs no recurring whole-media checksum comparisons.
 
@@ -190,3 +190,12 @@ with `pdbedit`. Treat archives as credentials: keep the backup directory private
 
 Primary references: [SQLite online backup](https://sqlite.org/backup.html) and
 [PostgreSQL logical backup](https://www.postgresql.org/docs/current/app-pgdump.html).
+
+## Ordinary media maintenance
+
+Install `quark-media-maintain` as `/usr/local/sbin/quark-media-maintain` with the
+existing root-only `/etc/quark-media.conf`. The hourly health timer checks the
+mounted UUID, RAID1 profiles, both members and device error counters. The monthly
+scrub sets the configured rate on each member explicitly before starting, so the
+limit survives a reboot and does not depend on the observed `scrub limit --all`
+behavior. Enable the monthly timer after the initial resumed scrub has finished.

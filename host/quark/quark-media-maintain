@@ -1,0 +1,37 @@
+#!/usr/bin/bash
+set -euo pipefail
+export LC_ALL=C
+config=${QUARK_MEDIA_CONFIG:-/etc/quark-media.conf}
+[[ -r "$config" ]] || { echo "Media configuration is not activated" >&2; exit 1; }
+# Root-owned configuration, written only after the actual disk UUID is known.
+source "$config"
+: "${MEDIA_MOUNT:?}" "${MEDIA_UUID:?}"
+[[ "$MEDIA_MOUNT" = /* && "$MEDIA_MOUNT" != / && "$MEDIA_MOUNT" != /mnt/apps ]] || { echo 'Unsafe media mount path' >&2; exit 1; }
+mountpoint -q -- "$MEDIA_MOUNT" || { echo 'Media filesystem is not mounted' >&2; exit 1; }
+[[ "$(findmnt -rn -M "$MEDIA_MOUNT" -o FSTYPE)" = btrfs ]] || { echo 'Expected Btrfs filesystem' >&2; exit 1; }
+[[ "$(findmnt -rn -M "$MEDIA_MOUNT" -o UUID)" = "$MEDIA_UUID" ]] || { echo 'Media UUID does not match' >&2; exit 1; }
+usage=$(btrfs filesystem usage -b "$MEDIA_MOUNT")
+printf '%s\n' "$usage"
+awk '
+/^Data,/ { data++; if ($1 != "Data,RAID1:") bad=1 }
+/^Metadata,/ { meta++; if ($1 != "Metadata,RAID1:") bad=1 }
+/^System,/ { sys_count++; if ($1 != "System,RAID1:") bad=1 }
+END { exit !(data && meta && sys_count && !bad) }
+' <<< "$usage" || { echo 'Unexpected RAID profiles' >&2; exit 1; }
+stats=$(btrfs filesystem show "$MEDIA_MOUNT")
+printf '%s\n' "$stats"
+[[ "$stats" != *missing* && "$(awk '$1=="devid" {n++} END{print n+0}' <<< "$stats")" = 2 ]] || { echo 'Expected two present mirror members' >&2; exit 1; }
+btrfs device stats -c "$MEDIA_MOUNT"
+case "${1:-health}" in
+    health) ;;
+    scrub)
+        # Set every member explicitly. The installed --all limit command only
+        # updated the first member during the initial resumed scrub.
+        while read -r devid; do
+            btrfs scrub limit --devid "$devid" --limit "${SCRUB_LIMIT:-40M}" "$MEDIA_MOUNT"
+        done < <(awk '$1=="devid" {print $2}' <<< "$stats")
+        btrfs scrub start -B -d --limit "${SCRUB_LIMIT:-40M}" "$MEDIA_MOUNT"
+        btrfs device stats -c "$MEDIA_MOUNT"
+        ;;
+    *) echo 'Usage: quark-media-maintain health|scrub' >&2; exit 2 ;;
+esac
