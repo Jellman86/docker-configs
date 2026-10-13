@@ -215,3 +215,27 @@ For the manager itself, `management/maintenance-compose.yml` provides a temporar
 loopback-only second Dockhand process. Seed it with a private online database
 backup and encryption key, sync/deploy the manager's Git stack through that
 process, then remove the temporary stack/state through the original manager.
+
+For native client updates, add the official stable Fedora repository from
+`https://pkgs.tailscale.com/stable/fedora/tailscale.repo`, then install the
+`tailscale` package with DNF. Enable automatic stable updates explicitly:
+
+```sh
+sudo tailscale set --auto-update=true
+sudo tailscale set --advertise-exit-node --advertise-routes=192.168.213.0/24,192.168.214.0/24
+```
+
+Persist IPv4 and IPv6 forwarding with `99-quark-tailscale.conf` and apply it
+with `sudo sysctl -p /etc/sysctl.d/99-quark-tailscale.conf`. Install
+`tailscaled-gro.conf` as `tailscaled.service.d/10-quark-gro.conf` under
+`/etc/systemd/system` to retain the NIC optimisation on service starts.
+Approve both subnet routes and exit-node use in the tenant, and disable node
+key expiry for this unattended router. Quark advertises these routes; it does
+not need to accept other routers' subnets or use another exit node itself.
+Keep Tailscale's default netfilter and subnet SNAT handling. Check real routed
+traffic before adding any firewalld masquerading workaround or broader rules.
+
+Upstream references: [subnet routers](https://tailscale.com/docs/features/subnet-routers),
+[exit nodes](https://tailscale.com/docs/features/exit-nodes),
+[UDP forwarding](https://tailscale.com/docs/reference/best-practices/performance),
+and [automatic updates](https://tailscale.com/docs/features/client/update).
