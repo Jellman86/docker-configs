@@ -2,6 +2,16 @@
 
 Git-backed Dockhand stack for Plex and Jellyfin playback plus Optimisarr media optimization on Riker.
 
+## Current Quark deployment
+
+The October 2026 migration moves this stack to Quark (`192.168.213.102`).
+Use `media_related_stack/docker-compose.quark.yml`; Plex and Jellyfin proxy
+backends are Quark host ports 32400 and 8096.
+Configs use `/mnt/services/docker`; photos/media remain on `/mnt/tank`.
+The native storage guard owns startup through Dockhand. See
+[`host/quark`](../host/quark/README.md) for storage and startup requirements.
+The legacy base topology and defaults below describe the former Riker placement.
+
 ## Services
 
 | Service | Role | Published access |

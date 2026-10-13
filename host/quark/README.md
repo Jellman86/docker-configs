@@ -2,7 +2,8 @@
 
 The migrated media services use the two independent USB disks as a native Btrfs
 RAID1 at `/mnt/tank`, and the incoming AirDisk SSD as XFS at `/mnt/services`.
-Quark's existing `/mnt/apps` remains on its boot SSD. The enclosure stays in
+Quark's `/mnt/apps` volume remains on its boot SSD for VMs and workspaces;
+existing app paths become bind aliases to the added SSD during consolidation. The enclosure stays in
 Single mode. The bridge's `RANDOM__` identity changes on reconnection, so mounts
 use filesystem UUIDs and the guard also verifies the actual ATA member serials.
 
@@ -96,3 +97,28 @@ Primary references:
 [mkfs.btrfs](https://btrfs.readthedocs.io/en/latest/mkfs.btrfs.html),
 [Btrfs hardware considerations](https://btrfs.readthedocs.io/en/latest/Hardware.html),
 [Docker startup order](https://docs.docker.com/compose/how-tos/startup-order/).
+
+## Consolidated application storage and ingress
+
+Migrated Riker configs live at `/mnt/services/docker`. Existing Quark app trees
+live at `/mnt/services/quark/{docker,docker-engine,containerd,security_inference_stack,compose}`.
+Bind mounts preserve their original `/mnt/apps/{name}` paths, including the
+`/var/lib/containerd` symlink target. Do not merge the two config trees: Quark's
+NPM and Dockhand remain authoritative. Keep `/mnt/apps/libvirt` and
+`/mnt/apps/dev` on the original SSD.
+
+A cold move requires stopping ordinary workloads through Dockhand, then stopping
+native Docker/containerd so management databases, named volumes and image stores
+are consistent. Verify full checksums before activation and retain original
+copies for rollback. Bind mounts require `mnt-services.mount`; native Docker and
+containerd need `RequiresMountsFor` dependencies on their aliases. Keep empty
+fallback directories immutable. The media guard remains responsible for the
+USB-backed workloads and their health ordering.
+
+Use plain service names for private ingress: `dockhand.pownet.uk`,
+`npm.pownet.uk` and `playwright-mcp.pownet.uk`. Preserve Playwright's explicit
+host allow-list and NPM authentication. Physical `quark.pownet.uk` remains an
+administration/SSH name. Migrated services keep their existing canonical names,
+with NPM and private DNS pointing at Quark. Retarget the existing public Seerr
+Cloudflare tunnel origin separately through an authorized management credential;
+its connector token cannot edit tunnel ingress. Do not expose new services.

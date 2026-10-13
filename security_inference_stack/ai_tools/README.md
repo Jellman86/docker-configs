@@ -186,7 +186,7 @@ http://playwright-mcp:8931/mcp
 Trusted LAN clients use the authenticated TLS proxy:
 
 ```text
-https://quark.pownet.uk/mcp
+https://playwright-mcp.pownet.uk/mcp
 ```
 
 Rusty IMAP MCP is available to trusted containers on `general_brg` at:
