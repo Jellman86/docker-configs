@@ -157,54 +157,36 @@ clients need to reconnect to the new hostname. Retain the independent ZFS backup
 
 ## Application recovery backups
 
-Install `app_backup.py` as `/usr/local/sbin/quark-app-backup` and its service/timer
-in `/etc/systemd/system`. Fill `app-backup.example.json` with the verified mount
-UUIDs and save it root-only as `/etc/quark-app-backup.json`. Verify the first run
-before enabling the nightly 03:10 timer. The first migration run also requires
-the retained full cold app recovery copy to have passed its checksum comparisons.
+Quark is a home lab. `app_backup.py` makes a small online backup of settings and
+application databases without stopping containers or SMB. Install it as
+`/usr/local/sbin/quark-app-backup`, fill the example mount UUIDs, and install the
+service/timer. Keep `/etc/quark-app-backup.json` root-only. The timer runs nightly
+at 03:10. There is no dependency on migration jobs or a recovery VM.
 
-The job pre-copies files live, then stops stateful apps through Dockhand and the
-storage guard. SMB stops natively. It compares the authoritative cold files with
-full checksums, creates a read-only Btrfs recovery snapshot, and restores services
-even if copying fails. Nightly maintenance briefly interrupts those applications
-and SMB. NPM, Dockhand, VPN transport and remote access remain available. Their
-management databases use SQLite's online backup API, with integrity checks,
-rather than copying a live database without its committed WAL transactions.
-Dockhand's encryption key and generated stack configuration are included privately.
-Snapshots include a private container inventory and selected host recovery files.
+SQLite uses its online backup API and checks the resulting copy. Plex uses its
+bundled SQLite tool for its custom tokenizer. Immich uses a
+consistent logical `pg_dump`; Samba account hashes use `pdbedit`. Other live
+configuration files are best-effort copies, suitable for a home lab rather than
+a synchronized snapshot of every application. Dockhand's encryption key, stack
+settings, NPM certificates and selected host configuration are included privately.
+Files retain ownership and permissions for restoration.
 
-Retention is bounded by both seven successful snapshots and a 200 GiB routine
-backup budget, including the working copy. Shared snapshot extents are counted
-separately for a conservative estimate. Before copying, the job forecasts the
-next working copy and snapshot and removes only older verified snapshots when
-needed. It preserves at least two existing recovery snapshots; if a new backup
-cannot fit, it fails rather than consuming unbounded space. Rate-limited copying
-also checks actual apparent usage with 4 GiB of reserved detection headroom.
-The fixed full migration recovery copy is separate from this routine allowance.
-An interrupted
-maintenance record blocks another run until the recorded services are recovered.
-The job defers while Optimisarr is encoding, while a media scrub is running, or
-until the migration cold backup is verified. Low space, a missing mount or a
-wrong UUID blocks backup. Mount protection also applies when recovering services.
-The backup status is recorded separately from migration and scrub completion.
+Archives live at `/mnt/tank/backups/apps`. Keep three successful archives, each
+limited to 4 GiB. Including one temporary staging tree and one candidate archive,
+maximum routine data is 20 GiB, below the user's 200 GiB allowance. Only a valid
+new candidate permits rotation; a failed backup keeps existing recovery points.
+This does not include the fixed one-off recovery copy. Container images, models,
+recordings, artwork, caches and historical backups are excluded from the routine.
+The job performs no recurring whole-media checksum comparisons.
 
-These snapshots recover the apps SSD onto replacement storage. They are on
-Quark's media mirror and are **not an independent or off-site backup**. Keep the
-read-only ZFS migration disk intact. Current media, Immich originals/uploads,
-personal files and VMs need a separate ongoing backup destination. Do not reuse
-or overwrite the independent migration disk to obtain one during this migration.
+These are apps SSD recovery copies on the same host mirror, not an independent
+backup of media, photo originals, personal files or VMs. Keep the independent
+backup disk and a documented recovery path. For restoration, extract an archive
+privately, stop only the affected writer through Dockhand, restore its matching
+`apps/files` config path with numeric ownership and apply `restorecon`. Restore
+`apps/immich.dump` with `pg_restore` into a compatible Immich database; never copy
+it over PostgreSQL's physical files. `apps/smbpasswd-private.txt` can be imported
+with `pdbedit`. Treat archives as credentials: keep the backup directory private.
 
-Nightly application snapshots exclude container images, downloadable models,
-Frigate recordings/clips/exports, media caches and historical test backups. The
-full retained migration recovery copy preserves their cutover state. These
-exclusions do not delete the live files. Immich's PostgreSQL directory is copied
-with its server stopped; restore it with the matching PostgreSQL image. Use a
-logical `pg_dump` for cross-version recovery and test it in a disposable database.
-For a restore, disable the workload guard, stop writers through Dockhand, restore
-the selected snapshot's `files` trees with numeric ownership/ACLs/xattrs, apply
-host SELinux labels with `restorecon`, then validate databases and start through
-Dockhand. Restore NPM/Dockhand management data only with their writers stopped.
-
-Primary references: [SQLite online backups](https://sqlite.org/backup.html),
-[PostgreSQL backup and restore](https://www.postgresql.org/docs/current/backup-dump.html),
-and [Btrfs scrub and resumption](https://btrfs.readthedocs.io/en/latest/btrfs-scrub.html).
+Primary references: [SQLite online backup](https://sqlite.org/backup.html) and
+[PostgreSQL logical backup](https://www.postgresql.org/docs/current/app-pgdump.html).

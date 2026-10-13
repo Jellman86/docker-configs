@@ -1,13 +1,12 @@
 [Unit]
-Description=Consistent application backups through Dockhand on Quark
-RequiresMountsFor=/mnt/services /mnt/tank /mnt/apps/docker /var/lib/samba
-After=docker.service quark-storage-workloads.service smb.service
+Description=Online home lab configuration and database backup
+RequiresMountsFor=/mnt/services /mnt/tank /mnt/apps/docker
+After=docker.service
 ConditionPathExists=/etc/quark-app-backup.json
 
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/python3 /usr/local/sbin/quark-app-backup
-TimeoutStartSec=infinity
-TimeoutStopSec=15min
+TimeoutStartSec=30min
 Nice=15
 UMask=0077
