@@ -34,7 +34,7 @@ def included(relative):
     if parts and parts[0] == 'letsencrypt':
         return True  # Certificate archives and live symlinks are recovery data.
     return not (any(p.lower() in EXCLUDED or 'backup-' in p.lower() or 'loadtest-' in p.lower() for p in parts)
-                or any(x in relative.name.lower() for x in ['.bak', '.backup', '.malformed-backup'])
+                or any(x in relative.name.lower() for x in ['.bak', '.backup', '.malformed-backup', '.pre-migration-'])
                 or relative.name.endswith(('-wal', '-shm', '.log', '.lock', '.pid', '.sock'))
                 or relative.suffix.lower() in MEDIA)
 

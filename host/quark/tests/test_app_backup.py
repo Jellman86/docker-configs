@@ -25,7 +25,7 @@ class BackupTests(unittest.TestCase):
                     self.assertEqual(recovered.execute('SELECT value FROM important').fetchone(), ('committed in WAL',))
 
     def test_rebuildable_data_and_database_sidecars_are_excluded(self):
-        for name in ['cache/blob.bin','models/model.bin','recordings/video.mp4','MediaCover/1/image.jpg','app.db-wal','app.db-shm','state.db.malformed-backup-20260101']:
+        for name in ['cache/blob.bin','models/model.bin','recordings/video.mp4','MediaCover/1/image.jpg','app.db-wal','app.db-shm','state.db.malformed-backup-20260101','speciesid.pre-migration-20261013-abc.db']:
             self.assertFalse(module.included(Path(name)), name)
         for name in ['.encryption_key','secrets.yaml','.storage/auth','config.xml','app.db']:
             self.assertTrue(module.included(Path(name)), name)
