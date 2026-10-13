@@ -1,6 +1,6 @@
 # Web Services Stack
 
-Git-backed Dockhand stack for ingress, Cloudflare Tunnel, and Tailscale. This directory contains complete host-specific Compose manifests rather than an override chain.
+Git-backed Dockhand stack for ingress and Cloudflare Tunnel. Tailscale runs natively on Quark. This directory contains complete host-specific Compose manifests rather than an override chain.
 
 ## Compose manifests
 
@@ -18,16 +18,14 @@ Dockhand deploys one complete file. Do not combine these manifests with `-f` ove
 |---|---|---|
 | `npm` | Nginx Proxy Manager reverse proxy and certificate management | `80`, `81`, `443` |
 | `cloudflared` | Outbound Cloudflare Tunnel connector | No host port |
-| `tailscale` | Subnet router and exit node | No application port; `/dev/net/tun` |
 
 ## Networking
 
 All variants attach services to the external `general_brg` network.
 
-- Riker attaches NPM to ARR and media networks so it can proxy those services directly. Tailscale also joins the ARR network.
-- Quark attaches NPM to `npm_proxy_backends`, which is the explicit network for private proxy targets such as OpenViking. Quark's Tailscale service remains on `general_brg` only.
+- Riker attaches NPM to ARR and media networks so it can proxy those services directly.
+- Quark attaches NPM to `npm_proxy_backends`, which is the explicit network for private proxy targets such as OpenViking.
 - NPM has the `nginx-rp` alias on `general_brg`.
-- Tailscale requires `NET_ADMIN`, `NET_RAW`, `/dev/net/tun`, and IPv4/IPv6 forwarding. The Quark manifest selects nftables-compatible binaries for Fedora.
 
 Create the selected manifest's external networks before first deployment.
 
@@ -37,7 +35,6 @@ Create the selected manifest's external networks before first deployment.
 |---|---|
 | `${DOCKERCONFIGPATH}/nginx-proxy-manager/data` | NPM database and configuration |
 | `${DOCKERCONFIGPATH}/nginx-proxy-manager/letsencrypt` | Certificates and ACME state |
-| `${DOCKERCONFIGPATH}/tailscale` | Tailscale node identity and state |
 
 These directories contain security-sensitive state. Back them up with restrictive permissions and do not copy them into Git.
 
@@ -46,15 +43,13 @@ These directories contain security-sensitive state. Back them up with restrictiv
 Common settings:
 
 - `PUID`, `PGID`, `TZ`, `DOCKERCONFIGPATH`
-- `TAILSCALE_HOSTNAME`, `TAILSCALE_ADVERTISE_ROUTES`
 - Riker network override: `NETWORK`
 
 Secrets:
 
 - `TUNNEL_TOKEN`
-- `TS_AUTHKEY`
 
-Store both secrets in Dockhand. Tailscale auth keys should be scoped and short-lived where practical.
+Store the tunnel token in Dockhand. Native Tailscale keeps its node identity privately in `/var/lib/tailscale`, independent of Docker and the apps SSD.
 
 ## Deployment and updates
 
@@ -75,7 +70,7 @@ When Cloudflare Tunnel targets NPM, avoid redirect loops:
 
 ## Rollback
 
-Revert the relevant Git or image change, push, and redeploy the same host-specific manifest through Dockhand. Preserve NPM and Tailscale bind-mounted state. An ingress rollback can affect all hosted services, so verify local/LAN recovery access before updating and avoid changing DNS, tunnel routing, certificates, and container images in one release.
+Revert the relevant Git or image change, push, and redeploy the same host-specific manifest through Dockhand. Preserve NPM bind-mounted state. Native Tailscale is managed separately from this stack. An ingress rollback can affect all hosted services, so verify local/LAN recovery access before updating and avoid changing DNS, tunnel routing, certificates, and container images in one release.
 
 ## Security notes
 
@@ -100,3 +95,18 @@ but proving it means another live deploy of the only proxy in front of every ser
 application that put credentials in query strings (YA-WAMF) has stopped doing so, which is the
 real fix, so this is deliberately left alone. If it is ever revisited: test the bind on a
 throwaway NPM container first, never on this one.
+
+## Native Tailscale on Quark
+
+Install the stable signed Fedora package from Tailscale. During the one-time
+handover, stop the old container through Dockhand before copying its private
+state to root-owned `/var/lib/tailscale`; never run the same identity twice.
+Enable `tailscaled.service` after copying state and verify the same node ID,
+addresses, hostname, subnet routes and exit-node capability before deploying
+this stack to remove the orphaned container. Keep a LAN SSH connection available.
+
+Install `host/quark/99-quark-tailscale.conf` under `/etc/sysctl.d` for forwarding
+and `host/quark/tailscaled-gro.conf` as `tailscaled.service.d/10-quark-gro.conf`.
+Preserve route approvals and do not enable Tailscale SSH or change host DNS
+acceptance during migration. The app backup includes the native state file.
+Remove old Dockhand auth-key variables and container-state copy after acceptance.
