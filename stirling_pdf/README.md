@@ -4,6 +4,15 @@ Self-hosted PDF toolkit for merging, splitting, converting, compressing, signing
 and OCR. Runs on Riker because the work it does is document handling next to
 storage, and it needs no GPU or NPU time on the compute host.
 
+## Current Quark deployment
+
+The October 2026 migration moves this stack to Quark (`192.168.213.102`).
+Use `stirling_pdf/docker-compose.quark.yml`.
+Configs use `/mnt/services/docker`; photos/media remain on `/mnt/tank`.
+The native storage guard owns startup through Dockhand. See
+[`host/quark`](../host/quark/README.md) for storage and startup requirements.
+The legacy base topology and defaults below describe the former Riker placement.
+
 ## Services
 
 | Service | Role | Network exposure |

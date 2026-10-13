@@ -1,16 +1,16 @@
 # docker-configs
-Personal Docker Compose stacks used across the TrueNAS storage host and the
-Fedora compute host. Most stacks expect external networks to exist and rely on
-values provided via a local `.env` file.
+Personal Docker Compose stacks consolidated on Quark, the Fedora server.
+Most stacks expect external networks and overrides in Dockhand. Secrets belong
+in its encrypted stack variables; never edit generated environment files.
 
 ## Repo layout
 - [`autofpl/`](autofpl/README.md) - private, stateless autoFPL API on Quark.
 - [`arr_vpn_stack/`](arr_vpn_stack/README.md) - Gluetun, qBittorrent, Prowlarr, Radarr, Sonarr, Byparr, Cleanuparr, Seerr, and the Gluetun restart guard.
-- [`immich/`](immich/README.md) - self-hosted photo and video library on Riker.
+- [`immich/`](immich/README.md) - self-hosted photo and video library on Quark.
 - [`management/`](management/README.md) - Dockhand control plane.
 - [`media_related_stack/`](media_related_stack/README.md) - Plex, Jellyfin, and Optimisarr.
 - [`monitoring_management/`](monitoring_management/README.md) - Prometheus, SNMP Exporter, Unpoller, and Grafana.
-- [`stirling_pdf/`](stirling_pdf/README.md) - self-hosted PDF toolkit on Riker.
+- [`stirling_pdf/`](stirling_pdf/README.md) - self-hosted PDF toolkit on Quark.
 - [`security_inference_stack/`](security_inference_stack/README.md) - Frigate, BirdNET-Go, Mosquitto, YA-WAMF, and Home Assistant.
 - [`security_inference_stack/ai_tools/`](security_inference_stack/ai_tools/README.md) - independently deployed OpenViking, mail, browser, and web-research services.
 - [`web_services/`](web_services/README.md) - host-specific Nginx Proxy Manager, Cloudflare Tunnel, and Tailscale stacks.
@@ -22,17 +22,17 @@ runtime state ever differ.
 
 ## Current host layout
 
-- `riker.pownet.uk` / TrueNAS N100 NAS keeps the storage-local media stack:
-  `arr_vpn_stack`, `media_related_stack`, `stirling_pdf`, `immich`, and
-  `web_services`.
-- `dell-compute` / Fedora Core Ultra box runs compute-heavy and management
-  stacks: `autofpl`, `security_inference_stack`,
-  `security_inference_stack/ai_tools`, `management` / Dockhand, and the
-  Quark `web_services` variant.
-- `monitoring_management` is portable across the trusted management network;
-  its Dockhand definition and `CONFIG_PATH` determine the owning host.
+- `quark.pownet.uk` runs management, ingress, security/inference and the
+  migrated media, arr, Immich and document stacks. Riker is retired.
+- Use the four guarded Quark server variants documented in
+  [`host/quark/`](host/quark/README.md). The base files retain legacy defaults.
+- Immich's existing Quark ML worker remains separate from its server/database.
+- `monitoring_management` is portable; its Dockhand definition determines its host.
 
-The Fedora host uses `/mnt/apps` for persistent Docker data:
+Existing Quark apps retain `/mnt/apps` paths through bind aliases backed by
+`/mnt/services/quark` on the added apps SSD. Migrated Riker configs use
+`/mnt/services/docker`. Fedora, developer workspaces and VM images stay on the
+original SSD. Existing Quark stack overrides remain:
 
 ```bash
 DOCKERCONFIGPATH=/mnt/apps/docker
@@ -73,40 +73,24 @@ Every Compose project is a Git-backed Dockhand stack. Git is the source of truth
 pulls and container recreations must be performed through the Dockhand API on the server that owns
 the stack. Do not run `docker pull`, `docker compose pull`, or `docker compose up` on a host.
 
-The deployment sequence below was verified end to end against the live Dockhand
-`1.0.27` runtime on 2026-07-24:
+The synchronous Git deployment API was verified against the installed Dockhand
+`1.0.49` on 13 October 2026. Verify the installed version and route contract again
+if the control plane is upgraded.
 
-> `management/docker-compose.yml` currently tracks `fnsys/dockhand:latest`.
-> Before any deployment mutation, read the live `/app/package.json` version with
-> `docker exec dockhand node -p "require('/app/package.json').version"`. If
-> it is not `1.0.27`, stop and validate the current UI/API route, payload, job
-> schema, and terminal states before updating this runbook. Never infer mutation
-> routes from an older release.
+1. Push changes and wait for CI and any image publication to succeed.
+2. Discover the stack through `GET /api/git/stacks`; verify repository, branch,
+   Compose path, environment and `repullImages: true`.
+3. `POST /api/git/stacks/{id}/sync` with `Accept: application/json`. Verify
+   `lastCommit`, `syncStatus: "synced"` and no sync error with a fresh GET.
+4. `POST /api/git/stacks/{id}/deploy` with `Accept: application/json`, no body.
+   Keep the request open until it returns `success: true`. This performs the
+   configured fresh pull and recreation. Never issue a second deployment while
+   the first is running, or retry an ambiguous response without inspecting state.
+5. Verify image references, running state, health and application behavior.
 
-1. Push the application and Compose commits and wait for CI, image smoke tests, and registry
-   publication to succeed.
-2. Discover the target through `GET /api/git/stacks`; verify its repository,
-   branch, Compose path, environment, and repull/build/recreate settings.
-3. Send `POST /api/git/stacks/{id}/deploy-stream` with JSON body `{}` and
-   `Content-Type: application/json`, but do **not** add
-   `Accept: application/json`. On Dockhand 1.0.27 that Accept header selects an
-   SSE-to-JSON compatibility path which may complete the deployment yet return
-   `{"success":false,"error":"No result"}`. Without it, record the returned
-   `jobId`; do not repeat the request just because deployment is still running.
-   If any response is ambiguous, inspect the Git stack, container and job state
-   before deciding whether another mutation is safe.
-4. Poll `GET /api/jobs/{jobId}` while `status` is `running`. Require the verified
-   success terminal state `done` and inspect `result` for an error/failure. Treat
-   `error` or any unknown state as failure.
-5. Read `GET /api/git/stacks/{id}` and confirm `lastCommit` equals the intended
-   remote revision.
-6. Verify the expected containers, image references, health checks, private
-   port posture, and application-level behavior.
-
-The deploy route performs the Git synchronization and applies the stack's
-configured pull/build/recreate policy. A long job is expected when images build
-or a service drains under `stop_grace_period`; do not retry or bypass it. Recheck
-the current Dockhand route contract after a control-plane upgrade.
+Container start, stop and restart operations also go through Dockhand. Native
+Docker/containerd shutdown for cold storage maintenance follows the documented
+host-maintenance sequence, retaining Dockhand and transport until engine stop.
 
 Notes:
 - Most stacks expect environment overrides in Dockhand's stack configuration.
@@ -114,7 +98,7 @@ Notes:
   files or the generated stack copy on a host.
 - Docker CLI logs and inspection may be used for read-only diagnosis, but all lifecycle and image
   mutations go through Dockhand.
-- On the Fedora compute host (`quark.pownet.uk` / `dell-compute`), use
+- On the Fedora compute host (`quark.pownet.uk`), use
   `DOCKERCONFIGPATH=/mnt/apps/docker`. The host's Docker engine data lives
   separately at `/mnt/apps/docker-engine`; do not use that path for app config
   bind mounts.
