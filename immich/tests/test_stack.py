@@ -77,10 +77,16 @@ class ImmichStackPolicyTests(unittest.TestCase):
         source = next(
             v["source"]
             for v in self.database["volumes"]
-            if v["target"] == "/var/lib/postgresql/data"
+            if v["target"] == "/var/lib/postgresql"
         )
         self.assertIn("/mnt/apps/docker", source)
         self.assertNotIn("/mnt/tank", source)
+
+    def test_pg18_uses_a_fresh_directory_and_parent_mount(self) -> None:
+        self.assertIn("postgres:18-", self.database["image"])
+        mounts = self.database["volumes"]
+        self.assertEqual("/var/lib/postgresql", mounts[0]["target"])
+        self.assertIn("/postgres18}", mounts[0]["source"])
 
     def test_media_lives_on_the_bulk_pool(self) -> None:
         source = next(
@@ -169,6 +175,24 @@ class ImmichQuarkWorkerTests(unittest.TestCase):
     def test_worker_has_no_profile_so_it_actually_starts(self) -> None:
         # The Riker copy is profile-gated off; this one is the live worker.
         self.assertNotIn("profiles", self.ml)
+
+
+class PostgreSQLUpgradeSafetyTests(unittest.TestCase):
+    def test_rehearsal_cannot_receive_application_traffic(self) -> None:
+        model = yaml.safe_load((ROOT / "postgres-upgrade.compose.yml").read_text())
+        self.assertEqual({"database", "restore"}, set(model["services"]))
+        self.assertTrue(model["networks"]["upgrade"]["internal"])
+        for service in model["services"].values():
+            self.assertNotIn("ports", service)
+            self.assertEqual(["upgrade"], service["networks"])
+            self.assertEqual("no", service["restart"])
+
+    def test_restore_fails_on_errors_and_cannot_modify_the_dump(self) -> None:
+        model = yaml.safe_load((ROOT / "postgres-upgrade.compose.yml").read_text())
+        restore = model["services"]["restore"]
+        self.assertIn("--exit-on-error", restore["command"])
+        self.assertTrue(restore["volumes"][0]["read_only"])
+        self.assertFalse(restore["volumes"][0]["bind"]["create_host_path"])
 
 
 if __name__ == "__main__":

@@ -24,5 +24,7 @@ for source in sys.argv[1:]:
             assert model['services'][name]['networks']['vpn_stack_brg']['gw_priority'] == 1
     if 'immich-server' in model['services']:
         assert 'immich-machine-learning' not in model['services']
-        assert model['services']['immich-database']['volumes'][0]['source'] == '/mnt/services/docker/immich/postgres'
+        mount = model['services']['immich-database']['volumes'][0]
+        assert mount['source'] == '/mnt/services/docker/immich/postgres18'
+        assert mount['target'] == '/var/lib/postgresql'
 print('Merged Quark Compose models verified')
