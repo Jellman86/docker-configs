@@ -1,8 +1,7 @@
 # Immich
 
-Self-hosted photo and video library for phone backup, browsing, search, and
-sharing. Runs on Riker because the library lives next to pool storage and the
-Alder Lake-N iGPU handles transcoding without borrowing Quark's compute.
+Self-hosted photo and video library on Quark for phone backup, browsing, search
+and sharing. The existing Intel GPU handles transcoding and machine learning.
 
 ## Current Quark deployment
 
@@ -21,7 +20,7 @@ The legacy base topology and defaults below describe the former Riker placement.
 | `immich-server` | API, web UI, and all background workers | `general_brg` + `immich_backend`; no host port |
 | `immich-machine-learning` | CLIP search, face recognition, OCR | `immich_backend` only; **off by default - runs on Quark instead** |
 | `immich-redis` | Valkey job queue and cache | `immich_backend` only |
-| `immich-database` | Postgres 14 + VectorChord | `immich_backend` only |
+| `immich-database` | Postgres 18 + VectorChord | `immich_backend` only |
 
 Upstream merged the old `immich-microservices` container into `immich-server`
 in v1.118.0. Any compose file still carrying it is stale.
@@ -91,7 +90,7 @@ Cloudflare Tunnel route without a separate exposure and authentication review.
 | Path | Contents | Pool |
 |---|---|---|
 | `${IMMICH_UPLOAD_PATH:-/mnt/tank/photos}` | Originals, thumbnails, transcodes, profile images, Immich's own DB dumps | `tank` (spinning, bulk) |
-| `${IMMICH_DB_PATH:-/mnt/apps/docker/immich/postgres}` | Postgres data directory | `apps` (NVMe) |
+| `${IMMICH_DB_PATH:-/mnt/apps/docker/immich/postgres18}` | Postgres data directory | `apps` (NVMe) |
 | `model-cache` volume | ML model weights; re-downloadable | Docker volume |
 
 Two rules that matter more here than in most stacks:
@@ -261,3 +260,38 @@ Verified on 2026-08-27 against upstream primary sources, at release `v3.1.0`:
   learning.
 - v3.0.0 dropped pgvecto.rs support; VectorChord has been the default since
   v1.133.0. Migrate before upgrading from anything older.
+
+## PostgreSQL major upgrade
+
+The database uses PostgreSQL 18 with VectorChord 1.1.1 and pgvector 0.8.5 in
+Immich's digest-pinned upstream image. PostgreSQL 18 mounts `/var/lib/postgresql`
+and keeps its cluster in `18/docker`. Quark's Dockhand `IMMICH_DB_PATH` override
+must point to `/mnt/services/docker/immich/postgres18`.
+
+Never start this image over a PostgreSQL 14 directory. Rehearse a logical
+`pg_dump -Fc --no-owner --no-privileges` restore using the isolated, temporary
+`postgres-upgrade.compose.yml` Git stack. Its dump directory is read-only and
+its network has no published ports or application access. Store the database
+password in that temporary Dockhand stack's secret store, not in files or Git.
+The restore must exit successfully and table counts, vector indexes and
+extensions must be checked before the production switch.
+
+For the final cutover, temporarily hold the native storage guard without stopping
+its other applications, stop only Immich's server through Dockhand, and take a
+fresh dump. Restore and compare that final snapshot while the server remains
+stopped. Stop the temporary database before attaching its prepared directory
+to the production database. Update the path override through Dockhand, then sync
+and deploy the production Git stack after successful CI. Resume the guard in
+all exit paths. Check authenticated photo access and vector search, then remove
+the temporary stack and dump. Keep exactly one old cluster for short rollback;
+retire it after acceptance and a verified fresh bounded backup. The bulk photo
+tree is unchanged.
+
+Rollback requires the old image and mount layout in Git plus its original path
+override, followed by CI and Dockhand deployment. Never point PostgreSQL 14 at
+PostgreSQL 18 files. Once new writes are accepted, rolling back to the old cluster
+loses those new database changes, so keep the maintenance window short.
+
+Upstream: [PostgreSQL major upgrades](https://www.postgresql.org/docs/18/upgrading.html),
+[Immich database compatibility](https://docs.immich.app/administration/postgres-standalone/),
+[Immich backup and restore](https://docs.immich.app/administration/backup-and-restore/).

@@ -52,6 +52,8 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m unittest discover -s host/quark/tests -v
+      - run: pip install pyyaml
+      - run: python -m unittest discover -s immich/tests -v
       - name: Validate native file-server configuration
         run: |
           sudo apt-get update -qq
@@ -62,12 +64,13 @@ jobs:
         env:
           DOCKERCONFIGPATH: /mnt/services/docker
           CONFIG_PATH: /mnt/services/docker/pms
-          IMMICH_DB_PATH: /mnt/services/docker/immich/postgres
+          IMMICH_DB_PATH: /mnt/services/docker/immich/postgres18
           IMMICH_DB_PASSWORD: ci-placeholder-only
           TZ: Europe/London
         run: |
           docker compose -f media_related_stack/docker-compose.quark.yml config --format json > /tmp/quark-media.json
           docker compose -f arr_vpn_stack/docker-compose.quark.yml config --format json > /tmp/quark-arr.json
           docker compose -f immich/docker-compose.quark-server.yml config --format json > /tmp/quark-immich.json
+          docker compose -f immich/postgres-upgrade.compose.yml config --quiet
           docker compose -f stirling_pdf/docker-compose.quark.yml config --format json > /tmp/quark-stirling.json
           python host/quark/tests/check_compose.py /tmp/quark-media.json /tmp/quark-arr.json /tmp/quark-immich.json /tmp/quark-stirling.json
