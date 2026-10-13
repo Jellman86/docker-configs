@@ -25,6 +25,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y samba-common-bin
+          sudo mkdir -p /run/samba /var/lib/samba/cache
           testparm --suppress-prompt host/quark/smb.conf
       - name: Validate merged deployment variants
         env:
