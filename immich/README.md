@@ -274,7 +274,12 @@ Never start this image over a PostgreSQL 14 directory. Rehearse a logical
 its network has no published ports or application access. Store the database
 password in that temporary Dockhand stack's secret store, not in files or Git.
 The restore must exit successfully and table counts, vector indexes and
-extensions must be checked before the production switch.
+extensions must be checked before the production switch. Also extract database
+properties from the custom dump with `pg_restore --create --schema-only --file=-`
+and replay its `ALTER DATABASE ... SET ...` statements through Dockhand's
+one-shot exec API. A restore without `--create` does not apply these properties.
+In particular, Immich's `vchordrq.probes=1` database default must be preserved;
+check vector queries in a new connection without adding a per-query override.
 
 For the final cutover, temporarily hold the native storage guard without stopping
 its other applications, stop only Immich's server through Dockhand, and take a
