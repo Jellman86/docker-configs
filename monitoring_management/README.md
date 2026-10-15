@@ -89,3 +89,7 @@ whichever expires first; allow extra space for the WAL, head and compaction.
 All Docker stdout/stderr logs are bounded to three 10 MB files per container.
 Application file logs and TSDB retention are separate policies. The `latest`
 Prometheus image no longer bundles the old console template directories.
+
+Grafana uses `grafana/grafana`, the supported OSS image repository since 12.4;
+`grafana/grafana-oss` no longer receives updates. Console-only Grafana logs use
+the bounded Docker policy rather than duplicating into a persistent file log.
