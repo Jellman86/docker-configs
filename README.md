@@ -25,7 +25,7 @@ runtime state ever differ.
 - `quark.pownet.uk` runs management, ingress, security/inference and the
   migrated media, arr, Immich and document stacks. Riker is retired.
 - Use the four guarded Quark server variants documented in
-  [`host/quark/`](host/quark/README.md). The base files retain legacy defaults.
+  [`host/quark/`](host/quark/README.md). The base service definitions use Quark defaults; deploy the guarded variants.
 - Immich's existing Quark ML worker remains separate from its server/database.
 - `monitoring_management` is portable; its Dockhand definition determines its host.
 
@@ -141,3 +141,5 @@ retain legacy network defaults for reference; Riker is retired.
 When chaining Cloudflare Tunnel (`cloudflared`) with Nginx Proxy Manager (`nginx-pm`), avoid redirect loops:
 - When NPM forces HTTPS, use `https://quark.pownet.uk:443` as the tunnel origin, with the public hostname as HTTP Host and TLS server name. Keep TLS verification enabled.
 - If using an HTTP origin instead, avoid an origin redirect back to the same public URL.
+
+See [Quark configuration review](host/quark/UPSTREAM_REVIEW.md) for upstream contracts, intentional deviations, current deployment scope and remaining limitations.

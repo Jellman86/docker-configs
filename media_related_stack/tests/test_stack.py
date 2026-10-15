@@ -83,7 +83,7 @@ class MediaStackPolicyTests(unittest.TestCase):
             if volume["target"] == "/config"
         )
         self.assertEqual(
-            "${DOCKERCONFIGPATH:-/mnt/apps/docker}/jellyfin", config["source"]
+            "${DOCKERCONFIGPATH:-/mnt/services/docker}/jellyfin", config["source"]
         )
         self.assertTrue(config["bind"]["create_host_path"])
 

@@ -1,0 +1,21 @@
+name: All Compose contracts
+on:
+  push:
+    paths: ['**/*.yml', 'scripts/**', '**/tests/**']
+  pull_request:
+    paths: ['**/*.yml', 'scripts/**', '**/tests/**']
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install PyYAML==6.0.2
+      - name: Render all manifests and check log retention and one-shot jobs
+        run: python scripts/validate-compose.py
+      - run: python -m unittest discover -s media_related_stack/tests -v
+      - run: python -m unittest discover -s autofpl/tests -v

@@ -1,3 +1,7 @@
+# Quark deployment uses docker-compose.quark.yml, which extends these services.
+# /data is one shared bind for downloads and libraries: hardlinks and atomic
+# imports require both paths on the same filesystem. Keep app settings in /config.
+# Image contract: https://docs.linuxserver.io/images/docker-qbittorrent/
 name: arr_stack
 
 # Pinned to a release, and anchored so the same reference reaches qbittorrent's
@@ -33,10 +37,10 @@ services:
       - "${QBITTORRENT_PORT:-5041}:5041/tcp"
       - "${QBITTORRENT_PORT:-5041}:5041/udp"
       - "${QBITTORRENT_WEBUI_PORT:-8081}:8081/tcp"
-      - "${GLUETUN_CONTROL_BIND_ADDRESS:-192.168.213.101}:${GLUETUN_CONTROL_PORT:-8000}:8000/tcp"
+      - "${GLUETUN_CONTROL_BIND_ADDRESS:-192.168.213.102}:${GLUETUN_CONTROL_PORT:-8000}:8000/tcp"
     volumes:
       - type: bind
-        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/gluetun
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/gluetun
         target: /gluetun
         bind:
           create_host_path: true
@@ -105,12 +109,12 @@ services:
       DOCKER_MODS: ${QBITTORRENT_DOCKER_MODS:-ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest}
     volumes:
       - type: bind
-        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/qbittorrent
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/qbittorrent
         target: /config
         bind:
           create_host_path: true
       - type: bind
-        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/qbittorrent/logs
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/qbittorrent/logs
         target: /logs
         bind:
           create_host_path: true
@@ -150,7 +154,7 @@ services:
       TZ: ${TZ:-Europe/London}
     volumes:
       - type: bind
-        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/prowlarr
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/prowlarr
         target: /config
         bind:
           create_host_path: true
@@ -181,7 +185,7 @@ services:
       TZ: ${TZ:-Europe/London}
     volumes:
       - type: bind
-        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/radarr
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/radarr
         target: /config
         bind:
           create_host_path: true
@@ -212,7 +216,7 @@ services:
       TZ: ${TZ:-Europe/London}
     volumes:
       - type: bind
-        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/sonarr
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/sonarr
         target: /config
         bind:
           create_host_path: true
@@ -275,7 +279,7 @@ services:
       - "${CLEANUPARR_PORT:-11011}:11011/tcp"
     volumes:
       - type: bind
-        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/cleanuparr
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/cleanuparr
         target: /config
         bind:
           create_host_path: true
@@ -298,6 +302,8 @@ services:
       retries: 3
       start_period: 30s
 #-----------------------------------------------
+  # Official Seerr requires an init process; PUID/PGID alone do not set its UID.
+  # Native user: below matches ownership of the migrated /app/config tree.
   seerr:
     image: ghcr.io/seerr-team/seerr:latest
     init: true
@@ -313,7 +319,7 @@ services:
       - "5055:5055"
     volumes:
       - type: bind
-        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/seerr
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/seerr
         target: /app/config
         bind:
           create_host_path: true
@@ -350,7 +356,7 @@ services:
       vpn_stack_brg:
     environment:
       TZ: ${TZ:-Europe/London}
-      DOCKHAND_URL: ${DOCKHAND_URL:-http://192.168.213.101:30328}
+      DOCKHAND_URL: ${DOCKHAND_URL:-http://192.168.213.102:3000}
       DOCKHAND_ENV_ID: ${DOCKHAND_ENV_ID:-1}
       DOCKHAND_TOKEN: ${DOCKHAND_TOKEN:-}
       STACK_NAME: ${GLUETUN_GUARD_STACK:-arr_stack}

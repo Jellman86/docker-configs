@@ -14,7 +14,7 @@ EXPECTED_DATA_PATH = "/mnt/apps/docker/autofpl/data"
 EXPECTED_INBOX_PATH = "/mnt/apps/docker/autofpl/analytics-inbox"
 EXPECTED_SNAPSHOT_PATH = "/mnt/apps/docker/autofpl/analytics-snapshot"
 EXPECTED_RESEARCH_NETWORK = "ai_tools_research_private"
-EXPECTED_BYPARR_URL = "http://192.168.213.101:8191/"
+EXPECTED_BYPARR_URL = "http://192.168.213.102:8191/"
 
 
 class AutoFplStackPolicyTests(unittest.TestCase):

@@ -1,6 +1,6 @@
 # Media Stack
 
-Git-backed Dockhand stack for Plex and Jellyfin playback plus Optimisarr media optimization on Riker.
+Git-backed Dockhand stack for Plex and Jellyfin playback plus Optimisarr media optimization on Quark.
 
 ## Current Quark deployment
 
@@ -10,7 +10,7 @@ backends are Quark host ports 32400 and 8096.
 Configs use `/mnt/services/docker`; photos/media remain on `/mnt/tank`.
 The native storage guard owns startup through Dockhand. See
 [`host/quark`](../host/quark/README.md) for storage and startup requirements.
-The legacy base topology and defaults below describe the former Riker placement.
+The base file contains reusable service definitions; deploy the Quark variant.
 
 ## Services
 
@@ -22,15 +22,15 @@ The legacy base topology and defaults below describe the former Riker placement.
 
 ## Topology and hardware
 
-- Compose file: `media_related_stack/docker-compose.yml`
-- Intended host: Riker / TrueNAS.
+- Compose file: `media_related_stack/docker-compose.quark.yml`
+- Intended host: Quark / Fedora Server.
 - Plex and Jellyfin use host networking for DLNA, discovery, and media-client
-  compatibility. A reverse proxy must therefore target Riker's host address,
+  compatibility. A reverse proxy must therefore target Quark's host address,
   not the `jellyfin` container name on `media_stack_default`.
 - Optimisarr joins both its project default network and external `${ARR_NETWORK:-arr_stack_brg}` so it can resolve Radarr and Sonarr directly.
 - Plex, Jellyfin, and Optimisarr receive `/dev/dri` for Intel QSV/VA-API.
   LinuxServer's Jellyfin entrypoint grants its `abc` user access to the mounted
-  render device; Optimisarr separately receives `${RENDER_GID:-107}` as a
+  render device; Optimisarr separately receives `${RENDER_GID:-105}` as a
   supplementary group.
 
 Confirm the iGPU device and host render-group ID before deployment to a new host.
@@ -38,15 +38,15 @@ Confirm the iGPU device and host render-group ID before deployment to a new host
 ## Private application access
 
 Jellyfin is available to trusted-network clients at
-`https://jellyfin.pownet.uk`. UniFi provides a private A record to Riker
-(`192.168.213.101`), where Nginx Proxy Manager terminates the managed
+`https://jellyfin.pownet.uk`. UniFi provides a private A record to Quark
+(`192.168.213.102`), where Nginx Proxy Manager terminates the managed
 `*.pownet.uk` certificate and proxies HTTP/WebSocket traffic to
-`192.168.213.101:8096`.
+`192.168.213.102:8096`.
 
 This hostname is intentionally private-LAN ingress. Do not add a public DNS
 record or Cloudflare Tunnel route without a separate exposure and
 authentication review. Because Jellyfin uses host networking, keep the proxy
-upstream on Riker's address rather than changing it to the Compose service
+upstream on Quark's address rather than changing it to the Compose service
 name.
 
 ### Jellyfin container and GPU research
@@ -76,14 +76,14 @@ tone-mapping test on this host.
 
 | Host path | Container use |
 |---|---|
-| `${CONFIG_PATH:-/mnt/apps/docker/pms}` | Plex configuration, metadata, and identity |
+| `${CONFIG_PATH:-/mnt/services/docker/pms}` | Plex configuration, metadata, and identity |
 | `${MEDIA_PATH:-/mnt/tank/media}` | Plex library at `/library` |
 | `${IMMICH_PHOTOS_PATH:-/mnt/tank/photos}/library` | Immich storage-template originals, read-only in Plex at `/immich/library` |
 | `${IMMICH_PHOTOS_PATH:-/mnt/tank/photos}/upload` | Immich non-template originals, read-only in Plex at `/immich/upload` |
-| `${MEDIA_PATH}/transcode` | Plex transcode workspace |
-| `${DOCKERCONFIGPATH:-/mnt/apps/docker}/jellyfin` | Jellyfin configuration, database, metadata, cache, and identity at `/config` |
+| `${PLEX_TRANSCODE_PATH:-/mnt/services/plex-transcode}` | Plex transcode workspace on the SSD |
+| `${DOCKERCONFIGPATH:-/mnt/services/docker}/jellyfin` | Jellyfin configuration, database, metadata, cache, and identity at `/config` |
 | `${MEDIA_PATH:-/mnt/tank/media}` | The same media tree mounted read-only in Jellyfin at `/library` |
-| `${DOCKERCONFIGPATH:-/mnt/apps/docker}/optimisarr` | Optimisarr configuration and database |
+| `${DOCKERCONFIGPATH:-/mnt/services/docker}/optimisarr` | Optimisarr configuration and database |
 | `${DATAPATH:-/mnt/tank}` | Optimisarr `/data` tree |
 | `${OPTIMISARR_WORKPATH:-/mnt/tank/.optimisarr/work}` | Optimisarr work area |
 | `${OPTIMISARR_TRASHPATH:-/mnt/tank/.optimisarr/trash}` | Optimisarr quarantine/trash area |
@@ -150,9 +150,9 @@ Revert the Git/image change, push, and redeploy through Dockhand. Do not interru
 
 ## Security and operational notes
 
-- Plex host networking exposes its normal service ports directly on Riker; control exposure with trusted-network firewalling and Plex authentication.
+- Plex host networking exposes its normal service ports directly on Quark; control exposure with trusted-network firewalling and Plex authentication.
 - Jellyfin host networking exposes `8096` and its discovery/DLNA listeners
-  directly on Riker. Complete the setup wizard immediately, create a strong
+  directly on Quark. Complete the setup wizard immediately, create a strong
   administrator credential, disable remote access until the reverse proxy and
   authentication policy are ready, and do not expose `/metrics` publicly.
 - Back up Jellyfin's `/config`; LinuxServer notes that metadata for a large

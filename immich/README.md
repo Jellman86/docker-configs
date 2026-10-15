@@ -1,73 +1,53 @@
-# Immich
+# Immich on Quark
 
-Self-hosted photo and video library on Quark for phone backup, browsing, search
-and sharing. The existing Intel GPU handles transcoding and machine learning.
+Photo/video library, PostgreSQL and the separate OpenVINO worker all run on Quark
+(`192.168.213.102`). Riker is retired. Deploy through Git, successful CI and Dockhand.
 
-## Current Quark deployment
+## Deployed topology
 
-The October 2026 migration moves this stack to Quark (`192.168.213.102`).
-Use `immich/docker-compose.quark-server.yml` for server/database/cache and retain
-the separate existing `docker-compose.quark.yml` ML worker.
-Configs use `/mnt/services/docker`; photos/media remain on `/mnt/tank`.
-The native storage guard owns startup through Dockhand. See
-[`host/quark`](../host/quark/README.md) for storage and startup requirements.
-The legacy base topology and defaults below describe the former Riker placement.
+| Git stack | Compose path | Services |
+| --- | --- | --- |
+| `immich` | `immich/docker-compose.quark-server.yml` | Server, PostgreSQL, Valkey |
+| `immich_ml` | `immich/docker-compose.quark.yml` | OpenVINO machine learning |
 
-## Services
+The server variant extends `docker-compose.yml` and sets `restart: "no"` because
+Quark's storage guard owns startup and crash recovery through Dockhand. The ML
+worker uses `unless-stopped` and needs only its SSD-backed model cache. The base
+machine-learning profile is a fallback, not another worker to enable alongside it.
 
-| Service | Role | Network exposure |
-|---|---|---|
-| `immich-server` | API, web UI, and all background workers | `general_brg` + `immich_backend`; no host port |
-| `immich-machine-learning` | CLIP search, face recognition, OCR | `immich_backend` only; **off by default - runs on Quark instead** |
-| `immich-redis` | Valkey job queue and cache | `immich_backend` only |
-| `immich-database` | Postgres 18 + VectorChord | `immich_backend` only |
+The server joins `general_brg` for NPM and `immich_backend` for database/cache.
+Database/cache have no published ports. This bridge is host-local, not cross-host.
+The independently deployed ML worker retains the tested LAN endpoint
+`http://192.168.213.102:3003`. Its API is unauthenticated and must not be exposed
+through NPM or Cloudflare. Keep it LAN-bound until both stacks deliberately move
+to a shared network and the saved ML URL is updated together.
 
-Upstream merged the old `immich-microservices` container into `immich-server`
-in v1.118.0. Any compose file still carrying it is stale.
+## Storage and hardware
 
-## Topology
+| Location | Contents |
+| --- | --- |
+| `/mnt/tank/photos` -> `/data` | Originals, thumbnails, profiles, transcodes |
+| `/mnt/services/docker/immich/postgres18` -> `/var/lib/postgresql` | PostgreSQL cluster `18/docker` on local SSD |
+| ML `model-cache` volume | Re-downloadable weights on the added SSD's Docker storage |
 
-Riker (`riker.pownet.uk`, TrueNAS) runs the stack. Only `immich-server` joins
-the external `general_brg` bridge, with alias `immich-server`, so Nginx Proxy
-Manager can reach it by name. The database, cache, and ML worker stay on the
-stack's own `immich_backend` bridge and are unreachable from the proxy network.
+Never put PostgreSQL on SMB/NFS or reuse a previous-major cluster directory.
+PG18 uses the parent `/var/lib/postgresql` mount, not the old PG14 `/data` mount.
+The accepted database image contains PostgreSQL 18, VectorChord 1.1.1 and pgvector.
+Its digest is an explicit reviewed upgrade, not a promise to match a moving
+upstream latest Compose file. Do not redeploy `postgres-upgrade.compose.yml`
+over the production path: it is an isolated maintenance template only.
 
-`immich_backend` is a normal bridge rather than `internal: true` because the ML
-worker downloads model weights and the server fetches reverse geocoding data on
-first run.
+Intel transcoding and OpenVINO receive `/dev/dri` and Quark render GID `105`.
+OpenVINO also retains upstream's USB device cgroup rule. Server and ML image
+versions must match; the accepted deployment uses Immich 3.3.1. Do not upgrade one
+stack independently. The worker's 8 GiB memory ceiling covers measured simultaneous
+CLIP/face/OCR residency; caps do not reserve that memory.
 
-Compose paths for the Dockhand Git stacks:
+## Ingress
 
-```text
-immich/docker-compose.yml         # Riker  - server, database, cache
-immich/docker-compose.quark.yml   # Quark  - machine-learning worker
-```
-
-The worker is a separate stack on a separate host with its own Dockhand, which
-is why it is a host variant rather than another service in the Riker file.
-
-## Private application access
-
-The stack publishes no host port. Expose it with a UniFi private A record for
-`immich.pownet.uk` pointing at Riker (`192.168.213.101`), then an Nginx Proxy
-Manager proxy host targeting:
-
-```text
-http://immich-server:2283
-```
-
-Immich **cannot be served on a sub-path** - it must own the root of a
-(sub)domain.
-
-Three proxy settings are mandatory, and each fails silently if missed:
-
-1. **Websockets Support** must be enabled, or the web UI reports
-   `Server Status Offline | Version Unknown`.
-2. **`client_max_body_size`** must be raised well above nginx's default, or
-   large video uploads fail. Upstream's reference config uses `50000M`.
-3. **Timeouts** must be raised from the default 60s, or uploads die mid-transfer.
-
-Put the following in the proxy host's **Advanced** tab:
+Private DNS `immich.pownet.uk` targets Quark. NPM forwards to
+`http://immich-server:2283`, with **Websockets Support** enabled. Immich needs the
+root of its domain, not a subpath. The tested advanced configuration is:
 
 ```nginx
 client_max_body_size 50000M;
@@ -78,225 +58,29 @@ proxy_send_timeout 600s;
 send_timeout 600s;
 ```
 
-`proxy_request_buffering off` keeps the proxy from spooling entire videos to
-disk before forwarding them, which both avoids filling the proxy and roughly
-doubles upload speed.
+Store database credentials in Dockhand encrypted variables. Keep original
+`IMMICH_UPLOAD_PATH`, database username/name, and saved application settings when
+recreating containers. `IMMICH_TRUSTED_PROXIES` must reflect the actual proxy path;
+the existing Docker-range setting is broad and assumes trusted local containers.
 
-This hostname is private-LAN ingress. Do not add a public DNS record or a
-Cloudflare Tunnel route without a separate exposure and authentication review.
+## Recovery and validation
 
-## Persistent storage
+Nightly bounded app recovery uses a consistent logical `pg_dump`. Photos require
+the separate full USB backup. Physical cluster copying while online is not a
+replacement for the dump. After a restore, replay original database properties:
+`vchordrq.probes=1` and `search_path="$user", public, vectors`. Inspect them with
+`pg_restore --create --schema-only --file=- immich.dump`. A restore without
+`--create` does not apply the DATABASE properties automatically.
 
-| Path | Contents | Pool |
-|---|---|---|
-| `${IMMICH_UPLOAD_PATH:-/mnt/tank/photos}` | Originals, thumbnails, transcodes, profile images, Immich's own DB dumps | `tank` (spinning, bulk) |
-| `${IMMICH_DB_PATH:-/mnt/apps/docker/immich/postgres18}` | Postgres data directory | `apps` (NVMe) |
-| `model-cache` volume | ML model weights; re-downloadable | Docker volume |
+After deployment check server/ML/database health, authenticated photo original and
+preview access, smart search, vector indexes, expected asset counts and a fresh
+logical backup. Restore app files only while the affected service is stopped
+through Dockhand. Never restart the retired PG14 cluster over PG18 files.
 
-Two rules that matter more here than in most stacks:
+## Upstream references
 
-- **The database must not sit on a network share or the media pool.** Upstream
-  states network shares are unsupported for the database, and this repository
-  keeps database-heavy state local to its host. It is deliberately on the NVMe
-  `apps` pool.
-- **The upload tree must stay on one mount.** Thumbnails and transcodes add
-  roughly 10-20% on top of the originals; splitting them breaks Immich's own
-  backup assumptions.
-
-The filesystem must be Unix-compatible with real ownership. ZFS qualifies.
-
-## Environment
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `IMMICH_VERSION` | `v3` | Major-version metatag. Upstream now recommends pinning the major rather than tracking `release`, so a v4 never lands unattended |
-| `IMMICH_DB_PASSWORD` | **none - required** | Postgres password. **Dockhand secret only.** Must be `A-Za-z0-9` with no symbols or spaces, because Immich builds a connection URL from it |
-| `IMMICH_DB_USERNAME` | `postgres` | Upstream advises leaving this alone |
-| `IMMICH_DB_NAME` | `immich` | Upstream advises leaving this alone |
-| `IMMICH_UPLOAD_PATH` | `/mnt/tank/photos` | Media root |
-| `IMMICH_DB_PATH` | `/mnt/apps/docker/immich/postgres` | Database directory |
-| `IMMICH_TRUSTED_PROXIES` | `172.16.0.0/12` | Keeps real client IPs in the audit log instead of the proxy's address |
-| `IMMICH_ML_URL` | `http://immich-machine-learning:3003` | Point at another host to run inference remotely |
-| `RENDER_GID` | `107` | Riker's `render` group, owner of `/dev/dri/renderD128` |
-| `TZ` | `Europe/London` | Container timezone |
-| `IMMICH_SERVER_MEMORY_LIMIT` | `3g` | Server bound |
-| `IMMICH_ML_MEMORY_LIMIT` | `8g` (Quark) / `4g` (Riker fallback) | ML bound. Measured 5.4GiB with CLIP, face and OCR models resident together |
-| `IMMICH_DB_MEMORY_LIMIT` | `2g` | Database bound |
-| `IMMICH_REDIS_MEMORY_LIMIT` | `512m` | Cache bound |
-
-`IMMICH_DB_PASSWORD` is the only secret and has **no default on purpose** -
-this repository is public, so a default would publish a working credential.
-
-## Hardware acceleration
-
-Riker is an Intel N100 (Alder Lake-N, UHD Graphics, `i915`), with
-`/dev/dri/renderD128` owned by group `render` (GID 107).
-
-Upstream ships acceleration as separate `hwaccel.transcoding.yml` and
-`hwaccel.ml.yml` overlay files combined with `-f`. Dockhand deploys a single
-compose path and would never load a second file, so the relevant fragments are
-**inlined**:
-
-- `immich-server` gets `/dev/dri` and `group_add`, equivalent to upstream's
-  `quicksync` transcoding profile.
-- `immich-machine-learning` gets `/dev/dri`, the `c 189:* rmw` cgroup rule, and
-  the `-openvino` image tag, equivalent to upstream's `openvino` profile.
-
-Transcoding acceleration is low-risk and always on. OpenVINO inference is the
-more fragile of the two on Alder Lake-N; if it misbehaves, drop the `-openvino`
-suffix to fall back to CPU inference, which only slows the initial library scan.
-
-## Machine learning runs on Quark
-
-Inference is deliberately **not** on Riker. Immich's documented minimum is 6 GB
-RAM and the worker alone holds 2-4 GB resident. Riker has 15 GB total with
-roughly 1.4 GB free after the server stack, **no swap**, and already serves
-Plex, Jellyfin, and the ARR stack. Starting the worker there forces ZFS ARC to
-its floor or trips the OOM killer against services that matter more.
-
-Quark has 22.9 GB with ~13.8 GB free, 14 cores, and an Arrow Lake-S iGPU, so the
-worker lives there and Riker's server reaches it across the LAN:
-
-| | Riker | Quark |
-|---|---|---|
-| Compose | `docker-compose.yml` | `docker-compose.quark.yml` |
-| Render GID | 107 | 105 |
-| Role | server, database, cache | machine-learning only |
-
-`IMMICH_ML_URL` on the Riker stack points at
-`http://192.168.213.102:3003`. The worker publishes that port bound to Quark's
-LAN address specifically, not `0.0.0.0`.
-
-**Immich's ML API has no authentication of its own.** The bind address is the
-only boundary, so the port must never be published on an untrusted interface,
-proxied publicly, or routed through Cloudflare Tunnel.
-
-Riker's own `immich-machine-learning` definition stays in place behind the
-`machine-learning` profile as a fallback. **Only one worker should be active at
-a time** - if you enable the local profile, clear `IMMICH_ML_URL` so the server
-stops pointing at Quark.
-
-With the worker down, everything except smart search, face recognition, and OCR
-continues to work; the server degrades rather than failing.
-
-## Companion tools
-
-None are required, and none belong in this stack.
-
-- **`immich-go`** - a bulk importer for Google Photos Takeout, iCloud exports,
-  and local folders. It is a **standalone Go binary with no official container
-  image**, run ad hoc from a workstation against the API. It is not a service
-  and must not be added here.
-- **`immich-cli`** - the official CLI. Run with `docker run --rm` when needed.
-- **immich-public-proxy**, **immich-kiosk** - genuine long-running services, but
-  separate concerns that would deploy as their own stacks. Both talk only to the
-  API.
-- **immich-power-tools**, **immich-deduper** - reach directly into the Immich
-  database rather than the API, which couples them to Immich's schema across
-  upgrades. Avoid.
-
-## Deployment and updates
-
-Deploy only through Riker's Dockhand after the Compose change has reached
-`main`. Riker runs Dockhand `1.0.37`; confirm the live version before any
-mutation and follow
-[`dockhand-git-deployments.md`](../../.agents/nevercommit/dockhand-git-deployments.md).
-
-`IMMICH_DB_PASSWORD` must exist in Dockhand's secret store **before** the first
-deploy. Postgres initialises its data directory on first start and the password
-is fixed at that moment; changing it afterwards means editing the database, not
-the variable.
-
-The Git stack has `repullImages` enabled, so a Dockhand deploy pulls the current
-`v3` images and recreates the containers.
-
-The worker is a second Git stack on **Quark's** Dockhand (port `3000`, not
-Riker's `30328`) with compose path `immich/docker-compose.quark.yml`. Keep both
-stacks on the same `IMMICH_VERSION`: the server and worker must share a major
-version.
-
-## Rollback
-
-Immich **does not support downgrades**, not even patch-level, because migrations
-run forward-only on start. Rolling back the image after a successful start
-requires restoring the database from backup as well.
-
-Revert the Compose commit, push `main`, then repeat the Dockhand sync and deploy.
-Restore `${IMMICH_DB_PATH}` from a verified backup only after stopping the stack
-through Dockhand.
-
-## Security and operational notes
-
-- Every service runs with `no-new-privileges` and no published host port.
-- The database and cache are unreachable from `general_brg`.
-- `IMMICH_DB_PASSWORD` lives only in Dockhand's secret store. This repository is
-  public; never give it a default.
-- Immich has its own user accounts and admin registration. The first account
-  created becomes the administrator, so register it immediately after the first
-  deploy rather than leaving registration open on the LAN.
-- Upgrade the mobile app before the server. The app supports the current and
-  previous major; the server only supports a matching major.
-- Docker CLI may be used for read-only diagnosis only; all lifecycle changes go
-  through Dockhand.
-
-## Research record
-
-Verified on 2026-08-27 against upstream primary sources, at release `v3.1.0`:
-
-- [Official release compose file](https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml)
-  defines the four services, the digest-pinned Valkey 9 and
-  `ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0` images,
-  `shm_size: 128mb`, and `healthcheck: disable: false`.
-- [Environment variables](https://docs.immich.app/install/environment-variables)
-  documents `DB_*`, `REDIS_HOSTNAME`, `IMMICH_TRUSTED_PROXIES`, and
-  `IMMICH_MACHINE_LEARNING_URL`.
-- [Reverse proxy](https://docs.immich.app/administration/reverse-proxy/) gives
-  the `client_max_body_size 50000M`, `proxy_request_buffering off`, and 600s
-  timeout values reproduced above, and states sub-path hosting is unsupported.
-- [ML hardware acceleration](https://docs.immich.app/features/ml-hardware-acceleration)
-  documents the `-openvino` image tag and the `c 189:* rmw` cgroup rule.
-- [Requirements](https://docs.immich.app/install/requirements) states the 6 GB
-  minimum, 8 GB recommendation, and that 4 GB systems must disable machine
-  learning.
-- v3.0.0 dropped pgvecto.rs support; VectorChord has been the default since
-  v1.133.0. Migrate before upgrading from anything older.
-
-## PostgreSQL major upgrade
-
-The database uses PostgreSQL 18 with VectorChord 1.1.1 and pgvector 0.8.5 in
-Immich's digest-pinned upstream image. PostgreSQL 18 mounts `/var/lib/postgresql`
-and keeps its cluster in `18/docker`. Quark's Dockhand `IMMICH_DB_PATH` override
-must point to `/mnt/services/docker/immich/postgres18`.
-
-Never start this image over a PostgreSQL 14 directory. Rehearse a logical
-`pg_dump -Fc --no-owner --no-privileges` restore using the isolated, temporary
-`postgres-upgrade.compose.yml` Git stack. Its dump directory is read-only and
-its network has no published ports or application access. Store the database
-password in that temporary Dockhand stack's secret store, not in files or Git.
-The restore must exit successfully and table counts, vector indexes and
-extensions must be checked before the production switch. Also extract database
-properties from the custom dump with `pg_restore --create --schema-only --file=-`
-and replay its `ALTER DATABASE ... SET ...` statements through Dockhand's
-one-shot exec API. A restore without `--create` does not apply these properties.
-In particular, Immich's `vchordrq.probes=1` database default must be preserved;
-check vector queries in a new connection without adding a per-query override.
-
-For the final cutover, temporarily hold the native storage guard without stopping
-its other applications, stop only Immich's server through Dockhand, and take a
-fresh dump. Restore and compare that final snapshot while the server remains
-stopped. Stop the temporary database before attaching its prepared directory
-to the production database. Update the path override through Dockhand, then sync
-and deploy the production Git stack after successful CI. Resume the guard in
-all exit paths. Check authenticated photo access and vector search, then remove
-the temporary stack and dump. Keep exactly one old cluster for short rollback;
-retire it after acceptance and a verified fresh bounded backup. The bulk photo
-tree is unchanged.
-
-Rollback requires the old image and mount layout in Git plus its original path
-override, followed by CI and Dockhand deployment. Never point PostgreSQL 14 at
-PostgreSQL 18 files. Once new writes are accepted, rolling back to the old cluster
-loses those new database changes, so keep the maintenance window short.
-
-Upstream: [PostgreSQL major upgrades](https://www.postgresql.org/docs/18/upgrading.html),
-[Immich database compatibility](https://docs.immich.app/administration/postgres-standalone/),
-[Immich backup and restore](https://docs.immich.app/administration/backup-and-restore/).
+- [Docker Compose installation](https://docs.immich.app/install/docker-compose/)
+- [Hardware transcoding](https://docs.immich.app/features/hardware-transcoding/)
+- [ML acceleration](https://docs.immich.app/features/ml-hardware-acceleration/)
+- [Reverse proxy](https://docs.immich.app/administration/reverse-proxy/)
+- [Backup and restore](https://docs.immich.app/administration/backup-and-restore/)

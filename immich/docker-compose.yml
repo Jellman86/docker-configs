@@ -1,24 +1,12 @@
 ---
-# Immich - self-hosted photo and video library on Riker.
-#
-# The service shape tracks the official v3 release compose file at
-# https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml
-# with four deliberate deviations, each explained in README.md:
-#
-#   1. No published host port. Nginx Proxy Manager reaches the server over
-#      general_brg by name, matching every other proxied service on Riker.
-#   2. Hardware acceleration is inlined instead of pulled in through upstream's
-#      hwaccel.transcoding.yml / hwaccel.ml.yml overlays, because Dockhand
-#      deploys a single compose path and would never load a second file.
-#   3. Machine learning sits behind a Compose profile and does not start by
-#      default. Riker has ~3 GB free of 15 GB with no swap; the ML worker needs
-#      2-4 GB resident and would push ZFS ARC out or trip the OOM killer.
-#   4. Postgres and Valkey stay on an internal bridge. Only the server joins
-#      general_brg, so the database is never reachable from the proxy network.
-#
-# Immich requires Postgres with a vector extension - it has no SQLite mode and
-# stock Postgres will not work. Upstream's image bundles VectorChord, so both
-# infrastructure images are digest-pinned exactly as upstream ships them.
+# Shared service definitions. Deploy docker-compose.quark-server.yml on Quark;
+# the separate immich_ml stack supplies the OpenVINO worker on the same host.
+# Keep server and ML versions matched in Dockhand. Do not enable the fallback
+# machine-learning profile while the separate worker exists (same container name).
+# Upstream: https://docs.immich.app/install/docker-compose/
+# Deliberate differences: NPM-only server ingress, private database/cache bridge,
+# bounded resources/logs, and hardware mappings inlined for one-file deployment.
+# PostgreSQL is an accepted explicit PG18 upgrade, not an automatic image bump.
 
 services:
   immich-server:
@@ -55,11 +43,11 @@ services:
         target: /etc/localtime
         read_only: true
     devices:
-      # Alder Lake-N iGPU for QSV/VA-API transcoding. Upstream ships this as
+      # Intel iGPU for QSV/VA-API transcoding. Upstream ships this as
       # hwaccel.transcoding.yml service "quicksync".
       - /dev/dri:/dev/dri
     group_add:
-      - "${RENDER_GID:-107}"
+      - "${RENDER_GID:-105}"
     expose:
       - "2283"
     networks:
@@ -90,8 +78,8 @@ services:
     image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-v3}-openvino
     container_name: immich-machine-learning
     restart: unless-stopped
-    # Off by default. Start it with `--profile machine-learning` once Riker has
-    # the headroom, or run this worker on Quark and set IMMICH_ML_URL instead.
+    # Optional fallback only. The deployed Quark server variant omits this service
+    # and uses the existing independently deployed worker on LAN port 3003.
     profiles:
       - machine-learning
     environment:
@@ -104,7 +92,7 @@ services:
     device_cgroup_rules:
       - "c 189:* rmw"
     group_add:
-      - "${RENDER_GID:-107}"
+      - "${RENDER_GID:-105}"
     networks:
       immich_backend: {}
     security_opt:
@@ -120,7 +108,8 @@ services:
         max-file: "3"
 
   immich-redis:
-    # Valkey, digest-pinned exactly as upstream ships it. The job queue is
+    # Validated Valkey image. Review pinned dependencies with the selected Immich
+    # release rather than tracking a moving upstream compose file. The job queue is
     # intentionally ephemeral, so this service has no volume.
     image: docker.io/valkey/valkey:9@sha256:8e8d64b405ce18f41b8e5ee20aa4687a8ed0022d1298f2ce31cdcf3a76e09411
     container_name: immich-redis
@@ -159,7 +148,7 @@ services:
       # Upstream states network shares are unsupported for the database and
       # this repository keeps database-heavy state local to its host.
       - type: bind
-        source: ${IMMICH_DB_PATH:-/mnt/apps/docker/immich/postgres18}
+        source: ${IMMICH_DB_PATH:-/mnt/services/docker/immich/postgres18}
         target: /var/lib/postgresql
         bind:
           create_host_path: true
@@ -182,7 +171,7 @@ volumes:
   model-cache:
 
 networks:
-  # Shared cross-host bridge that Nginx Proxy Manager already sits on.
+  # Shared host-local bridge that Nginx Proxy Manager already sits on.
   general_brg:
     name: ${NETWORK:-general_brg}
     external: true

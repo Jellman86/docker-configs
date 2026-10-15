@@ -1,3 +1,4 @@
+# Legacy ingress topology retained for reference. Deploy docker-compose.quark.yml.
 services:
 #-----------------------------------------------
   npm:

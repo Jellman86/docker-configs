@@ -6,10 +6,10 @@ Git-backed Dockhand stack for Prometheus-based infrastructure monitoring and Gra
 
 | Service | Role | Published access |
 |---|---|---|
-| `prometheus` | Metrics collection, storage, rules, and query API | `${PROMETHEUS_WEB_PORT:-9090}` |
+| `prometheus` | Metrics collection, storage, rules, and query API | `${PROMETHEUS_WEB_PORT:-9091}` |
 | `snmp-exporter` | SNMP polling endpoint for Prometheus | `${SNMP_EXPORTER_WEB_PORT:-9116}` |
 | `unpoller` | UniFi controller polling and Prometheus metrics | `${UNPOLLER_WEB_PORT:-9130}` |
-| `grafana` | Dashboards and visualization | `${GRAFANA_WEB_PORT:-3000}` |
+| `grafana` | Dashboards and visualization | `${GRAFANA_WEB_PORT:-3002}` |
 
 ## Topology and storage
 
@@ -40,9 +40,9 @@ Required or security-sensitive values:
 - `UNIFI_CONTROLLER_URL`, `UNIFI_CONTROLLER_USER`, `UNIFI_CONTROLLER_PASS`
 - `GRAFANA_ADMIN_USER`, `GRAFANA_ADMIN_PASSWORD`
 
-Optional settings include `PUID`, `PGID`, `TZ`, published ports, `PROMETHEUS_RETENTION`, UniFi site/DPI/debug options, and `UNIFI_VERIFY_SSL`.
+Optional settings include `PUID`, `PGID`, `TZ`, published ports, `PROMETHEUS_RETENTION`, `PROMETHEUS_RETENTION_SIZE`, UniFi site/DPI/debug options, and `UNIFI_VERIFY_SSL`.
 
-Store SNMP, UniFi, and Grafana credentials as Dockhand secrets. The Compose fallback for Grafana is `admin`/`admin`; always override it before exposing Grafana. Use a dedicated read-only UniFi account and prefer SNMPv3.
+Store SNMP, UniFi, and Grafana credentials as Dockhand secrets. Grafana requires an explicit admin password; there is no public default password. Use a dedicated read-only UniFi account and prefer SNMPv3.
 
 ## Configuration
 
@@ -80,3 +80,12 @@ Revert the Git/image/configuration change, push, and redeploy through Dockhand. 
 - Protect SNMPv3 and UniFi credentials; do not commit populated environment files.
 - Avoid SNMPv2 community strings where SNMPv3 is available.
 - Monitor the size of the Prometheus TSDB; the default retention is 30 days.
+
+## Quark placement
+
+This stack is not currently deployed. Its default host ports avoid Cockpit 9090
+and Dockhand 3000. Retention is 30 days or 5 GB of persistent TSDB blocks,
+whichever expires first; allow extra space for the WAL, head and compaction.
+All Docker stdout/stderr logs are bounded to three 10 MB files per container.
+Application file logs and TSDB retention are separate policies. The `latest`
+Prometheus image no longer bundles the old console template directories.

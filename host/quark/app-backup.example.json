@@ -26,7 +26,8 @@
     "/mnt/services/quark/docker/mosquitto/config",
     "/mnt/services/quark/docker/mosquitto/data",
     "/mnt/services/quark/docker/hermes",
-    "/mnt/services/quark/docker/openviking"
+    "/mnt/services/quark/docker/openviking",
+    "/mnt/services/quark/docker-engine/volumes/optimisarr_sidecar_sidecar-config/_data"
   ],
   "files": [
     "/etc/fstab",
@@ -51,6 +52,13 @@
     "/mnt/services/docker/pms/Library/Application Support/Plex Media Server/Plug-in Support/Databases/com.plexapp.plugins.library*.db",
     "/var/lib/tailscale/tailscaled.state",
     "/etc/sysctl.d/99-quark-tailscale.conf",
-    "/etc/systemd/system/tailscaled.service.d/10-quark-gro.conf"
+    "/etc/systemd/system/tailscaled.service.d/10-quark-gro.conf",
+    "/etc/cockpit/cockpit.conf",
+    "/etc/systemd/system/quark-media-health.service",
+    "/etc/systemd/system/quark-media-health.timer",
+    "/etc/systemd/system/quark-media-scrub.service",
+    "/etc/systemd/system/quark-media-scrub.timer",
+    "/etc/quark-external-backup.json",
+    "/usr/local/sbin/quark-external-backup"
   ]
 }

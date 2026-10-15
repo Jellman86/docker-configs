@@ -1,3 +1,7 @@
+# Dockhand is the lifecycle control plane; socket access is intentionally privileged.
+# /app/data contains encrypted stack variables and Git metadata: back it up and
+# do not edit its database or generated Compose/env files by hand.
+# PUID/PGID apply to this image; use native user: only when its upstream requires it.
 services:
 #-----------------------------------------------
   dockhand:
