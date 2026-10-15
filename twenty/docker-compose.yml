@@ -10,6 +10,9 @@ services:
     environment:
       ASPNETCORE_HTTP_PORTS: "8080"
       DOTNET_EnableDiagnostics: "0"
+      TWENTY_DATA_ROOT: /data
+    volumes:
+      - twenty_data:/data
     tmpfs:
       - /tmp:rw,nosuid,nodev,noexec,size=16m
     cap_drop:
@@ -42,3 +45,6 @@ networks:
   general_brg:
     name: general_brg
     external: true
+
+volumes:
+  twenty_data:
