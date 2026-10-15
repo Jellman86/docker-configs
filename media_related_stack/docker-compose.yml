@@ -1,3 +1,7 @@
+# Use docker-compose.quark.yml on Quark so the storage guard owns restarts.
+# Host networking for playback/discovery follows LinuxServer upstream guidance:
+# https://docs.linuxserver.io/images/docker-plex/
+# https://docs.linuxserver.io/images/docker-jellyfin/
 ---
 services:
 #-----------------------------------------------
@@ -17,7 +21,7 @@ services:
         - PLEX_CLAIM=${PLEX_CLAIM:-}
       volumes:
         - type: bind
-          source: ${CONFIG_PATH:-/mnt/apps/docker/pms}
+          source: ${CONFIG_PATH:-/mnt/services/docker/pms}
           target: /config
           bind:
             create_host_path: true
@@ -65,11 +69,11 @@ services:
         - PGID=${PGID:-568}
         - TZ=${TZ:-Europe/London}
         - UMASK=${UMASK:-002}
-        # Riker's N100 uses the modern Intel media driver for QSV/VA-API.
+        # Quark's Intel GPU uses the modern Intel media driver for QSV/VA-API.
         - LIBVA_DRIVER_NAME=${LIBVA_DRIVER_NAME:-iHD}
       volumes:
         - type: bind
-          source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/jellyfin
+          source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/jellyfin
           target: /config
           bind:
             create_host_path: true
@@ -86,7 +90,7 @@ services:
       # safely pre-seed that per-installation application setting.
       devices:
         - /dev/dri:/dev/dri
-      # Host networking keeps DLNA and UDP client discovery on Riker's LAN,
+      # Host networking keeps DLNA and UDP client discovery on Quark's LAN,
       # matching Plex. Jellyfin's HTTP UI is consequently available on 8096.
       network_mode: host
       healthcheck:
@@ -119,11 +123,11 @@ services:
         arr_stack_brg:
       devices:
         - /dev/dri:/dev/dri
-      # TrueNAS SCALE assigns /dev/dri/renderD128 to the render group (GID 107 on
-      # this host). The app runs as PUID/PGID, so it needs that supplementary group
-      # to use Intel QSV or VA-API rather than falling back to CPU encoding.
+      # Quark's render group is 105. Optimisarr needs the supplementary group;
+      # LinuxServer's Plex/Jellyfin entrypoints manage their own device groups.
+      # Verify getent group render when moving this stack to another host.
       group_add:
-        - "${RENDER_GID:-107}"
+        - "${RENDER_GID:-105}"
       ports:
         - "${OPTIMISARR_PORT:-8787}:8787/tcp"
       environment:
@@ -150,7 +154,7 @@ services:
         LIBVA_DRIVER_NAME: ${LIBVA_DRIVER_NAME:-iHD}
       volumes:
         - type: bind
-          source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/optimisarr
+          source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/optimisarr
           target: /config
           bind:
             create_host_path: true

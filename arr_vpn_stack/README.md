@@ -1,6 +1,6 @@
 # ARR and VPN Stack
 
-Git-backed Dockhand stack for the download and media-management services on Riker. The Compose project is named `arr_stack`.
+Git-backed Dockhand stack for the download and media-management services on Quark. The Compose project is named `arr_stack`.
 
 ## Services
 
@@ -11,7 +11,7 @@ Git-backed Dockhand stack for the download and media-management services on Rike
 | `prowlarr` | Indexer manager | `9696` |
 | `radarr` | Movie management | `7878` |
 | `sonarr` | TV management | `8989` |
-| `byparr` | Browser-backed indexer challenge helper | Riker port `8191` |
+| `byparr` | Browser-backed indexer challenge helper | Quark port `8191` |
 | `cleanuparr` | Queue and download cleanup | `11011` |
 | `seerr` | Media request interface | `5055` |
 | `gluetun-guard` | Restores the containers that lose their network when Gluetun's container goes away | None |
@@ -21,15 +21,15 @@ Port variables in `docker-compose.yml` can override most published defaults.
 ## Topology and networking
 
 - Compose file: `arr_vpn_stack/docker-compose.yml`
-- Intended host: Riker / TrueNAS.
+- Intended host: Quark / Fedora Server.
 - External network: `${NETWORK:-arr_stack_brg}`.
-- Gluetun's unauthenticated control API is bound by default to Riker's LAN
-  address at `http://192.168.213.101:8000`. Override
+- Gluetun's unauthenticated control API is bound by default to Quark's LAN
+  address at `http://192.168.213.102:8000`. Override
   `GLUETUN_CONTROL_BIND_ADDRESS` or `GLUETUN_CONTROL_PORT` only when the trusted
   management network changes; never bind it to a public interface.
 - qBittorrent uses `network_mode: service:gluetun`; it has no independent network path or host ports.
 - Byparr reaches the public web through Gluetun's HTTP proxy at `http://gluetun:8888` by default.
-- Byparr publishes port 8191 on Riker so Quark-hosted applications can reuse
+- Byparr publishes port 8191 on Quark so other applications can reuse
   the proven service without an NPM or public route.
 - Prowlarr, Radarr, Sonarr, Cleanuparr, Seerr, and Gluetun communicate over `arr_stack_brg`.
 - `gluetun-guard` holds no published ports and talks only to Dockhand's API on the trusted LAN.
@@ -206,7 +206,7 @@ Secrets that belong in Dockhand's encrypted variables:
 
 `gluetun-guard` settings, all optional and defaulted in Compose:
 
-- `DOCKHAND_URL` (default `http://192.168.213.101:30328`), `DOCKHAND_ENV_ID`,
+- `DOCKHAND_URL` (default `http://192.168.213.102:3000`), `DOCKHAND_ENV_ID`,
   and `DOCKHAND_TOKEN` — the token is only needed if Dockhand authentication is
   enabled; keep it in Dockhand's encrypted variables if it is set.
 - `GLUETUN_GUARD_ANCHOR`, `GLUETUN_GUARD_NAMESPACE_DEPENDENTS`, and
@@ -224,17 +224,17 @@ that value must include `8000` for the control API. Never commit a populated
 
 ## Deployment and updates
 
-This stack is managed through its Git-backed Dockhand entry. Follow the repository-level deployment procedure in the [root README](../README.md): validate the Compose source, push the reviewed change, then deploy through Dockhand. Do not run lifecycle-changing `docker compose up`, `pull`, or `down` commands directly on Riker.
+This stack is managed through its Git-backed Dockhand entry. Follow the repository-level deployment procedure in the [root README](../README.md): validate the Compose source, push the reviewed change, then deploy through Dockhand. Do not run lifecycle-changing `docker compose up`, `pull`, or `down` commands directly on Quark.
 
 After deployment, verify:
 
 1. Gluetun is healthy and reports the intended VPN exit before trusting qBittorrent.
 2. qBittorrent is healthy and still shares Gluetun's network namespace.
 3. Radarr, Sonarr, Prowlarr, Cleanuparr, and Seerr are healthy and retain their state.
-4. Byparr is reachable from Quark at `http://192.168.213.101:8191` and uses
+4. Byparr is reachable from Quark at `http://192.168.213.102:8191` and uses
    Gluetun's proxy.
 5. Gluetun's control API responds from the trusted LAN at
-   `http://192.168.213.101:8000/v1/version` and is unreachable from untrusted
+   `http://192.168.213.102:8000/v1/version` and is unreachable from untrusted
    networks.
 6. The `/data` mount points at the expected storage tree.
 7. `gluetun-guard` is healthy and its log reports `watching gluetun id=...`. An
@@ -265,3 +265,21 @@ Revert the relevant Git commit or restore a previously reviewed image reference,
   reason and because both only issue a plain restart, which cannot repair a
   dependent whose namespace owner was recreated.
 - The detailed migration and application reference is in [`ARR_STACK_MIGRATION.md`](../ARR_STACK_MIGRATION.md).
+
+## Quark application settings
+
+Allowed Hosts is configured through each application's General settings/API, not
+by editing a running `config.xml`. Allow the canonical service domain, its Docker
+service name, Quark hostname/LAN and Tailscale addresses, and loopback. Do not use
+`*` or reintroduce Riker aliases. Restart through Dockhand after changing it and
+verify unknown Host headers return 400. These settings live in backed-up /config.
+See [Servarr's host settings](https://wiki.servarr.com/sonarr/settings#host).
+
+qBittorrent uses an explicit server-domain list and CSRF protection. NPM's
+`torrents.pownet.uk` Host/Origin and internal `gluetun:8081` client connections
+must both pass. Download categories are `tv-sonarr`, `radarr`, and `prowlarr`.
+All apps share `/data`; do not add remote path mappings for paths already identical.
+
+The Quark variant disables the old Gluetun repair container by profile. The native
+storage guard handles namespace repair and orders qBittorrent/Prowlarr after VPN
+readiness. Never enable both repair owners simultaneously.

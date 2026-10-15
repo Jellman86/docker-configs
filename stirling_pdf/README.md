@@ -1,8 +1,7 @@
 # Stirling PDF
 
 Self-hosted PDF toolkit for merging, splitting, converting, compressing, signing
-and OCR. Runs on Riker because the work it does is document handling next to
-storage, and it needs no GPU or NPU time on the compute host.
+and OCR. Runs on Quark and needs no GPU or NPU access.
 
 ## Current Quark deployment
 
@@ -11,7 +10,7 @@ Use `stirling_pdf/docker-compose.quark.yml`.
 Configs use `/mnt/services/docker`; photos/media remain on `/mnt/tank`.
 The native storage guard owns startup through Dockhand. See
 [`host/quark`](../host/quark/README.md) for storage and startup requirements.
-The legacy base topology and defaults below describe the former Riker placement.
+The base file contains reusable service definitions; deploy the Quark variant.
 
 ## Services
 
@@ -21,21 +20,21 @@ The legacy base topology and defaults below describe the former Riker placement.
 
 ## Topology
 
-Riker (`riker.pownet.uk`, TrueNAS) runs the stack. The container joins the
+Quark (`quark.pownet.uk`, Fedora Server) runs the stack. The container joins the
 existing external `general_brg` bridge with alias `stirling-pdf`, which is the
-same network Riker's Nginx Proxy Manager sits on, so NPM can reach it by name
+same network Quark's Nginx Proxy Manager sits on, so NPM can reach it by name
 without a published host port.
 
 Compose path for the Dockhand Git stack:
 
 ```text
-stirling_pdf/docker-compose.yml
+stirling_pdf/docker-compose.quark.yml
 ```
 
 ## Private application access
 
 The stack publishes no host port and creates no ingress of its own. Expose it by
-adding a proxy host in Riker's Nginx Proxy Manager pointing at:
+adding a proxy host in Quark's Nginx Proxy Manager pointing at:
 
 ```text
 http://stirling-pdf:8080
@@ -47,7 +46,7 @@ container and the application has no authentication enabled.
 
 ## Persistent storage
 
-Three bind mounts under `${DOCKERCONFIGPATH:-/mnt/apps/docker}/stirling-pdf`:
+Three bind mounts under `${DOCKERCONFIGPATH:-/mnt/services/docker}/stirling-pdf`:
 
 | Path | Contents |
 |---|---|
@@ -56,8 +55,7 @@ Three bind mounts under `${DOCKERCONFIGPATH:-/mnt/apps/docker}/stirling-pdf`:
 | `customFiles` | Custom templates and static overrides |
 
 Working copies during conversion go to a 1 GB `tmpfs` at `/tmp`, so scratch
-churn stays off the pool and is cleared on every restart. Nothing a user
-uploads is retained after processing.
+churn stays off the pool and is cleared on every restart. Application-specific persistent outputs are separate; do not interpret tmpfs or analytics settings as a guarantee of document deletion.
 
 ## Environment
 
@@ -66,11 +64,11 @@ required for this stack.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `PUID` / `PGID` | `568` | TrueNAS apps user, matching the other Riker stacks |
+| `PUID` / `PGID` | `568` | Preserved media-apps identity, matching the other Quark stacks |
 | `TZ` | `Europe/London` | Container timezone |
-| `DOCKERCONFIGPATH` | `/mnt/apps/docker` | Persistent config root on Riker |
+| `DOCKERCONFIGPATH` | `/mnt/services/docker` | Persistent config root on Quark |
 | `NETWORK` | `general_brg` | External bridge shared with Nginx Proxy Manager |
-| `STIRLING_LANGS` | `en_GB` | OCR language packs to install |
+| `STIRLING_LANGS` | `en_GB` | Optional conversion font support; OCR traineddata is separate |
 | `STIRLING_ENABLE_LOGIN` | `false` | Upstream defaults login on; the container returns 401 until disabled |
 | `STIRLING_LOCALE` | `en-GB` | Application default locale |
 | `STIRLING_MEMORY_LIMIT` | `2g` | Memory bound; OCR is the heaviest operation |
@@ -78,8 +76,8 @@ required for this stack.
 
 ## Deployment and updates
 
-Deploy only through Riker's Dockhand after the Compose change has reached
-`main`. Riker runs Dockhand `1.0.37`; confirm the live version before any
+Deploy only through Quark's Dockhand after the Compose change has reached
+`main`. Quark runs Dockhand `1.0.49`; confirm the live version before any
 mutation and follow
 [`dockhand-git-deployments.md`](../../.agents/nevercommit/dockhand-git-deployments.md).
 

@@ -17,7 +17,7 @@ Shared AI support services are deployed as a separate nested stack; see [`ai_too
 ## Host and hardware requirements
 
 - Compose file: `security_inference_stack/docker-compose.yml`
-- Intended host: Quark / `dell-compute`.
+- Intended host: Quark / Fedora Server.
 - External network: `general_brg`.
 - Intel GPU: `/dev/dri`, with `${RENDER_GID:-105}`.
 - Intel NPU: `/dev/accel/accel0` for Frigate and YA-WAMF.
@@ -60,7 +60,7 @@ Store credentials in Dockhand's encrypted variables. Never commit camera, MQTT, 
 
 ## Service relationships
 
-- Mosquitto creates an authenticated listener on `general_brg` but does not publish port 1883 on the host.
+- Mosquitto creates an authenticated listener on `general_brg` but publishes port 1883 only on host loopback for Home Assistant.
 - Frigate and BirdNET publish observations that YA-WAMF correlates.
 - YA-WAMF defaults to the `intel_npu` provider on Quark but keeps the setting overridable for validated comparisons.
 - Home Assistant is lifecycle-independent from the shared AI tools stack.

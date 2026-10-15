@@ -1,3 +1,7 @@
+# Quark GPU/NPU stack. Keep camera/MQTT credentials in Dockhand variables.
+# Upstream: https://docs.frigate.video/frigate/installation/
+# /mnt/apps aliases resolve to the added apps SSD; they are not OS-disk copies.
+# Device exposure and application provider selection are separate requirements.
 services:
 #-----------------------------------------------
   frigate:
@@ -10,10 +14,14 @@ services:
         max-file: "3"
     stop_grace_period: 30s # allow enough time to shut down the various services
     image: ghcr.io/blakeblackshear/frigate:stable
-    shm_size: "1024mb" # update for your cameras based on calculation above
+    # Sized for this camera configuration. Recalculate from upstream's shared
+    # memory formula before changing resolution/camera count; not a RAM reservation.
+    shm_size: "1024mb"
     devices:
       - /dev/dri:/dev/dri            # Intel iGPU (VAAPI decode + OpenVINO GPU fallback)
       - /dev/accel/accel0:/dev/accel/accel0  # Intel AI Boost NPU (OpenVINO object detection)
+    # Intel GPU performance counters require elevated perf access on this kernel.
+    # These are not required to give every other service broad privileges.
     cap_add:
       - CAP_PERFMON
       - SYS_ADMIN
@@ -256,6 +264,9 @@ services:
       timeout: 10s
       retries: 3
 #-----------------------------------------------
+  # Upstream Container setup uses host networking and D-Bus for discovery.
+  # Privileged mode is deliberate here; this is not a confined untrusted workload.
+  # https://www.home-assistant.io/installation/linux#install-home-assistant-container
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
     container_name: homeassistant

@@ -25,6 +25,8 @@ services:
       - "192.168.213.102:8788:8788"
     devices:
       - /dev/dri:/dev/dri
+    # Pairing identity/config must survive recreation; nightly recovery explicitly
+    # includes this volume even though Docker engine/image data is excluded.
     volumes:
       - sidecar-config:/config
     tmpfs:

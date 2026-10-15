@@ -1,3 +1,8 @@
+# Active Quark ingress. NPM reaches bridge apps by service name; Plex/Jellyfin,
+# Cockpit and Home Assistant use their documented host endpoints instead.
+# Remotely managed Tunnel ingress lives in Cloudflare, not this Compose file.
+# TLS origin validation stays enabled; token is an encrypted Dockhand variable.
+# https://nginxproxymanager.com/setup/
 services:
 #-----------------------------------------------
   npm:
@@ -50,6 +55,7 @@ services:
         max-file: "3"
     networks:
       general_brg:
+    # Loopback metrics are used only by cloudflared's own readiness probe.
     command: tunnel --metrics 127.0.0.1:60123 run
     environment:
       - PUID=${PUID}

@@ -1,3 +1,8 @@
+# Independent AI stack. One-shot model/bootstrap services exiting 0 are healthy;
+# do not give them a restart loop or a server-style inherited healthcheck.
+# Internal DNS connects backends; only selected authenticated UI/API routes use NPM.
+# Resource caps are ceilings, not reserved memory. Ollama embeddings intentionally
+# use CPU here to leave Intel GPU/NPU capacity for media and camera workloads.
 services:
   hermes-agent:
     image: nousresearch/hermes-agent:v2026.8.31@sha256:64923faeae267792bf9bf87fe3b4c4869e35004e360c7df01730ad801b74d524

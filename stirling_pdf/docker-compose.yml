@@ -9,8 +9,8 @@ services:
         - PUID=${PUID:-568}
         - PGID=${PGID:-568}
         - TZ=${TZ:-Europe/London}
-        # Stirling ships optional OCR language packs. English only keeps the
-        # image small; add more codes here if other languages are ever needed.
+        # LANGS selects optional conversion font support, not OCR traineddata.
+        # OCR languages come from the persisted /usr/share/tessdata mount.
         - LANGS=${STIRLING_LANGS:-en_GB}
         # Login defaults to ON upstream and the container answers 401 until it
         # is turned off. This instance publishes no host port and is reachable
@@ -18,23 +18,24 @@ services:
         # layer adds a credential to manage without adding a boundary.
         - SECURITY_ENABLELOGIN=${STIRLING_ENABLE_LOGIN:-false}
         - SYSTEM_DEFAULTLOCALE=${STIRLING_LOCALE:-en-GB}
-        # Uploads are processed then discarded; nothing is retained server side.
+        # Disable analytics; this flag is not a document-retention policy.
+        # /tmp is ephemeral but application-managed persistent files are separate.
         - SYSTEM_ENABLEANALYTICS=false
       volumes:
         # Custom OCR training data and per-installation config persist here so a
         # container recreate does not lose them.
         - type: bind
-          source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/stirling-pdf/trainingData
+          source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/stirling-pdf/trainingData
           target: /usr/share/tessdata
           bind:
             create_host_path: true
         - type: bind
-          source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/stirling-pdf/configs
+          source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/stirling-pdf/configs
           target: /configs
           bind:
             create_host_path: true
         - type: bind
-          source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/stirling-pdf/customFiles
+          source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/stirling-pdf/customFiles
           target: /customFiles
           bind:
             create_host_path: true
@@ -43,7 +44,7 @@ services:
       tmpfs:
         - /tmp:rw,nosuid,nodev,size=1g
       # No host port. Nginx Proxy Manager reaches the container by name on
-      # general_brg, matching every other proxied service on Riker.
+      # general_brg, matching other proxied services on Quark.
       expose:
         - "8080"
       networks:
@@ -67,7 +68,7 @@ services:
           max-file: "3"
 
 networks:
-  # Shared cross-host bridge that Nginx Proxy Manager already sits on; declared
+  # Shared host-local bridge that Nginx Proxy Manager already sits on; declared
   # external so this stack joins it rather than trying to own it.
   general_brg:
     name: ${NETWORK:-general_brg}

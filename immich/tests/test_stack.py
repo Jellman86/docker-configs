@@ -79,7 +79,7 @@ class ImmichStackPolicyTests(unittest.TestCase):
             for v in self.database["volumes"]
             if v["target"] == "/var/lib/postgresql"
         )
-        self.assertIn("/mnt/apps/docker", source)
+        self.assertIn("/mnt/services/docker", source)
         self.assertNotIn("/mnt/tank", source)
 
     def test_pg18_uses_a_fresh_directory_and_parent_mount(self) -> None:
@@ -98,7 +98,7 @@ class ImmichStackPolicyTests(unittest.TestCase):
         for name in ("immich-server", "immich-machine-learning"):
             service = self.services[name]
             self.assertIn("/dev/dri:/dev/dri", service["devices"], name)
-            self.assertIn("${RENDER_GID:-107}", service["group_add"], name)
+            self.assertIn("${RENDER_GID:-105}", service["group_add"], name)
         # OpenVINO inference additionally needs the DRI cgroup rule.
         self.assertIn("c 189:* rmw", self.ml["device_cgroup_rules"])
         self.assertTrue(self.ml["image"].endswith("-openvino"), self.ml["image"])

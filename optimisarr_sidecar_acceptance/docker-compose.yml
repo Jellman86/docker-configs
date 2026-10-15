@@ -6,6 +6,9 @@ services:
     image: ${OPTIMISARR_IMAGE:-ghcr.io/jellman86/optimisarr-sidecar:dev}
     container_name: optimisarr-sidecar-acceptance
     restart: "no"
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
     stop_grace_period: 45s
     gpus: all
     mem_limit: 6g

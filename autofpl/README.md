@@ -1,6 +1,6 @@
 # autoFPL
 
-Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
+Git-backed Dockhand stack for the private autoFPL API on Quark (`quark.pownet.uk`).
 
 ## Service
 
@@ -23,7 +23,7 @@ Git-backed Dockhand stack for the private autoFPL API on Quark (`dell-compute`).
 
 ## Network exposure
 
-The service joins the existing external `general_brg` network with alias `autofpl-api` and the existing internal `ai_tools_research_private` network. The research network lets autoFPL call Quark's bounded `spider-mcp` research collector without deploying another browser or scraper. The general bridge also provides the private LAN route to Riker's Byparr port; Byparr is not routed through public DNS or Nginx Proxy Manager. autoFPL declares container port `8080` for internal discovery but publishes no host port. The analytics worker uses `network_mode: none` and declares neither a port nor a listener. The separately managed private-LAN DNS and Nginx Proxy Manager route exposes `https://autofpl.pownet.uk` to trusted clients and proxies to `autofpl-api:8080`; this Compose stack does not create or modify that ingress. There is no public or tunnel route.
+The service joins the existing external `general_brg` network with alias `autofpl-api` and the existing internal `ai_tools_research_private` network. The research network lets autoFPL call Quark's bounded `spider-mcp` research collector without deploying another browser or scraper. The general bridge also provides the private LAN route to Quark's Byparr port; Byparr is not routed through public DNS or Nginx Proxy Manager. autoFPL declares container port `8080` for internal discovery but publishes no host port. The analytics worker uses `network_mode: none` and declares neither a port nor a listener. The separately managed private-LAN DNS and Nginx Proxy Manager route exposes `https://autofpl.pownet.uk` to trusted clients and proxies to `autofpl-api:8080`; this Compose stack does not create or modify that ingress. There is no public or tunnel route.
 
 Internal callers on `general_brg` can use:
 
@@ -139,7 +139,7 @@ After Dockhand deployment, verify:
 9. `--import-fpl-form-forecast` uses `playwright-mcp:8931`, fails cleanly without a partial capture when the provider has no active next-Gameweek forecast, and records `playwright-mcp`, extraction version and provider payload hash provenance when an active forecast is available.
 10. The capture-specific FPL Form identity route returns 404 for an unknown capture and fails closed on unavailable, ambiguous or post-deadline evidence. `--evaluate-fpl-form-forecast` and `--evaluate-official-fpl-expected-points` return exit `2` with deterministic `insufficient-data` reports until their complete forecast/outcome pairs exist.
 11. `/api/v1/selections/current` returns 404 before a user creates a draft. The UI offers explicit forecast-to-draft, edit and confirmation-gated lock actions only for persisted pre-deadline forecasts; synthetic previews remain read-only. Edits reject infeasible formations and create immutable superseding drafts, including after an earlier revision was locked. Neither editing nor locking writes to an FPL account.
-12. From the autoFPL container, Riker's Byparr health endpoint responds on the configured private-LAN origin, and `--capture-research-source fbref-championship-playing-time-2025-26` retains a bounded snapshot whose inventory reports `byparr/2.1.0` provenance without exposing the raw HTML.
+12. From the autoFPL container, Quark's Byparr health endpoint responds on the configured private-LAN origin, and `--capture-research-source fbref-championship-playing-time-2025-26` retains a bounded snapshot whose inventory reports `byparr/2.1.0` provenance without exposing the raw HTML.
 13. The API atomically publishes an integrity-checked delete-journal database at `/analytics-snapshot/autofpl.db`; the analytics worker has that directory mounted read-only, has no `/data` mount, and retains the shared inbox writable. It logs `current` while an exact shadow exists and produces at most one pending file when the next supported official capture lacks a shadow. The API archives a valid handoff `.imported`; `/api/v1/forecasts/multi-season-shadow/readiness` then reports the exact official and shadow capture IDs as `current`.
 
 ## Rollback
