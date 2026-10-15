@@ -121,7 +121,9 @@ services:
       start_period: 30s
 #-----------------------------------------------
   grafana:
-    image: grafana/grafana-oss:latest
+    # Upstream stopped updating grafana-oss at 12.4; grafana is the OSS image.
+    # https://grafana.com/docs/grafana/latest/setup-grafana/configure-docker/
+    image: grafana/grafana:latest
     container_name: grafana
     restart: unless-stopped
     logging: *bounded-logging
@@ -135,6 +137,8 @@ services:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?Set a Grafana admin password in Dockhand}
       - GF_USERS_ALLOW_SIGN_UP=false
+      # Use Docker's bounded stdout logs instead of a second growing file log.
+      - GF_LOG_MODE=console
       - GF_PLUGINS_PREINSTALL_AUTO_UPDATE=false
     volumes:
       - type: bind
