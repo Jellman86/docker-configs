@@ -143,3 +143,7 @@ When chaining Cloudflare Tunnel (`cloudflared`) with Nginx Proxy Manager (`nginx
 - If using an HTTP origin instead, avoid an origin redirect back to the same public URL.
 
 See [Quark configuration review](host/quark/UPSTREAM_REVIEW.md) for upstream contracts, intentional deviations, current deployment scope and remaining limitations.
+
+## Twenty research workbench
+
+[`twenty/`](twenty/) serves the research-only .NET/Svelte investing workbench on Quark through Git-backed Dockhand and private NPM ingress.
