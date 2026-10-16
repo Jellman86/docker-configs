@@ -14,6 +14,7 @@ Stack variables (Dockhand, stack `twenty`, environment Quark; mark the credentia
 |---|---|
 | `TWENTY_T212_ENVIRONMENT` | `live` or `demo`; leave unset for no broker |
 | `TWENTY_T212_KEY`, `TWENTY_T212_SECRET` | Trading 212 API key and secret (secret) |
+| `TWENTY_AUTH` | `on` (default) or `off`; `off` is refused with a live broker key |
 | `TWENTY_COLLECTOR_ROLE` | defaults to `local`; `off` disables collection |
 | `TWENTY_INGEST_TOKEN` | only when a remote collector ships here (secret, 32+ characters) |
 

@@ -11,6 +11,8 @@ services:
       ASPNETCORE_HTTP_PORTS: "8080"
       DOTNET_EnableDiagnostics: "0"
       TWENTY_DATA_ROOT: /data
+      # on (default) or off; off is refused while a live broker key is set.
+      TWENTY_AUTH: ${TWENTY_AUTH:-on}
       # Free-data collection inside the app (docs/collectors.md in the twenty repo).
       TWENTY_COLLECTOR_ROLE: ${TWENTY_COLLECTOR_ROLE:-local}
       TWENTY_COLLECTOR_NAME: quark
