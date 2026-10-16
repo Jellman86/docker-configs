@@ -11,6 +11,15 @@ services:
       ASPNETCORE_HTTP_PORTS: "8080"
       DOTNET_EnableDiagnostics: "0"
       TWENTY_DATA_ROOT: /data
+      # Free-data collection inside the app (docs/collectors.md in the twenty repo).
+      TWENTY_COLLECTOR_ROLE: ${TWENTY_COLLECTOR_ROLE:-local}
+      TWENTY_COLLECTOR_NAME: quark
+      # Set only when a remote collector ships here; Dockhand encrypted secret.
+      TWENTY_INGEST_TOKEN: ${TWENTY_INGEST_TOKEN:-}
+      # Trading 212: Dockhand encrypted secrets. Empty key and secret mean no broker connection.
+      TWENTY_T212_ENVIRONMENT: ${TWENTY_T212_ENVIRONMENT:-}
+      TWENTY_T212_KEY: ${TWENTY_T212_KEY:-}
+      TWENTY_T212_SECRET: ${TWENTY_T212_SECRET:-}
     volumes:
       - twenty_data:/data
     tmpfs:
