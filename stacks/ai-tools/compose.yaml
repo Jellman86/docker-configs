@@ -7,7 +7,9 @@ name: ai-tools
 
 services:
   playwright-mcp:
-    image: mcr.microsoft.com/playwright/mcp:v0.0.78@sha256:3d871c22ea2d4cca0966e2cfb1860e1cb03eb7353725a3d6cffd133296fb04eb
+    # Stateless browser MCP (browser is bundled in the image): rolling
+    # latest by owner preference; no digest pin without a data reason.
+    image: mcr.microsoft.com/playwright/mcp:latest
     container_name: playwright-mcp
     restart: unless-stopped
     init: true
