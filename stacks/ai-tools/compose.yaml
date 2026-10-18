@@ -28,7 +28,7 @@ services:
       - --allowed-hosts=playwright-mcp,playwright-mcp:8931,playwright-mcp.pownet.uk
       - --isolated
       - --block-service-workers
-      - --output-mode=stdout
+      # --output-mode was removed upstream (v0.0.79+); responses are inline by default.
     tmpfs:
       - /home/node:rw,nosuid,nodev,noexec,size=256m,mode=0700,uid=1000,gid=1000
       - /tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777
