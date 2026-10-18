@@ -55,7 +55,7 @@ class AiToolsPolicyTests(unittest.TestCase):
 
     def test_pinned_images_are_immutable(self) -> None:
         for name, service in self.services.items():
-            if name == "searxng":
+            if name in ("searxng", "playwright-mcp"):
                 continue  # stateless; rolling latest by owner preference
             image = service.get("image")
             if image is None or "${" in image:
@@ -65,6 +65,8 @@ class AiToolsPolicyTests(unittest.TestCase):
 
     def test_playwright_browser_stays_isolated(self) -> None:
         service = self.services["playwright-mcp"]
+        self.assertEqual(
+            service["image"], "mcr.microsoft.com/playwright/mcp:latest")
         command = service["command"]
         self.assertIn("--isolated", command)
         self.assertIn("--block-service-workers", command)
