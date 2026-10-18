@@ -10,7 +10,7 @@ services:
     user: "1000:1000"
     restart: unless-stopped
     environment:
-      TZ: Europe/London
+      TZ: ${TZ:-Europe/London}
       USER_UID: "1000"
       USER_GID: "1000"
       FORGEJO____APP_NAME: Pownet Git
@@ -45,15 +45,11 @@ services:
       FORGEJO__log__MODE: console
       FORGEJO__log__LEVEL: Info
     volumes:
-      # Separate rootless config/data paths, both on the guarded applications SSD.
+      # Upstream v15 rootless keeps config in /var/lib/gitea/custom/conf/app.ini.
+      # Keep that config, repositories, SQLite and SSH identity together on the apps SSD.
       - type: bind
         source: /mnt/services/quark/docker/forgejo/data
         target: /var/lib/gitea
-        bind:
-          create_host_path: false
-      - type: bind
-        source: /mnt/services/quark/docker/forgejo/config
-        target: /etc/gitea
         bind:
           create_host_path: false
     expose:

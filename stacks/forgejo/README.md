@@ -8,7 +8,7 @@ Private UniFi DNS and Quark's approved Tailscale subnet route provide access at 
 
 Use Git, successful Compose/host CI and Dockhand Git sync/deploy. Select `stacks/forgejo/compose.yaml`, environment Quark, stack name `forgejo`. Set `FORGEJO_SECRET_KEY` and `FORGEJO_INTERNAL_TOKEN` to independent random values in Dockhand's encrypted variable store. Keep repull enabled; the image follows the LTS patch train, with major upgrades reviewed separately.
 
-Pre-create `/mnt/services/quark/docker/forgejo/{data,config}` on the mounted apps SSD, owned by `1000:1000`, mode `0700`. Bind mounts refuse automatic creation. The existing host mount dependency protects Docker startup. No Docker socket, devices or host privilege are granted to Forgejo.
+Pre-create `/mnt/services/quark/docker/forgejo/data` on the mounted apps SSD, owned by `1000:1000`, mode `0700`. Bind mounts refuse automatic creation. The existing host mount dependency protects Docker startup. No Docker socket, devices or host privilege are granted to Forgejo.
 
 Installation is locked from first startup. Create the initial administrator using Forgejo's CLI through Dockhand exec; the password belongs in a private credential store, never this repository. Registration is disabled. Sign-in is required and all repositories are forced private. Reverse-proxy login is disabled and the v15 wildcard trusted-proxy default is explicitly restricted.
 
@@ -28,8 +28,10 @@ Actions runners, packages, LFS and email are disabled initially. Use the adminis
 ## Recovery
 
 - `/var/lib/gitea` maps to `/mnt/services/quark/docker/forgejo/data`, including repositories, SQLite and SSH identity.
-- `/etc/gitea` maps to `/mnt/services/quark/docker/forgejo/config`.
+- Rootless LTS configuration is `/var/lib/gitea/custom/conf/app.ini`, within the same persistent data mount.
 - SQLite: `/var/lib/gitea/data/forgejo.db`.
+
+The administrator CLI must use `forgejo --config /var/lib/gitea/custom/conf/app.ini admin ...`.
 
 The whole Forgejo directory is included in the bounded nightly application backup. The existing online SQLite backup replaces live database files with checked recovery copies; Git repository/config files are copied live. Avoid pushes during a manual recovery capture if a strict repository/database point in time is required. This is not an atomic whole-service snapshot.
 
