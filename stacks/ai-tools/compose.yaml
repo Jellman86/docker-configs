@@ -103,6 +103,52 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  searxng:
+    image: searxng/searxng:2026.10.17-1c10abe2d@sha256:8bdd9aa136b2dc3b9332cf24714fa34a375b8a1949a1201ec900c24d7378596e
+    platform: linux/amd64
+    container_name: searxng
+    restart: unless-stopped
+    init: true
+    user: "${PUID:-1000}:${PGID:-1000}"
+    read_only: true
+    pids_limit: 256
+    mem_limit: "${SEARXNG_MEMORY_LIMIT:-1g}"
+    cpus: "${SEARXNG_CPUS:-1.0}"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      # Env overrides of server.secret_key / server.base_url; the secret is
+      # a Dockhand encrypted variable, never in Git or settings.yml.
+      SEARXNG_SECRET: "${SEARXNG_SECRET:?SearXNG secret key required}"
+      SEARXNG_BASE_URL: "${SEARXNG_BASE_URL:-https://searxng.pownet.uk/}"
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+    tmpfs:
+      - /var/cache/searxng:rw,nosuid,nodev,noexec,size=128m,mode=0700,uid=1000,gid=1000
+      - /tmp:rw,nosuid,nodev,noexec,size=128m,mode=1777
+    expose:
+      - "8080"
+    networks:
+      general_brg:
+        aliases:
+          - searxng
+      npm_proxy_backends:
+        aliases:
+          - searxng
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=5).read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 networks:
   general_brg:
     external: true

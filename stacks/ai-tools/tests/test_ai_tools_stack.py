@@ -18,7 +18,8 @@ class AiToolsPolicyTests(unittest.TestCase):
 
     def test_required_services_exist(self) -> None:
         self.assertEqual(
-            {"playwright-mcp", "openknowledge"}, set(self.services.keys())
+            {"playwright-mcp", "openknowledge", "searxng"},
+            set(self.services.keys()),
         )
 
     def test_retired_services_are_absent(self) -> None:
@@ -26,7 +27,7 @@ class AiToolsPolicyTests(unittest.TestCase):
         # 2026-10-18 (containers, provisioning and data); see README.md.
         for name in ("hermes-agent", "openviking", "openviking-bootstrap",
                      "openviking-ollama", "openviking-ollama-model",
-                     "rusty-imap-mcp", "searxng", "spider-mcp",
+                     "rusty-imap-mcp", "spider-mcp",
                      "spider-chromium", "research-egress"):
             self.assertNotIn(name, self.services)
         self.assertFalse((ROOT / "managed").exists())
@@ -94,6 +95,19 @@ class AiToolsPolicyTests(unittest.TestCase):
         self.assertIn("node:24-slim@sha256:", dockerfile)
         self.assertIn("@inkeep/open-knowledge@${OPENKNOWLEDGE_VERSION}", dockerfile)
         self.assertNotIn("ENV OK_ALLOW_EXTERNAL", dockerfile)
+
+    def test_searxng_is_agent_ready_and_secret_free_in_git(self) -> None:
+        service = self.services["searxng"]
+        self.assertTrue(service.get("read_only"))
+        self.assertIn(":?", service["environment"]["SEARXNG_SECRET"])
+        self.assertEqual(set(service["networks"]),
+                         {"general_brg", "npm_proxy_backends"})
+        self.assertEqual(service["volumes"],
+                         ["./searxng/settings.yml:/etc/searxng/settings.yml:ro"])
+        settings = yaml.safe_load((ROOT / "searxng/settings.yml").read_text())
+        self.assertFalse(settings["server"]["limiter"])
+        self.assertIn("json", settings["search"]["formats"])
+        self.assertNotIn("secret_key", settings.get("server", {}))
 
     def test_no_orphaned_or_undeclared_networks(self) -> None:
         declared = set(self.networks)

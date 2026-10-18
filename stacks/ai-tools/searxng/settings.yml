@@ -1,0 +1,20 @@
+# SearXNG on Quark: private metasearch for agents (see ../README.md).
+# Merged over upstream defaults. The secret key is NOT here: it comes from
+# the Dockhand secret SEARXNG_SECRET (env override of server.secret_key).
+use_default_settings: true
+
+general:
+  instance_name: "Quark SearXNG"
+  debug: false
+
+server:
+  # Private LAN/Tailscale instance for trusted agents; the limiter's bot
+  # detection would otherwise reject programmatic search clients.
+  limiter: false
+  image_proxy: true
+
+search:
+  # json is what agents consume; html stays for humans.
+  formats:
+    - html
+    - json

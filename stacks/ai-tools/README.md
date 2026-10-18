@@ -2,8 +2,8 @@
 
 Deployment entrypoint: [`compose.yaml`](compose.yaml). See the [deployment map](../../docs/compose-layout.md) before changing a live project.
 
-This standalone Git-backed Dockhand stack runs OpenKnowledge and the shared
-Playwright browser MCP. It is intentionally separate from
+This standalone Git-backed Dockhand stack runs OpenKnowledge, the shared
+Playwright browser MCP and SearXNG metasearch for agents. It is intentionally separate from
 `stacks/home-automation/compose.yaml`, so tool upgrades do not recreate
 Frigate, Home Assistant, BirdNET-Go, Mosquitto, or YA-WAMF.
 
@@ -15,6 +15,7 @@ The active project name is `ai-tools`.
 |---|---|---|
 | `openknowledge` | AI-native markdown knowledge base, editor and MCP | `npm_proxy_backends` only; no host port |
 | `playwright-mcp` | Isolated interactive browser MCP | `general_brg`; no host port |
+| `searxng` | Private metasearch (HTML + JSON) for agents and humans | `general_brg` and `npm_proxy_backends`; no host port |
 
 No service publishes a host port. `general_brg` and `npm_proxy_backends` are
 external networks. Playwright reaches the public web directly over `general_brg`.
@@ -65,7 +66,8 @@ Create or migrate the Git stack with:
 - Build images: enabled
 - Force recreation: enabled for deliberate upgrades
 
-No secret stack variables are required. The optional non-secret sizing and
+One secret stack variable is required: `SEARXNG_SECRET` (SearXNG's
+`server.secret_key`, via env override; never in `settings.yml` or Git). The optional non-secret sizing and
 URL values are listed in [`.env.example`](.env.example). Never commit
 generated keys or `.env.dockhand`.
 
@@ -97,6 +99,23 @@ login of its own; reachability on the private LAN/Tailscale is the boundary,
 accepted for this home lab service. NPM must preserve the client `Host`, set
 `X-Forwarded-Proto: https`, allow WebSockets and never buffer `/mcp`. Agent
 setup details are in [openknowledge/README.md](openknowledge/README.md).
+
+SearXNG is available to containers on `general_brg` at
+`http://searxng:8080`, and to trusted LAN/Tailscale agents and humans at:
+
+```text
+https://searxng.pownet.uk/
+https://searxng.pownet.uk/search?q=<query>&format=json
+```
+
+Agents should use the JSON format. It has no login; private-network
+reachability is the boundary, as for OpenKnowledge. Its settings live in
+[`searxng/settings.yml`](searxng/settings.yml) (JSON enabled, limiter off so
+programmatic clients are not rejected as bots, upstream valkey sidecar
+deliberately omitted: it is only needed for the limiter). The image is the
+newest stable upstream release pinned by digest; bump the tag and digest
+together. A SearXNG instance was previously retired on 2026-08-23 as part of
+the Hermes research stack; this one returns as a standalone agent tool.
 
 Playwright MCP is available to containers on `general_brg` at:
 
@@ -139,6 +158,7 @@ Dockhand sync/deploy workflow.
 2. Confirm OpenKnowledge's editor loads, its MCP `initialize` plus a search
    succeed through `https://openknowledge.pownet.uk/mcp`, and its lint/audit
    tools report no problems.
-3. Confirm Playwright can load a harmless public page.
+3. Confirm Playwright can load a harmless public page, and a SearXNG
+   `search?q=quark&format=json` returns results internally and through NPM.
 4. Confirm `hermes-agent`, `openviking`, `openviking-ollama` and
    `rusty-imap-mcp` containers are absent.

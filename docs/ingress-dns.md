@@ -58,7 +58,8 @@ lists, certificate assignments, advanced configuration and application settings.
 | `yawamf` | `http://yawamf:8080` | Canonical target accepted; old bridge alias retained for clients |
 | `homeassistant` | `http://192.168.213.102:8123` | Host endpoint accepted; no bridge IP dependency |
 | `openviking` | retired 2026-10-18 | Proxy host and DNS removed with the service; see ai-tools README |
-| `openknowledge` | `http://openknowledge:8080` | NPM access list (Basic auth) is the only auth; preserve Host/`X-Forwarded-Proto`, WebSockets, unbuffered `/mcp` |
+| `openknowledge` | `http://openknowledge:8080` | No auth (private network only, owner decision); preserve Host/`X-Forwarded-Proto`, WebSockets, unbuffered `/mcp` |
+| `searxng` | `http://searxng:8080` | No auth (private network only); JSON format enabled for agents |
 | `hermes` | retired 2026-10-18 | Proxy host and DNS removed with the service; see ai-tools README |
 | `playwright-mcp` | `http://playwright-mcp:8931` | Preserve NPM access list and application allow-list |
 | `optimisarr-sidecar` | `http://192.168.213.102:8788` | Existing host-bound endpoint |
