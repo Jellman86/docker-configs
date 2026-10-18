@@ -1,18 +1,47 @@
 # Compose cutover and acceptance
 
-**18 October: the user authorized staged execution once checks pass.** Source
-preparation is complete; record actual rollout acceptance before claiming the
-new runtime identities are active. The independent USB backup has a recurrent
-transport fault and is not retried by this cutover.
+**Accepted on 18 October 2026.** All 11 Git-stack names/paths and running Compose
+project labels match the normalized layout. Thirty-one containers are running,
+and every configured health check passes. The two OpenViking bootstrap jobs
+exited successfully. No containers remain under the old project names.
 
-Three existing automatic Git schedules (`ai_tools`, `security_inference_stack`,
-`web_services`) are paused to prevent an unattended deployment during preparation.
-Their prior schedules are saved privately on the host. Restore them only after
-successful cutover, not merely after merging documentation.
+The previously enabled daily 03:00 Git schedules for `ai-tools`, `home-automation`
+and `ingress` are restored. Other stack scheduling policies are unchanged.
+The independent USB backup is a separate unresolved transport fault; it is not
+claimed verified and will not be retried automatically.
+
+## Acceptance
+
+- All 20 manifests / 61 resolved service definitions and 85 policy tests pass.
+- All 11 Dockhand records have canonical Git paths and successful syncs. Source-only
+  synchronization was verified to preserve container IDs/start times.
+- The original sidecar pairing volume and Immich ML cache are retained, and all
+  five application aliases resolve to the added SSD. No application data was removed.
+- NPM targets `yawamf:8080` and Quark `.102:8123` for Home Assistant. Nginx validation
+  passes. All 24 private service records resolve to Quark and return valid TLS/HTTP
+  responses, including expected authentication responses.
+- The stale `devenv` record is removed. Riker's inactive reservation/local DNS are
+  disabled; Quark's reservation and all other static records are preserved.
+- Four empty obsolete AI networks and eleven unused generated deployment-source
+  folders are removed. A fixed 405 KB private source archive excludes generated
+  environment files. Shared networks and the optional research network remain.
+- YA-WAMF's published rolling `dev-intel` image was verified against successful
+  upstream CI and deployed through Dockhand. Its Intel GPU/NPU devices remain
+  present. Frigate has six active feeds, zero skipped frames and approximately
+  5.6 ms detector latency at acceptance.
+- PostgreSQL 18.4 and original database properties are healthy. A fresh bounded
+  1.27 GB app recovery archive passed 32 SQLite checks and a complete gzip CRC read.
+  Three archives and the existing size limits are retained.
+- The queue is unpaused and can dispatch; qBittorrent uses the current Gluetun
+  namespace. Source mirror health, mount guards and the monthly scrub timer pass.
+
+These checks do not establish signed-in public service access, actual WAN Plex
+playback or completion of the independent USB backup. Private evidence is kept
+on the Mac and under `/mnt/services/host/external-backup`.
 
 ## Project mapping
 
-| Current Dockhand/Compose name | Prepared name |
+| Former Dockhand/Compose name | Current name |
 |---|---|
 | `ai_tools` | `ai-tools` |
 | `arr_stack` | `arr` |
@@ -25,32 +54,16 @@ successful cutover, not merely after merging documentation.
 | `immich`, `management`, `twenty` | Unchanged |
 
 The complete Git-path mapping is in [layout and naming](compose-layout.md).
-All 11 source paths were staged/synced to layout commit `b61318a` without
-deploying. Container IDs/start times and encrypted variables were verified
-unchanged. This does not change container ownership. Explicit `name` values describe the prepared target;
-Dockhand's project argument still takes precedence until its stack is renamed.
+All 11 source paths were first staged/synced without deploying, then the
+normalized runtime identities were checked against Dockhand and container labels.
+Explicit Compose `name` values now match the active Dockhand names.
 
-The only proposed container-name correction is `yawamf-monalithic` -> `yawamf`.
+The container-name correction is `yawamf-monalithic` -> `yawamf`.
 Its service name remains `yawamf`, the old DNS alias is retained, and its upstream
 image repository name does not change. All other service/container identities,
 host bindings and persistent bind paths remain unchanged.
 
-## Checks already completed
-
-- All 20 manifests and 61 resolved service definitions rendered successfully.
-- All 84 existing stack/host policy tests passed; CI passed on the layout change.
-- Eleven live stack configurations were compared with the prepared definitions
-  using current non-secret overrides and synthetic secret values.
-- Differences are project/private-network identity, relocated repository-local
-  files/build context, explicit existing named volumes, the external shared arr
-  bridge and YA-WAMF naming. The optional repair job now looks up `arr`.
-- NPM, UniFi records and Quark's fixed-IP reservation were inspected read-only.
-  Proposed cleanups are in [ingress and DNS](ingress-dns.md).
-
-These are source/configuration checks, not post-deployment application acceptance.
-The target layout has not been exercised by recreating production containers.
-
-## Execution
+## Procedure for a future move
 
 1. Confirm source health, adequate space and current consistent app recovery.
    Check the independent USB job before interrupting any application. Preserve
@@ -72,7 +85,7 @@ The target layout has not been exercised by recreating production containers.
    to simplify the rollout.
 7. Handle ingress last. Update NPM's YA-WAMF target after its new name resolves;
    normalize Home Assistant's host endpoint separately. Canonical DNS mostly
-   needs no change. Review `devenv` and the retired reservation before editing.
+   needs no change. Review any newly retired DNS records/reservations before editing.
 8. Test private DNS/TLS/authentication and application integrations. Record any
    public signed-in/WAN checks separately. Restore only the previous automatic
    update schedules once the rollout is accepted. Record the actual completed

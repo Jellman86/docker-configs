@@ -7,8 +7,7 @@ services. It is intentionally separate from
 `stacks/home-automation/compose.yaml`, so tool upgrades do not recreate
 Frigate, Home Assistant, BirdNET-Go, Mosquitto, or YA-WAMF.
 
-The prepared project name is `ai-tools`; its running name remains `ai_tools`
-until the staged cutover. Existing Hermes state/model login and OpenViking
+The active project name is `ai-tools`. Existing Hermes state/model login and OpenViking
 data directories and least-privilege tenant keys are preserved.
 
 ## Hermes dashboard and integrations
