@@ -106,3 +106,7 @@ inside their networks. Confirm that old compatibility names have no required
 clients before removing them. Signed-in public services and actual external Plex
 playback still require their own checks; a login page or unauthenticated 403 is
 not proof of signed-in functionality.
+
+## Private Git hosting
+
+`git.pownet.uk` resolves privately to `192.168.213.102`. NPM forwards HTTPS to `forgejo:3000` on `general_brg`; Forgejo SSH uses `.102:2222`. Tailnet clients use the existing approved LAN subnet route. No public Cloudflare Tunnel or WAN port forward is added. See the [Forgejo stack](../stacks/forgejo/README.md).
