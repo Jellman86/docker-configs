@@ -1,5 +1,7 @@
 # Management Stack
 
+Deployment entrypoint: [`compose.yaml`](compose.yaml). See the [deployment map](../../docs/compose-layout.md) and [cutover sequence](../../docs/cutover-plan.md) before changing a live project.
+
 Git-backed Dockhand control-plane stack for the Fedora compute host.
 
 ## Services
@@ -11,7 +13,7 @@ Git-backed Dockhand control-plane stack for the Fedora compute host.
 ## Topology and storage
 
 - Compose file: `stacks/management/compose.yaml`
-- Intended host: Quark / `dell-compute`.
+- Intended host: Quark / Fedora Server.
 - External network: `general_brg`.
 - Persistent data: `${DOCKERCONFIGPATH:-/mnt/apps/docker}/dockhand` mounted at `/app/data`.
 - Docker control: host `/var/run/docker.sock` mounted into Dockhand.

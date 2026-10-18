@@ -1,10 +1,12 @@
 # Media Stack
 
+Deployment entrypoint: [`compose.yaml`](compose.yaml). See the [deployment map](../../docs/compose-layout.md) and [cutover sequence](../../docs/cutover-plan.md) before changing a live project.
+
 Git-backed Dockhand stack for Plex and Jellyfin playback plus Optimisarr media optimization on Quark.
 
 ## Current Quark deployment
 
-The October 2026 migration moves this stack to Quark (`192.168.213.102`).
+This stack runs on Quark (`192.168.213.102`).
 Use `stacks/media/compose.yaml`; Plex and Jellyfin proxy
 backends are Quark host ports 32400 and 8096.
 Configs use `/mnt/services/docker`; photos/media remain on `/mnt/tank`.
@@ -26,7 +28,7 @@ The base file contains reusable service definitions; deploy the Quark variant.
 - Intended host: Quark / Fedora Server.
 - Plex and Jellyfin use host networking for DLNA, discovery, and media-client
   compatibility. A reverse proxy must therefore target Quark's host address,
-  not the `jellyfin` container name on `media_stack_default`.
+  not the `jellyfin` container name on a project bridge.
 - Optimisarr joins both its project default network and external `${ARR_NETWORK:-arr_stack_brg}` so it can resolve Radarr and Sonarr directly.
 - Plex, Jellyfin, and Optimisarr receive `/dev/dri` for Intel QSV/VA-API.
   LinuxServer's Jellyfin entrypoint grants its `abc` user access to the mounted
@@ -159,4 +161,4 @@ Revert the Git/image change, push, and redeploy through Dockhand. Do not interru
   collection can grow beyond 50 GB.
 - Optimisarr can modify media. Keep quality gates, free-space checks, and backup/recovery procedures enabled.
 - Do not move Optimisarr work/trash to a different filesystem without reviewing replacement safety.
-- Further migration details are in [`ARR_STACK_MIGRATION.md`](../../ARR_STACK_MIGRATION.md).
+- Further migration details are in [`ARR_STACK_MIGRATION.md`](../../docs/history/riker-arr-migration.md).

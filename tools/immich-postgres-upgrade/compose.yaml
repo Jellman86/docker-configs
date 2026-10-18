@@ -15,7 +15,7 @@ services:
       POSTGRES_INITDB_ARGS: "--data-checksums"
     volumes:
       - type: bind
-        source: ${IMMICH_PG18_PATH:-/mnt/services/docker/immich/postgres18}
+        source: ${IMMICH_PG18_PATH:?Set IMMICH_PG18_PATH to an isolated rehearsal directory}
         target: /var/lib/postgresql
         bind: {create_host_path: false}
     shm_size: 128mb
@@ -39,7 +39,7 @@ services:
       PGPASSWORD: ${IMMICH_DB_PASSWORD}
     volumes:
       - type: bind
-        source: ${IMMICH_PG_UPGRADE_DIR:-/mnt/services/host/immich-pg18-upgrade}
+        source: ${IMMICH_PG_UPGRADE_DIR:?Set IMMICH_PG_UPGRADE_DIR to the read-only dump directory}
         target: /upgrade
         read_only: true
         bind: {create_host_path: false}

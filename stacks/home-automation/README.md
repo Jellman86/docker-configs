@@ -1,5 +1,7 @@
 # Home automation
 
+Deployment entrypoint: [`compose.yaml`](compose.yaml). See the [deployment map](../../docs/compose-layout.md) and [cutover sequence](../../docs/cutover-plan.md) before changing a live project.
+
 Git-backed Dockhand stack for local video security, audio classification, MQTT, inference aggregation, and Home Assistant on Quark.
 
 Shared AI support services are deployed as a separate stack; see [`ai-tools/README.md`](../ai-tools/README.md).

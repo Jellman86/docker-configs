@@ -178,6 +178,14 @@ class ImmichQuarkWorkerTests(unittest.TestCase):
 
 
 class PostgreSQLUpgradeSafetyTests(unittest.TestCase):
+    def test_rehearsal_has_no_production_directory_default(self) -> None:
+        model = yaml.safe_load((ROOT.parents[1] / "tools/immich-postgres-upgrade/compose.yaml").read_text())
+        for service in model["services"].values():
+            source = service["volumes"][0]["source"]
+            self.assertIn(":?", source)
+            self.assertNotIn(":-", source)
+            self.assertNotIn("/mnt/services/docker/immich/postgres18", source)
+
     def test_rehearsal_cannot_receive_application_traffic(self) -> None:
         model = yaml.safe_load((ROOT.parents[1] / "tools/immich-postgres-upgrade/compose.yaml").read_text())
         self.assertEqual({"database", "restore"}, set(model["services"]))

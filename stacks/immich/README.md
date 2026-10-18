@@ -1,5 +1,7 @@
 # Immich on Quark
 
+Deployment entrypoint: [`compose.yaml`](compose.yaml). See the [deployment map](../../docs/compose-layout.md) and [cutover sequence](../../docs/cutover-plan.md) before changing a live project.
+
 Photo/video library, PostgreSQL and the separate OpenVINO worker all run on Quark
 (`192.168.213.102`). Riker is retired. Deploy through Git, successful CI and Dockhand.
 

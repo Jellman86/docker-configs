@@ -1,5 +1,7 @@
 # Optimisarr Linux sidecar — Quark dev
 
+Deployment entrypoint: [`compose.yaml`](compose.yaml). See the [deployment map](../../docs/compose-layout.md) and [cutover sequence](../../docs/cutover-plan.md) before changing a live project.
+
 A dedicated Git-backed Dockhand stack for testing the development worker on
 Quark's Intel GPU. The image reuses Optimisarr's Linux media runtime and shared
 worker engine. Its dashboard is at `https://optimisarr-sidecar.pownet.uk` once
