@@ -1,4 +1,9 @@
-# Arr Stack — Migration & Configuration Reference
+# Historical Riker arr migration reference
+
+> Historical snapshot, not a current deployment or recovery procedure. Riker is
+> retired. Use the [current operations guide](../operations.md) and
+> [Quark host guide](../../host/quark/README.md). Do not run old host commands or
+> restore retired paths from this document.
 
 Snapshot of the running media/download stack so it can be rebuilt on a new
 machine. Captured 2026-06-14 from the live containers.

@@ -1,5 +1,7 @@
 # Web Services Stack
 
+Deployment entrypoint: [`compose.yaml`](compose.yaml). See the [deployment map](../../docs/compose-layout.md) and [cutover sequence](../../docs/cutover-plan.md) before changing a live project.
+
 Git-backed Dockhand stack for ingress and Cloudflare Tunnel. Tailscale runs natively on Quark. This directory contains complete host-specific Compose manifests rather than an override chain.
 
 ## Compose manifest

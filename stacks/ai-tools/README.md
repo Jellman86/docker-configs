@@ -1,13 +1,15 @@
 # AI tools on Quark
 
+Deployment entrypoint: [`compose.yaml`](compose.yaml). See the [deployment map](../../docs/compose-layout.md) and [cutover sequence](../../docs/cutover-plan.md) before changing a live project.
+
 This standalone Git-backed Dockhand stack runs Hermes and shared AI support
 services. It is intentionally separate from
 `stacks/home-automation/compose.yaml`, so tool upgrades do not recreate
 Frigate, Home Assistant, BirdNET-Go, Mosquitto, or YA-WAMF.
 
-The stack was renamed from `hermes_agent` to `ai_tools` when Hermes was retired.
-Hermes was restored on 2026-09-06 using its retained state and model login;
-OpenViking's existing data directories and least-privilege tenant keys are unchanged.
+The prepared project name is `ai-tools`; its running name remains `ai_tools`
+until the staged cutover. Existing Hermes state/model login and OpenViking
+data directories and least-privilege tenant keys are preserved.
 
 ## Hermes dashboard and integrations
 

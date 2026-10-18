@@ -1,11 +1,13 @@
 # Stirling PDF
 
+Deployment entrypoint: [`compose.yaml`](compose.yaml). See the [deployment map](../../docs/compose-layout.md) and [cutover sequence](../../docs/cutover-plan.md) before changing a live project.
+
 Self-hosted PDF toolkit for merging, splitting, converting, compressing, signing
 and OCR. Runs on Quark and needs no GPU or NPU access.
 
 ## Current Quark deployment
 
-The October 2026 migration moves this stack to Quark (`192.168.213.102`).
+This stack runs on Quark (`192.168.213.102`).
 Use `stacks/stirling-pdf/compose.yaml`.
 Configs use `/mnt/services/docker`; photos/media remain on `/mnt/tank`.
 The native storage guard owns startup through Dockhand. See

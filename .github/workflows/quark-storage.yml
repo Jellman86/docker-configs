@@ -67,6 +67,8 @@ jobs:
           CONFIG_PATH: /mnt/services/docker/pms
           IMMICH_DB_PATH: /mnt/services/docker/immich/postgres18
           IMMICH_DB_PASSWORD: ci-placeholder-only
+          IMMICH_PG18_PATH: /tmp/immich-pg18-rehearsal
+          IMMICH_PG_UPGRADE_DIR: /tmp/immich-pg18-dump
           TZ: Europe/London
         run: |
           docker compose -f stacks/media/compose.yaml config --format json > /tmp/quark-media.json

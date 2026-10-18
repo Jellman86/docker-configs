@@ -1,241 +1,127 @@
-# Quark storage workloads
+# Quark host
 
-The migrated media services use the two independent USB disks as a native Btrfs
-RAID1 at `/mnt/tank`, and the incoming AirDisk SSD as XFS at `/mnt/services`.
-Quark's `/mnt/apps` volume remains on its boot SSD for VMs and workspaces;
-existing app paths become bind aliases to the added SSD during consolidation. The enclosure stays in
-Single mode. The bridge's `RANDOM__` identity changes on reconnection, so mounts
-use filesystem UUIDs and the guard also verifies the actual ATA member serials.
+Fedora Server on Quark (`192.168.213.102`, `quark.pownet.uk`). Riker is retired.
+Application storage has been consolidated on the added SSD. The initial media
+mirror scrub passed; the independent USB backup failed again during catch-up after successful
+filesystem recovery. The spare is normally unmounted pending investigation of
+repeated USB resets/write errors. No successful full-backup receipt exists.
 
-The Quark variants extend the existing service definitions:
+The repository's normalized Compose layout is **prepared, not deployed**. Follow
+the [cutover sequence and mapping](../../docs/cutover-plan.md). Do not rerun migration,
+filesystem preparation, old PostgreSQL upgrades or native Tailscale handover jobs.
 
-- `stacks/arr/compose.yaml` uses the existing external `arr_stack_brg` and joins the
-  proxied services to Quark's existing `npm_proxy_backends`. The arr network
-  retains default-gateway priority, including for Gluetun.
-- `stacks/media/compose.yaml` joins that network and Quark's
-  existing NPM `general_brg`. Plex transcode temporary files use the SSD.
-- `stacks/immich/compose.yaml` reuses the existing Quark ML worker.
-- `stacks/stirling-pdf/compose.yaml` preserves the document toolkit's
-  configs, custom files and OCR data on the incoming apps SSD.
+## Storage
 
-Set all application config paths to `/mnt/services/docker`, including Plex's
-`CONFIG_PATH` and Immich's `IMMICH_DB_PATH`. Set `RENDER_GID` from the actual host
-render device, `GLUETUN_CONTROL_BIND_ADDRESS` to Quark's LAN address, and
-`IMMICH_ML_URL` to the existing worker's reachable endpoint. Store credentials
-only in Dockhand's encrypted stack variables. Never copy Riker's generated env
-file or database over Quark's running Dockhand instance.
+| Mount | Purpose |
+|---|---|
+| `/` | Small Fedora root volume; keep build trees and large caches off it |
+| `/mnt/apps` | Original SSD: VMs and `/mnt/apps/developer/jellman86` |
+| `/mnt/services` | Added SSD: applications, Docker/containerd and native app state |
+| `/mnt/tank` | Two 8 TB drives in Btrfs RAID1: media, photos, downloads and personal data |
+| `/mnt/external-backup` | Independent ext4 USB copy, mounted on demand |
 
-## Storage verification and restoration
+Migrated application configs use `/mnt/services/docker`. Existing Quark app and
+engine data use `/mnt/services/quark`. Five legacy `/mnt/apps` bind aliases
+resolve to the added SSD; they are not duplicate copies. Preserve the home-directory
+symlinks for development/test work and the `/var/lib/containerd` compatibility link.
+Do not merge the two application config trees or rename live volume directories.
 
-Keep the independent ZFS migration backup intact. Import it read-only through
-a compatible recovery system, verify the final snapshot GUIDs and recorded file
-hashes, and verify disk serials before formatting either original media disk.
-Stage and fully checksum-compare all apps datasets on Quark's existing SSD
-before reformatting the AirDisk. Formatting is a one-time migration operation;
-none of the startup services here formats, partitions, repairs or deploys disks.
+Use UUID mounts and verify actual member serials, filesystem type and read-write
+state. The ICY BOX stays in SINGLE mode with native Btrfs RAID1 for data, metadata
+and system. Retain CoW/checksums, empty protected fallback directories and mount
+dependencies. Avoid automatic defragmentation and periodic full-volume balance.
+Private UUID/serial inventories and recovery evidence remain on the Mac.
 
-Restore former tank datasets into ordinary directories in ONE Btrfs subvolume.
-Media, downloads, Optimisarr work and trash must share that subvolume for atomic
-moves and hardlinks. Preserve numeric owners, modes, timestamps, hardlinks and
-supported xattrs. TrueNAS NFSv4 ACLs require deliberate POSIX permission mapping;
-do not blindly copy them using rsync `-A` or recursively change every UID.
-Preserve PostgreSQL's own user and private directory modes. Compare all restored
-files using checksums before enabling application writers, then scrub the mirror
-and validate databases, representative media and Intel acceleration.
+## Guarded startup
 
-Use explicit RAID1 for data, metadata and system, retain CoW/data checksums, and
-avoid automatic defragmentation or periodic whole-volume balance on these SMR
-drives. Keep the unmounted fallback mount directories empty and immutable, and
-use `nofail` UUID mounts so a missing enclosure cannot stop Quark's networking,
-Cockpit, NPM or existing apps. Activate the separately prepared health/scrub
-configuration only with the actual media UUID after restoration.
+`storage_workloads.py` is installed as `/usr/local/sbin/quark-storage-workloads`,
+with `/etc/quark-storage-workloads.json` and its systemd unit. Guarded Compose
+entrypoints use `restart: "no"`; the guard verifies mounts, RAID profiles, members
+and error counters before starting existing containers through Dockhand. It also
+orders healthy dependencies and handles a lost VPN namespace.
 
-## Startup guard
+Keep `/etc/quark-storage-workloads.enabled` present during normal operation.
+**Stopping the guard or removing that marker stops the guarded applications.**
+Do not use either merely to inspect health. A manual stop in Dockhand can be
+undone by the enabled guard. The guard does not deploy containers, repair disks,
+reset errors or make a failing USB adapter safe. Operator deployments must also
+check storage before they start applications.
 
-Docker restart policies do not enforce Compose health dependencies at host boot.
-All migrated variants therefore use `restart: "no"`. Install
-`storage_workloads.py` as `/usr/local/sbin/quark-storage-workloads`, the service
-unit under `/etc/systemd/system`, and a root-owned mode-0600 config at
-`/etc/quark-storage-workloads.json`. Replace both example UUIDs with the actual
-ones. If Dockhand authentication is enabled, add a root-only `token_file` path.
+The old Gluetun repair job is profile-gated manual tooling, not a running watchdog.
+Only normal Git/CI/Dockhand deployment may perform a required recreation.
 
-The guard checks exact mount path, filesystem type, UUID, member serials and
-read-write state. For Btrfs it also checks RAID1 profiles, missing devices and
-error counters. It resolves existing container IDs from Dockhand, respects
-configured health dependencies, rechecks storage before each start and starts or
-stops containers only through Dockhand. It never creates or deploys containers.
-A failed individual stop does not skip the remaining services. Before starting
-a stopped VPN container, the guard stops qBittorrent and Prowlarr so their next
-start uses the new network namespace/proxy connection. Optimisarr stops
-last because its encode drain can take two hours.
-
-Keep `/etc/quark-storage-workloads.enabled` ABSENT during restore. Create it only
-after the restored storage and application acceptance checks pass. Enable the
-systemd service after installing and checking its config. To pause migrated
-workloads for maintenance, remove the enabled file; the guard will stop them.
-Stopping a container in Dockhand without disabling the guard allows the guard to
-start it again. Do not manually deploy storage workloads while their mounts are
-unavailable. Dockhand's explicit deployment endpoint starts containers itself,
-so the guard is not an authorization boundary around operator deployments.
-
-The old gluetun watchdog can redeploy an entire stack and bypass this gate. It
-is retained behind the `manual-network-repair` profile for compatibility but is
-not started by normal deployment or by the guard.
-Use the storage guard for existing-container crash recovery. Namespace repair
-that requires recreation must use the normal Git/CI/Dockhand deployment path
-while verified storage is available. Quark's existing independent services keep
-their restart policies and are not stopped by this guard.
-
-The guard stops affected workloads if storage checks fail; it cannot make an
-unreliable USB bridge safe or undo writes during the detection interval. It will
-not automatically mount a degraded mirror, reset counters, repair filesystems,
-or force a hung container to exit. Resolve storage failures before re-enabling
-workloads. Preserve the readonly recovery route and independent backup until
-ongoing backup and restore testing is established.
-
-Primary references:
-[mkfs.btrfs](https://btrfs.readthedocs.io/en/latest/mkfs.btrfs.html),
-[Btrfs hardware considerations](https://btrfs.readthedocs.io/en/latest/Hardware.html),
-[Docker startup order](https://docs.docker.com/compose/how-tos/startup-order/).
-
-## Consolidated application storage and ingress
-
-Migrated Riker configs live at `/mnt/services/docker`. Existing Quark app trees
-live at `/mnt/services/quark/{docker,docker-engine,containerd,security_inference_stack,compose}`.
-Bind mounts preserve their original `/mnt/apps/{name}` paths, including the
-`/var/lib/containerd` symlink target. Do not merge the two config trees: Quark's
-NPM and Dockhand remain authoritative. Keep `/mnt/apps/libvirt` and
-`/mnt/apps/dev` on the original SSD.
-
-A cold move requires stopping ordinary workloads through Dockhand, then stopping
-native Docker/containerd so management databases, named volumes and image stores
-are consistent. Verify full checksums before activation and retain original
-copies for rollback. Bind mounts require `mnt-services.mount`; native Docker and
-containerd need `RequiresMountsFor` dependencies on their aliases. Keep empty
-fallback directories immutable. The media guard remains responsible for the
-USB-backed workloads and their health ordering.
-
-Use plain service names for private ingress: `dockhand.pownet.uk`,
-`npm.pownet.uk` and `playwright-mcp.pownet.uk`. Preserve Playwright's explicit
-host allow-list and NPM authentication. Physical `quark.pownet.uk` remains an
-administration/SSH name. Migrated services keep their existing canonical names,
-with NPM and private DNS pointing at Quark. Retarget the existing public Seerr
-Cloudflare tunnel origin separately through an authorized management credential;
-its connector token cannot edit tunnel ingress. Do not expose new services.
-
-## Native SMB shares
-
-`smb.conf` preserves the three enabled source shares: `media`, `downloads` and
-`home`. There were no NFS exports. Only authenticated `media-apps` group members
-can connect, and existing POSIX ACLs still control each directory. Private home
-data retains its user-specific ACL; group membership alone does not grant access.
-SMB1, guest access, printing and NetBIOS ports are not enabled. Allow TCP 445 only
-from the existing trusted LAN and Tailscale ranges in the host firewall.
-
-Install Fedora's native Samba packages, import the existing SMB password hash
-through `pdbedit` from a root-only migration file, and verify the imported hash
-without printing it. Map the source username to its actual Quark Unix UID. Keep
-the original TrueNAS export and secret seed private; neither belongs in Git.
-
-Samba's persistent state belongs on the apps SSD at `/mnt/services/host/samba`,
-bind-mounted onto `/var/lib/samba`, with an SELinux equivalence to the canonical
-directory. Install `smb-storage.conf` as a drop-in under `smb.service.d` so it
-requires the actual storage mounts and verifies UUIDs, member identities and
-mirror health before startup. Retain the original state before activating a bind.
-
-Use the standard `samba_share_t` label for the mirror root and the three exported
-trees. Photos, Optimisarr work, backups and other unshared trees keep their
-existing labels. Quark's current Docker workloads run as `spc_t`; verify their
-access again after relabeling. Enabling Docker SELinux confinement later requires
-qualifying a shared-label policy before changing that setting. Do not enable
-global Samba export booleans or disable enforcing mode to resolve a denial.
-
-Validate `testparm`, authenticated share listing and a disposable write/read/
-delete round trip in each share before declaring acceptance. Use `smb://quark.pownet.uk`
-on macOS or `\\quark.pownet.uk\media` on Windows. Preserve the existing login;
-clients need to reconnect to the new hostname. Retain the independent ZFS backup.
-
-## Application recovery backups
-
-Quark is a home lab. `app_backup.py` makes a small online backup of settings and
-application databases without stopping containers or SMB. Install it as
-`/usr/local/sbin/quark-app-backup`, fill the example mount UUIDs, and install the
-service/timer. Keep `/etc/quark-app-backup.json` root-only. The timer runs nightly
-at 03:10. There is no dependency on migration jobs or a recovery VM.
-
-SQLite uses its online backup API and checks the resulting copy. Plex uses its
-bundled SQLite tool for its custom tokenizer. Immich uses a
-consistent logical `pg_dump`; Samba account hashes use `pdbedit`. Other live
-configuration files are best-effort copies, suitable for a home lab rather than
-a synchronized snapshot of every application. Dockhand's encryption key, stack
-settings, NPM certificates and selected host configuration are included privately.
-Files retain ownership and permissions for restoration.
-
-Archives live at `/mnt/tank/backups/apps`. Keep three successful archives, each
-limited to 4 GiB. Including one temporary staging tree and one candidate archive,
-maximum routine data is 20 GiB. Only a valid
-new candidate permits rotation; a failed backup keeps existing recovery points.
-The separate offline ZFS backup reader is fixed in size. Container images, models,
-recordings, artwork, caches and historical backups are excluded from the routine.
-The job performs no recurring whole-media checksum comparisons.
-
-These are apps SSD recovery copies on the same host mirror, not an independent
-backup of media, photo originals, personal files or VMs. Keep the independent
-backup disk and a documented recovery path. For restoration, extract an archive
-privately, stop only the affected writer through Dockhand, restore its matching
-`apps/files` config path with numeric ownership and apply `restorecon`. Restore
-`apps/immich.dump` with `pg_restore` into a compatible Immich database; never copy
-it over PostgreSQL's physical files. `apps/smbpasswd-private.txt` can be imported
-with `pdbedit`. Treat archives as credentials: keep the backup directory private.
-
-Primary references: [SQLite online backup](https://sqlite.org/backup.html) and
-[PostgreSQL logical backup](https://www.postgresql.org/docs/current/app-pgdump.html).
-
-## Ordinary media maintenance
-
-Install `quark-media-maintain` as `/usr/local/sbin/quark-media-maintain` with the
-existing root-only `/etc/quark-media.conf`. The hourly health timer checks the
-mounted UUID, RAID1 profiles, both members and device error counters. The monthly
-scrub sets the configured rate on each member explicitly before starting, so the
-limit survives a reboot and does not depend on the observed `scrub limit --all`
-behavior. Enable the monthly timer after the initial resumed scrub has finished.
-
-## Host remote access and log retention
-
-Tailscale runs as the native `tailscaled.service`, with private state on the OS
-filesystem at `/var/lib/tailscale`, so Docker or apps-SSD maintenance does not
-remove remote access. Preserve the existing node identity and route approvals
-during the one-time stopped-container handover. The app backup includes its
-native state and forwarding settings.
-
-Container stdout/stderr logs use bounded Docker rotation. The newly covered
-services retain three 10 MB files each. This does not bound application-specific
-files such as camera recordings or logs an app writes inside its config folder.
-For the manager itself, `tools/dockhand-maintenance/compose.yaml` provides a temporary
-loopback-only second Dockhand process. Seed it with a private online database
-backup and encryption key, sync/deploy the manager's Git stack through that
-process, then remove the temporary stack/state through the original manager.
-
-For native client updates, add the official stable Fedora repository from
-`https://pkgs.tailscale.com/stable/fedora/tailscale.repo`, then install the
-`tailscale` package with DNF. Enable automatic stable updates explicitly:
+## Routine checks
 
 ```sh
-sudo tailscale set --auto-update=true
-sudo tailscale set --advertise-exit-node --advertise-routes=192.168.213.0/24,192.168.214.0/24
+sudo /usr/local/sbin/quark-media-maintain health
+sudo btrfs scrub status -d /mnt/tank
+sudo systemctl list-timers 'quark-*'
+df -h / /mnt/apps /mnt/services /mnt/tank
 ```
 
-Persist IPv4 and IPv6 forwarding with `99-quark-tailscale.conf` and apply it
-with `sudo sysctl -p /etc/sysctl.d/99-quark-tailscale.conf`. Install
-`tailscaled-gro.conf` as `tailscaled.service.d/10-quark-gro.conf` under
-`/etc/systemd/system` to retain the NIC optimisation on service starts.
-Approve both subnet routes and exit-node use in the tenant, and disable node
-key expiry for this unattended router. Quark advertises these routes; it does
-not need to accept other routers' subnets or use another exit node itself.
-Keep Tailscale's default netfilter and subnet SNAT handling. Check real routed
-traffic before adding any firewalld masquerading workaround or broader rules.
+Hourly mirror health and a monthly scrub are installed. The scrub explicitly
+limits each member to 40 MiB/s. Read its actual status and next timer time; do not
+launch another scrub as a verification shortcut. Container stdout/stderr has
+bounded Docker rotation. Applications must separately retain/rotate files they
+write inside their own directories.
 
-Upstream references: [subnet routers](https://tailscale.com/docs/features/subnet-routers),
-[exit nodes](https://tailscale.com/docs/features/exit-nodes),
-[UDP forwarding](https://tailscale.com/docs/reference/best-practices/performance),
-and [automatic updates](https://tailscale.com/docs/features/client/update).
+## Recovery backups
+
+`app_backup.py` is installed as `/usr/local/sbin/quark-app-backup` and runs nightly
+through `quark-app-backup.timer`. Root-only `/etc/quark-app-backup.json` selects
+state. Archives are under `/mnt/tank/backups/apps`; current evidence is
+`/mnt/services/host/app-backup/status.json`. Limits are three successful archives,
+4 GiB per generation and 20 GiB including working data. Applications remain online.
+
+SQLite uses consistent online recovery copies. Immich uses a logical PostgreSQL
+dump; its restored database properties, including `vchordrq.probes`, also matter.
+Keep PostgreSQL 18 at `/mnt/services/docker/immich/postgres18`, mounted at
+`/var/lib/postgresql`. The stopped old PG14 cluster has already been removed.
+Never recreate it or run the upgrade rehearsal against production storage.
+
+The independent USB tool is `/usr/local/sbin/quark-external-backup`, configured by
+`/etc/quark-external-backup.json`. Its installed guide is
+`/usr/local/share/quark-external-backup/README.md`; the practical Mac handover is
+`~/Desktop/Quark Backup/README.md`. It keeps one rolling file copy plus a fresh
+consistent application archive. Read the actual status and completed receipt:
+
+```sh
+sudo systemctl status quark-external-backup-run.service
+sudo cat /mnt/external-backup/quark-backup/status.json
+sudo cat /mnt/external-backup/quark-backup/last-success.json
+```
+
+An absent receipt means the first full backup has not been accepted. Do not
+reformat the already prepared ext4 disk. The old ZFS backup and offline reader are
+retired. VM/developer trees, rebuildable engine data and backups of backups are
+excluded. Independent VM backup remains a separate decision.
+
+## Access, security and networking
+
+Tailscale is native (`tailscaled.service`), using the official stable Fedora DNF
+repository and automatic client updates. Preserve `/var/lib/tailscale`, the node
+identity, forwarding settings, GRO tuning and approved subnet/exit routes.
+`99-quark-tailscale.conf` and `tailscaled-gro.conf` document the host settings.
+No Docker Tailscale service or replacement identity is needed.
+
+Native Samba shares are `media`, `downloads` and `home`, using existing authenticated
+credentials, POSIX permissions and `/mnt/services/host/samba` state. Access with
+`smb://quark.pownet.uk` or `\\quark.pownet.uk\media`. Validate with `testparm` and
+an authenticated disposable read/write test. Keep `smb-storage.conf` mount
+requirements and normal SELinux labels. SMB1 and guest access remain disabled.
+
+The host is SELinux Enforcing, but current Docker container labelling is disabled.
+Do not claim those workloads are confined. Enabling container labelling requires
+a separate shared-volume/device qualification, not a naming cleanup.
+
+Docker receives the Intel iGPU at `/dev/dri`; Quark's render group is GID `105`.
+Only workloads that need the NPU receive `/dev/accel/accel0`. Preserve those
+permissions, application provider choices and measured memory limits at cutover.
+
+## References
+
+- [Btrfs hardware considerations](https://btrfs.readthedocs.io/en/latest/Hardware.html)
+- [Compose startup order](https://docs.docker.com/compose/how-tos/startup-order/)
+- [SQLite online backup](https://sqlite.org/backup.html)
+- [PostgreSQL logical backup](https://www.postgresql.org/docs/current/app-pgdump.html)
+- [Tailscale subnet routers](https://tailscale.com/docs/features/subnet-routers)
