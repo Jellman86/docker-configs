@@ -18,6 +18,8 @@ services:
       TWENTY_COLLECTOR_NAME: quark
       # Set only when a remote collector ships here; Dockhand encrypted secret.
       TWENTY_INGEST_TOKEN: ${TWENTY_INGEST_TOKEN:-}
+      # Optional Tiingo Starter data key; value is held only in Dockhand's secret store.
+      TWENTY_TIINGO_KEY: ${TWENTY_TIINGO_KEY:-}
       # Trading 212: Dockhand encrypted secrets. Empty key and secret mean no broker connection.
       TWENTY_T212_ENVIRONMENT: ${TWENTY_T212_ENVIRONMENT:-}
       TWENTY_T212_KEY: ${TWENTY_T212_KEY:-}
