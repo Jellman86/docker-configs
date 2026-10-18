@@ -1,4 +1,4 @@
-# Reuse Quark's existing immich_ml worker rather than starting a second one.
+# Reuse Quark's existing immich-ml worker rather than starting a second one.
 # Stable deployment identity; Dockhand uses the same stack name.
 name: immich
 

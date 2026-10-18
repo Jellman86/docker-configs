@@ -361,7 +361,7 @@ services:
       DOCKHAND_URL: ${DOCKHAND_URL:-http://192.168.213.102:3000}
       DOCKHAND_ENV_ID: ${DOCKHAND_ENV_ID:-1}
       DOCKHAND_TOKEN: ${DOCKHAND_TOKEN:-}
-      STACK_NAME: ${GLUETUN_GUARD_STACK:-arr_stack}
+      STACK_NAME: ${GLUETUN_GUARD_STACK:-arr}
       ANCHOR_CONTAINER: ${GLUETUN_GUARD_ANCHOR:-gluetun}
       NAMESPACE_DEPENDENTS: ${GLUETUN_GUARD_NAMESPACE_DEPENDENTS:-qbittorrent}
       # byparr is deliberately not in this list. A challenge solve can occupy it
@@ -385,7 +385,7 @@ services:
         BASE = os.environ.get("DOCKHAND_URL", "").rstrip("/")
         ENV_ID = os.environ.get("DOCKHAND_ENV_ID", "1")
         TOKEN = os.environ.get("DOCKHAND_TOKEN", "")
-        STACK = os.environ.get("STACK_NAME", "arr_stack")
+        STACK = os.environ.get("STACK_NAME", "arr")
         ANCHOR = os.environ.get("ANCHOR_CONTAINER", "gluetun")
         NAMESPACE_DEPS = os.environ.get("NAMESPACE_DEPENDENTS", "qbittorrent").split()
         PROXY_DEPS = os.environ.get("PROXY_DEPENDENTS", "prowlarr").split()

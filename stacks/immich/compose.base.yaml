@@ -1,6 +1,6 @@
 ---
 # Shared service definitions. Deploy compose.yaml on Quark;
-# the separate immich_ml stack supplies the OpenVINO worker on the same host.
+# the separate immich-ml stack supplies the OpenVINO worker on the same host.
 # Keep server and ML versions matched in Dockhand. Do not enable the fallback
 # machine-learning profile while the separate worker exists (same container name).
 # Upstream: https://docs.immich.app/install/docker-compose/
