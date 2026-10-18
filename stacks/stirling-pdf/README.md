@@ -81,7 +81,7 @@ required for this stack.
 Deploy only through Quark's Dockhand after the Compose change has reached
 `main`. Quark runs Dockhand `1.0.49`; confirm the live version before any
 mutation and follow
-[root deployment procedure](../../README.md#deployment).
+[root deployment procedure](../../docs/operations.md).
 
 The image tracks `latest`. The Git stack has `repullImages` enabled, so a
 Dockhand deploy pulls the current image and recreates the container.

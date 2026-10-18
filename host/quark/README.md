@@ -6,7 +6,7 @@ mirror scrub passed; the independent USB backup failed again during catch-up aft
 filesystem recovery. The spare is normally unmounted pending investigation of
 repeated USB resets/write errors. No successful full-backup receipt exists.
 
-The repository's normalized Compose layout is **prepared, not deployed**. Follow
+The repository's normalized Compose layout is **live and accepted**. Follow
 the [cutover sequence and mapping](../../docs/cutover-plan.md). Do not rerun migration,
 filesystem preparation, old PostgreSQL upgrades or native Tailscale handover jobs.
 

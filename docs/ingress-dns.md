@@ -1,6 +1,7 @@
 # Ingress and private DNS
 
-**Read-only review: 18 October 2026. Changes below describe the reviewed cutover; actual acceptance is recorded in the cutover guide.**
+**Reviewed and accepted: 18 October 2026.** Runtime acceptance is recorded in the
+[cutover guide](cutover-plan.md).
 NPM and UniFi remain authoritative for their live configuration. This document
 records intent; Compose does not create DNS records, proxy hosts or access policies.
 
@@ -25,17 +26,17 @@ and application-specific proxy settings when changing a backend.
 
 ## UniFi findings and intended records
 
-The review found 25 enabled static A records. All 24 Quark service records point
+After retiring the stale development entry, 24 enabled static A records point
 to `192.168.213.102`. Quark has an active fixed-IP reservation for that address.
 Existing A records are adequate for this home lab; converting them all to CNAMEs
 would add cutover work without fixing the naming issue.
 
-| Item | Current state | Later action |
+| Item | Accepted state | Maintenance note |
 |---|---|---|
 | Canonical services | Service names point to Quark `.102` | Preserve; no broad DNS rewrite |
-| `devenv.pownet.uk` | Still points to `.101` | Determine whether its workload/client use remains, then retire or retarget |
-| Riker reservation | Retained at `.101`; host not currently connected | Retire only after confirming no remaining use |
-| Quark client | Friendly name `Quark`; recorded DHCP hostname `dell-compute` | Review old DHCP/client metadata; do not change MAC/reservation to tidy a label |
+| `devenv.pownet.uk` | Stale record removed | Reintroduce only with a real, intended backend |
+| Riker reservation/local DNS | Disabled for the inactive retired host | Client history is retained; no stale A answer remains |
+| Quark client | Friendly/local DNS identity and `.102` reservation preserved | Cached DHCP hostname `dell-compute` is informational; no forced lease renewal |
 | `overseerr.pownet.uk` | Alias for the Seerr route | Preserve until clients use `seerr.pownet.uk` |
 | Long YA-WAMF URL | Still listed on its NPM proxy host | Check actual client/DNS use before removing the alias |
 
@@ -54,8 +55,8 @@ lists, certificate assignments, advanced configuration and application settings.
 | `npm` | `http://npm:81` | Administrative endpoint |
 | `frigate` | `http://frigate:5000` | Current trusted-network, unauthenticated origin policy |
 | `birdnet` | `http://birdnet-go:8080` | Stable service name |
-| `yawamf` | `http://yawamf:8080` | Change only after new container resolves; current target is `yawamf-monalithic` |
-| `homeassistant` | `http://192.168.213.102:8123` | Replace current bridge gateway `172.18.0.1`; HA uses host networking |
+| `yawamf` | `http://yawamf:8080` | Canonical target accepted; old bridge alias retained for clients |
+| `homeassistant` | `http://192.168.213.102:8123` | Host endpoint accepted; no bridge IP dependency |
 | `openviking` | `http://openviking:1933` | Preserve application authentication |
 | `hermes` | `http://hermes-dashboard:9119` | Intentional trusted-proxy network alias |
 | `playwright-mcp` | `http://playwright-mcp:8931` | Preserve NPM access list and application allow-list |
@@ -78,8 +79,8 @@ NPM uses the shared `general_brg` and `npm_proxy_backends` networks. Keep both
 external during a project rename. Do not point a bridge service at a container IP
 or rely on a project-generated default network from a different stack.
 
-The proposed `yawamf` container keeps its old DNS alias for compatibility. Switch
-NPM to the canonical target after application checks, then test the service URL.
+The `yawamf` container keeps its old DNS alias for compatibility. NPM now uses
+the canonical target, and the service URL passed acceptance.
 That avoids a simultaneous proxy/DNS/container rename. The upstream image name
 `yawamf-monalithic` is a registry contract and remains unchanged.
 
@@ -96,7 +97,7 @@ placement plus application authentication. Dockhand login and Frigate browser
 auth remain separate audit decisions. Do not silently alter those policies or
 claim TLS provides application authentication as part of the rename.
 
-## Later acceptance
+## Validation after future changes
 
 After explicit cutover authorization, resolve each canonical private name through
 UniFi and through the intended Tailscale client path. Check valid TLS, the actual

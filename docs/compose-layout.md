@@ -11,8 +11,8 @@ everything on one host. Avoid splitting every supporting container into a stack:
 its database/cache belongs with its application. Shared ingress and the management
 plane remain separate so an application update does not recreate either.
 
-**Status:** source layout prepared; staged runtime cutover is authorized. See the
-[cutover sequence and acceptance](cutover-plan.md).
+**Status:** normalized source and runtime identities accepted on 18 October 2026.
+See the [cutover sequence and acceptance](cutover-plan.md).
 
 ## Deployment map
 

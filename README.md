@@ -4,11 +4,11 @@ Docker Compose applications and native host configuration for Quark, the Fedora
 server. This repository describes deployment; live application data and secrets
 belong on the server and in Dockhand's encrypted variable store.
 
-**18 October: staged cutover is authorized after validation.** Git paths are
-prepared; running project names change only through the verified Dockhand
-sequence in the [cutover plan](docs/cutover-plan.md). The previous three automatic
-Git schedules remain paused until rollout acceptance. Independent USB-backup
-recovery remains separate and requires a stable transport before retrying.
+**Current state, 18 October:** the normalized layout is live and accepted across
+11 Dockhand stacks and 31 running containers. Canonical NPM targets and private
+DNS checks pass. The previous automatic Git schedules are restored. The separate
+independent USB backup remains incomplete after recurrent transport errors; its
+partial copy is preserved and the spare is unmounted pending investigation.
 
 ## Start here
 
