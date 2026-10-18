@@ -242,6 +242,10 @@ class AiToolsPolicyTests(unittest.TestCase):
         # access list, and Hermes reaches /mcp over this same network.
         self.assertEqual(set(service["networks"]), {"npm_proxy_backends"})
         self.assertEqual(service["volumes"][0]["target"], "/data")
+        self.assertTrue(
+            any(t.startswith("/home/node:") for t in service["tmpfs"]),
+            "server needs a writable passwd-home ~/.ok on the read-only rootfs",
+        )
         self.assertEqual(
             service["build"]["args"]["OPENKNOWLEDGE_VERSION"],
             "${OPENKNOWLEDGE_VERSION:-0.86.22}",
