@@ -1,0 +1,90 @@
+# Private Git hosting. Web traffic enters through NPM; no direct web host port.
+# https://forgejo.org/docs/v15.0/admin/installation/docker/
+name: forgejo
+
+services:
+  forgejo:
+    # Follow the supported LTS patch train; major upgrades require review.
+    image: codeberg.org/forgejo/forgejo:15-rootless
+    container_name: forgejo
+    user: "1000:1000"
+    restart: unless-stopped
+    environment:
+      TZ: Europe/London
+      USER_UID: "1000"
+      USER_GID: "1000"
+      FORGEJO____APP_NAME: Pownet Git
+      FORGEJO__server__DOMAIN: git.pownet.uk
+      FORGEJO__server__ROOT_URL: https://git.pownet.uk/
+      FORGEJO__server__SSH_DOMAIN: git.pownet.uk
+      FORGEJO__server__SSH_PORT: "2222"
+      FORGEJO__server__SSH_LISTEN_PORT: "2222"
+      FORGEJO__server__START_SSH_SERVER: "true"
+      FORGEJO__server__LFS_START_SERVER: "false"
+      FORGEJO__database__DB_TYPE: sqlite3
+      FORGEJO__database__PATH: /var/lib/gitea/data/forgejo.db
+      # The first administrator is created through a private Dockhand exec.
+      # Keep installation locked and registration closed from first startup.
+      FORGEJO__security__INSTALL_LOCK: "true"
+      FORGEJO__security__SECRET_KEY: ${FORGEJO_SECRET_KEY:?Set a random key in Dockhand}
+      FORGEJO__security__INTERNAL_TOKEN: ${FORGEJO_INTERNAL_TOKEN:?Set a random token in Dockhand}
+      # v15 defaults to trusting all reverse proxies. Restrict that explicitly.
+      FORGEJO__security__REVERSE_PROXY_TRUSTED_PROXIES: 127.0.0.0/8,::1/128,172.18.0.0/16
+      FORGEJO__service__DISABLE_REGISTRATION: "true"
+      FORGEJO__service__REQUIRE_SIGNIN_VIEW: "true"
+      FORGEJO__service__ENABLE_REVERSE_PROXY_AUTHENTICATION: "false"
+      FORGEJO__service__ENABLE_NOTIFY_MAIL: "false"
+      FORGEJO__repository__DEFAULT_PRIVATE: private
+      FORGEJO__repository__FORCE_PRIVATE: "true"
+      # No CI runners, package registry, LFS or mail service needed initially.
+      FORGEJO__actions__ENABLED: "false"
+      FORGEJO__packages__ENABLED: "false"
+      FORGEJO__mailer__ENABLED: "false"
+      FORGEJO__picture__DISABLE_GRAVATAR: "true"
+      FORGEJO__picture__ENABLE_FEDERATED_AVATAR: "false"
+      FORGEJO__log__MODE: console
+      FORGEJO__log__LEVEL: Info
+    volumes:
+      # Separate rootless config/data paths, both on the guarded applications SSD.
+      - type: bind
+        source: /mnt/services/quark/docker/forgejo/data
+        target: /var/lib/gitea
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /mnt/services/quark/docker/forgejo/config
+        target: /etc/gitea
+        bind:
+          create_host_path: false
+    expose:
+      - "3000"
+    ports:
+      # LAN endpoint is also reachable through Quark's approved tailnet subnet route.
+      # Port 22 remains the host SSH server. No router/public Tunnel rule is added.
+      - "192.168.213.102:2222:2222"
+    networks:
+      - general_brg
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 2.0
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  general_brg:
+    name: general_brg
+    external: true
