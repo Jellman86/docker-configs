@@ -125,3 +125,7 @@ permissions, application provider choices and measured memory limits at cutover.
 - [SQLite online backup](https://sqlite.org/backup.html)
 - [PostgreSQL logical backup](https://www.postgresql.org/docs/current/app-pgdump.html)
 - [Tailscale subnet routers](https://tailscale.com/docs/features/subnet-routers)
+
+## Native coding and private Git
+
+[Native T3 Code](t3/README.md) runs under the developer account with SSD-backed state and hardware access. [Forgejo](../../stacks/forgejo/README.md) is a separate Git-backed Dockhand stack with SQLite and private repositories. The owner-authorized agent instructions and secrets live in its private `jellman86/agents` repository and authenticated OpenViking, not this public deployment repository. Large task artifacts are excluded. Forgejo is included in bounded application recovery; native developer/T3 state remains outside it.

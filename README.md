@@ -5,8 +5,8 @@ server. This repository describes deployment; live application data and secrets
 belong on the server and in Dockhand's encrypted variable store.
 
 **Current state, 18 October:** the normalized layout is live and accepted across
-11 Dockhand stacks and 31 running containers. Canonical NPM targets and private
-DNS checks pass. The previous automatic Git schedules are restored. The separate
+12 Dockhand stacks and 32 running containers. Canonical NPM targets and private
+DNS checks pass. The previous automatic Git schedules are restored. Private Forgejo and native T3 Code have NPM/UniFi routes; T3 also has private tailnet HTTPS. The separate
 independent USB backup remains incomplete after recurrent transport errors; its
 partial copy is preserved and the spare is unmounted pending investigation.
 

@@ -110,3 +110,7 @@ not proof of signed-in functionality.
 ## Private Git hosting
 
 `git.pownet.uk` resolves privately to `192.168.213.102`. NPM forwards HTTPS to `forgejo:3000` on `general_brg`; Forgejo SSH uses `.102:2222`. Tailnet clients use the existing approved LAN subnet route. No public Cloudflare Tunnel or WAN port forward is added. See the [Forgejo stack](../stacks/forgejo/README.md).
+
+## Native T3 Code
+
+`t3.pownet.uk` resolves privately to `.102`; NPM forwards HTTPS/WebSockets to the host Docker bridge `172.18.0.1:3773`. The existing native user service also remains reachable through private Tailscale Serve at `https://quark.dinosaur-algieba.ts.net/`. Pairing is still required. No public Funnel or WAN route is added. See [native T3](../host/quark/t3/README.md).
