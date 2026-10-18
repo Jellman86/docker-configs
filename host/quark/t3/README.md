@@ -2,15 +2,15 @@
 
 T3 runs as the existing `jellman86` host user because coding agents need native toolchains, hardware and authorized system administration. It is separate from the Forgejo Compose stack. Upstream supports `t3 service install` and a systemd user service with lingering on Linux.
 
-The installed versions on 18 October match the Mac: T3 0.1.0, Codex 0.163.0, Claude Code 2.1.302, Muse 1.4.10 and OpenCode 1.19.3. T3's default is Muse Wonder Full; provider sign-ins are deferred at the user's request. OpenCode free-model inference and shared OpenViking MCP connections were checked separately from paid-provider authentication.
+The installed versions on 18 October match the Mac: T3 0.1.0, Codex 0.163.0, Claude Code 2.1.302, Muse 1.4.10 and OpenCode 1.19.3. T3's default is Muse Wonder Full; provider sign-ins are deferred at the user's request. OpenCode free-model inference was checked separately from paid-provider authentication. (OpenViking was retired on 2026-10-18; agents now use OpenKnowledge MCP.)
 
 ## State and startup
 
 `~/.t3`, `~/.codex`, `~/.claude`, provider data and native package storage point into `/mnt/apps/developer/jellman86/agent-state` or `agent-tools` on the original SSD. Preserve existing developer symlinks and work. The small OS root is not a build/cache destination.
 
-Install the official CLI as the normal user, enable lingering, then use `t3 service install`. Apply [quark.conf](quark.conf) at `~/.config/systemd/user/t3code.service.d/quark.conf`, with a private `~/.t3/provider.env` containing the established shared OpenViking USER key. Never copy real credentials into this public deployment repository.
+Install the official CLI as the normal user, enable lingering, then use `t3 service install`. Apply [quark.conf](quark.conf) at `~/.config/systemd/user/t3code.service.d/quark.conf`, with a private `~/.t3/provider.env` for any provider credentials. Never copy real credentials into this public deployment repository.
 
-The private agent-information checkout is `/mnt/apps/developer/jellman86/.agents`, exposed as `~/.agents`. It comes from the separate private Forgejo repository and intentionally contains owner-authorized secrets. Ordinary provider configurations reference the shared `hermes` OpenViking user/agent scope. No Mac conversations, environment identity or provider OAuth sessions were copied.
+The private agent-information checkout is `/mnt/apps/developer/jellman86/.agents`, exposed as `~/.agents`. It comes from the separate private Forgejo repository and intentionally contains owner-authorized secrets. Ordinary provider configurations use the unauthenticated private OpenKnowledge MCP at `https://openknowledge.pownet.uk/mcp`. No Mac conversations, environment identity or provider OAuth sessions were copied.
 
 ## Routing and permissions
 

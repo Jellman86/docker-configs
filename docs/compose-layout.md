@@ -21,7 +21,7 @@ See the [cutover sequence and acceptance](cutover-plan.md).
 | `management` | `stacks/management/compose.yaml` | Dockhand |
 | `ingress` | `stacks/ingress/compose.yaml` | NPM, Cloudflare connector |
 | `home-automation` | `stacks/home-automation/compose.yaml` | Frigate, BirdNET-Go, MQTT, YA-WAMF, Home Assistant |
-| `ai-tools` | `stacks/ai-tools/compose.yaml` | Hermes, OpenViking and its bootstrap/Ollama, mail/browser tools |
+| `ai-tools` | `stacks/ai-tools/compose.yaml` | OpenKnowledge and Playwright browser MCP (Hermes/OpenViking retired 2026-10-18) |
 | `arr` | `stacks/arr/compose.yaml` | VPN, downloads, indexers, requests and library management |
 | `media` | `stacks/media/compose.yaml` | Playback servers and Optimisarr |
 | `immich` | `stacks/immich/compose.yaml` | Photo server, private PostgreSQL and Valkey |
