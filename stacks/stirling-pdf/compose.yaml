@@ -1,0 +1,13 @@
+# Use the restored apps SSD and the same native storage guard as media services.
+# Stable deployment identity; Dockhand uses the same stack name.
+name: stirling-pdf
+
+services:
+  stirling-pdf:
+    extends: {file: compose.base.yaml, service: stirling-pdf}
+    restart: "no"
+
+networks:
+  general_brg:
+    name: general_brg
+    external: true

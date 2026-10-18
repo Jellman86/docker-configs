@@ -3,17 +3,31 @@ Personal Docker Compose stacks consolidated on Quark, the Fedora server.
 Most stacks expect external networks and overrides in Dockhand. Secrets belong
 in its encrypted stack variables; never edit generated environment files.
 
+## Structure and naming
+
+- `stacks/<name>/compose.yaml`: normal deployment entrypoint, README and related configuration.
+- `compose.base.yaml`: reusable service definitions, not a Quark deployment entrypoint.
+- `compose.ml.yaml`: the explicitly separate Immich ML worker entrypoint.
+- `tools/`: manual maintenance, database rehearsal and acceptance workloads.
+- `host/quark/`: native storage, backup, routing and file-server configuration.
+- `scripts/`: repository validation only.
+
+Folder, Compose project and Dockhand stack names use lowercase kebab-case.
+Service/container names describe the application, without host names or a `_stack`
+suffix. Existing storage paths, named volumes and shared network identities are
+operational state and are deliberately preserved. See [layout and rename guide](docs/compose-layout.md).
+
 ## Repo layout
-- [`autofpl/`](autofpl/README.md) - private, stateless autoFPL API on Quark.
-- [`arr_vpn_stack/`](arr_vpn_stack/README.md) - Gluetun, qBittorrent, Prowlarr, Radarr, Sonarr, Byparr, Cleanuparr, Seerr, and the Gluetun restart guard.
-- [`immich/`](immich/README.md) - self-hosted photo and video library on Quark.
-- [`management/`](management/README.md) - Dockhand control plane.
-- [`media_related_stack/`](media_related_stack/README.md) - Plex, Jellyfin, and Optimisarr.
-- [`monitoring_management/`](monitoring_management/README.md) - Prometheus, SNMP Exporter, Unpoller, and Grafana.
-- [`stirling_pdf/`](stirling_pdf/README.md) - self-hosted PDF toolkit on Quark.
-- [`security_inference_stack/`](security_inference_stack/README.md) - Frigate, BirdNET-Go, Mosquitto, YA-WAMF, and Home Assistant.
-- [`security_inference_stack/ai_tools/`](security_inference_stack/ai_tools/README.md) - independently deployed OpenViking, mail, browser, and web-research services.
-- [`web_services/`](web_services/README.md) - Nginx Proxy Manager and Cloudflare Tunnel; Tailscale is native on Quark.
+- [`stacks/autofpl/`](stacks/autofpl/README.md) - private, stateless autoFPL API on Quark.
+- [`stacks/arr/`](stacks/arr/README.md) - Gluetun, qBittorrent, Prowlarr, Radarr, Sonarr, Byparr, Cleanuparr, Seerr, and the Gluetun restart guard.
+- [`stacks/immich/`](stacks/immich/README.md) - self-hosted photo and video library on Quark.
+- [`stacks/management/`](stacks/management/README.md) - Dockhand control plane.
+- [`stacks/media/`](stacks/media/README.md) - Plex, Jellyfin, and Optimisarr.
+- [`stacks/monitoring/`](stacks/monitoring/README.md) - Prometheus, SNMP Exporter, Unpoller, and Grafana.
+- [`stacks/stirling-pdf/`](stacks/stirling-pdf/README.md) - self-hosted PDF toolkit on Quark.
+- [`stacks/home-automation/`](stacks/home-automation/README.md) - Frigate, BirdNET-Go, Mosquitto, YA-WAMF, and Home Assistant.
+- [`stacks/ai-tools/`](stacks/ai-tools/README.md) - independently deployed OpenViking, mail, browser, and web-research services.
+- [`stacks/ingress/`](stacks/ingress/README.md) - Nginx Proxy Manager and Cloudflare Tunnel; Tailscale is native on Quark.
 
 Each stack README documents its services, Compose path, host placement, ports,
 networks, storage, variables, security assumptions, deployment checks, and
@@ -27,7 +41,7 @@ runtime state ever differ.
 - Use the four guarded Quark server variants documented in
   [`host/quark/`](host/quark/README.md). The base service definitions use Quark defaults; deploy the guarded variants.
 - Immich's existing Quark ML worker remains separate from its server/database.
-- `monitoring_management` is portable; its Dockhand definition determines its host.
+- `monitoring` is portable; its Dockhand definition determines its host.
 
 Existing Quark apps retain `/mnt/apps` paths through bind aliases backed by
 `/mnt/services/quark` on the added apps SSD. Migrated Riker configs use
@@ -132,8 +146,7 @@ Tailscale runs on the host with its own interface and approved subnet/exit
 routes; it has no Docker bridge or Compose service.
 
 Dockhand deploys one complete Compose file per Git stack. For Quark ingress use
-`web_services/docker-compose.quark.yml`. The base and explicit Riker manifests
-retain legacy network defaults for reference; Riker is retired.
+`stacks/ingress/compose.yaml`. Retired Riker ingress manifests are available in Git history.
 
 ## Configuration Notes
 
@@ -146,4 +159,4 @@ See [Quark configuration review](host/quark/UPSTREAM_REVIEW.md) for upstream con
 
 ## Twenty research workbench
 
-[`twenty/`](twenty/) serves the research-only .NET/Svelte investing workbench on Quark through Git-backed Dockhand and private NPM ingress.
+[`stacks/twenty/`](stacks/twenty/) serves the research-only .NET/Svelte investing workbench on Quark through Git-backed Dockhand and private NPM ingress.

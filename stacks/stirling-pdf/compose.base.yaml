@@ -1,0 +1,78 @@
+---
+# Stable deployment identity; Dockhand uses the same stack name.
+name: stirling-pdf
+
+services:
+#-----------------------------------------------
+    stirling-pdf:
+      image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
+      container_name: stirling-pdf
+      restart: unless-stopped
+      environment:
+        - PUID=${PUID:-568}
+        - PGID=${PGID:-568}
+        - TZ=${TZ:-Europe/London}
+        # LANGS selects optional conversion font support, not OCR traineddata.
+        # OCR languages come from the persisted /usr/share/tessdata mount.
+        - LANGS=${STIRLING_LANGS:-en_GB}
+        # Login defaults to ON upstream and the container answers 401 until it
+        # is turned off. This instance publishes no host port and is reachable
+        # only through Nginx Proxy Manager on the trusted LAN, so the account
+        # layer adds a credential to manage without adding a boundary.
+        - SECURITY_ENABLELOGIN=${STIRLING_ENABLE_LOGIN:-false}
+        - SYSTEM_DEFAULTLOCALE=${STIRLING_LOCALE:-en-GB}
+        # Disable analytics; this flag is not a document-retention policy.
+        # /tmp is ephemeral but application-managed persistent files are separate.
+        - SYSTEM_ENABLEANALYTICS=false
+      volumes:
+        # Custom OCR training data and per-installation config persist here so a
+        # container recreate does not lose them.
+        - type: bind
+          source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/stirling-pdf/trainingData
+          target: /usr/share/tessdata
+          bind:
+            create_host_path: true
+        - type: bind
+          source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/stirling-pdf/configs
+          target: /configs
+          bind:
+            create_host_path: true
+        - type: bind
+          source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/stirling-pdf/customFiles
+          target: /customFiles
+          bind:
+            create_host_path: true
+      # Stirling writes working copies while converting; a tmpfs keeps that churn
+      # off the pool and guarantees the scratch area is cleared on restart.
+      tmpfs:
+        - /tmp:rw,nosuid,nodev,size=1g
+      # No host port. Nginx Proxy Manager reaches the container by name on
+      # general_brg, matching other proxied services on Quark.
+      expose:
+        - "8080"
+      networks:
+        general_brg:
+          aliases:
+            - stirling-pdf
+      security_opt:
+        - no-new-privileges:true
+      mem_limit: "${STIRLING_MEMORY_LIMIT:-2g}"
+      cpus: "${STIRLING_CPUS:-2.0}"
+      healthcheck:
+        test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/v1/info/status >/dev/null || exit 1"]
+        interval: 1m
+        timeout: 10s
+        retries: 3
+        start_period: 2m
+      logging:
+        driver: json-file
+        options:
+          max-size: "10m"
+          max-file: "3"
+
+networks:
+  # Shared host-local bridge that Nginx Proxy Manager already sits on; declared
+  # external so this stack joins it rather than trying to own it.
+  general_brg:
+    name: ${NETWORK:-general_brg}
+    external: true

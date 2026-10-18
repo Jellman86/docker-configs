@@ -2,11 +2,11 @@ name: Optimisarr acceptance Compose
 on:
   push:
     paths:
-      - optimisarr_sidecar_acceptance/**
+      - tools/optimisarr-sidecar-acceptance/**
       - .github/workflows/optimisarr-acceptance-compose.yml
   pull_request:
     paths:
-      - optimisarr_sidecar_acceptance/**
+      - tools/optimisarr-sidecar-acceptance/**
       - .github/workflows/optimisarr-acceptance-compose.yml
 permissions:
   contents: read
@@ -15,4 +15,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker compose -f optimisarr_sidecar_acceptance/docker-compose.yml config --quiet
+      - run: docker compose -f tools/optimisarr-sidecar-acceptance/compose.yaml config --quiet

@@ -1,0 +1,22 @@
+# Reuse Quark's existing immich-ml worker rather than starting a second one.
+# Stable deployment identity; Dockhand uses the same stack name.
+name: immich
+
+services:
+  immich-server:
+    extends: {file: compose.base.yaml, service: immich-server}
+    restart: "no"
+  immich-database:
+    extends: {file: compose.base.yaml, service: immich-database}
+    restart: "no"
+  immich-redis:
+    extends: {file: compose.base.yaml, service: immich-redis}
+    restart: "no"
+
+networks:
+  general_brg:
+    name: general_brg
+    external: true
+  immich_backend:
+    name: ${IMMICH_BACKEND_NETWORK:-immich_backend}
+    driver: bridge

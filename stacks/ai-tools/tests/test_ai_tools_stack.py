@@ -1,0 +1,242 @@
+from __future__ import annotations
+
+import unittest
+from pathlib import Path
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+COMPOSE = ROOT / "compose.yaml"
+
+
+class AiToolsPolicyTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.compose = yaml.safe_load(COMPOSE.read_text())
+        cls.services = cls.compose["services"]
+        cls.networks = cls.compose["networks"]
+
+    def test_required_services_exist(self) -> None:
+        self.assertTrue(
+            {"hermes-agent", "playwright-mcp", "openviking", "openviking-ollama", "rusty-imap-mcp"}
+            <= self.services.keys()
+        )
+
+    def test_no_ai_tool_publishes_a_host_port(self) -> None:
+        for name, service in self.services.items():
+            self.assertNotIn("ports", service, name)
+
+    def test_no_ai_tool_mounts_the_docker_socket(self) -> None:
+        for name, service in self.services.items():
+            for mount in service.get("volumes", []):
+                self.assertNotIn("docker.sock", str(mount), name)
+
+    def test_services_are_hardened_and_bounded(self) -> None:
+        for name in ("playwright-mcp", "openviking", "rusty-imap-mcp"):
+            service = self.services[name]
+            self.assertEqual(service.get("cap_drop"), ["ALL"], name)
+            self.assertIn("no-new-privileges:true", service.get("security_opt", []), name)
+            self.assertIn("mem_limit", service, name)
+            self.assertIn("cpus", service, name)
+
+    def test_pinned_images_are_immutable(self) -> None:
+        for name, service in self.services.items():
+            image = service.get("image")
+            if image is None or "${" in image:
+                continue
+            self.assertIn("@sha256:", image, name)
+            self.assertNotIn(":latest@", image, name)
+
+    def test_playwright_browser_stays_isolated(self) -> None:
+        service = self.services["playwright-mcp"]
+        command = service["command"]
+        # --isolated keeps each session in a throwaway profile. The browser no
+        # longer runs behind the squid egress gateway, so this and the
+        # allowed-hosts list are what remain of its boundary.
+        self.assertIn("--isolated", command)
+        self.assertIn("--block-service-workers", command)
+        self.assertNotIn("PLAYWRIGHT_MCP_CDP_ENDPOINT", service.get("environment", {}))
+        self.assertTrue(
+            any(a.startswith("--allowed-hosts=") for a in command),
+            "playwright must restrict the Host headers it will serve",
+        )
+
+    def test_openviking_embedding_stays_local_and_extraction_is_free(self) -> None:
+        # Even funded OpenRouter accounts allow 1,000 free requests a day;
+        # OpenViking can issue roughly 2,900, so embeddings must stay local.
+        env = self.services["openviking"]["environment"]
+        self.assertIn("OPENVIKING_EMBED_MODEL", env)
+        self.assertIn("OPENVIKING_EMBED_DIMENSION", env)
+        self.assertEqual(env["OPENVIKING_VLM_PROVIDER"], "${OPENVIKING_VLM_PROVIDER:-openrouter}")
+        self.assertEqual(
+            env["OPENVIKING_VLM_MODEL"],
+            "${OPENVIKING_VLM_MODEL:-inclusionai/ling-3.0-flash-vl:free}",
+        )
+        self.assertEqual(
+            env["OPENVIKING_VLM_API_BASE"],
+            "${OPENVIKING_VLM_API_BASE:-https://openrouter.ai/api/v1}",
+        )
+        self.assertIn(":?", env["OPENROUTER_API_KEY"])
+
+    def test_retired_runtimes_are_absent(self) -> None:
+        for name in ("searxng", "spider-mcp", "spider-chromium",
+                     "research-egress"):
+            self.assertNotIn(name, self.services)
+        self.assertFalse((ROOT / "skills").exists())
+        self.assertFalse((ROOT / "web-research").exists())
+
+    def test_hermes_auth_networks_and_secret_boundary(self) -> None:
+        service = self.services["hermes-agent"]
+        env = service["environment"]
+        self.assertEqual(env["API_SERVER_ENABLED"], "false")
+        for key in ("HERMES_DASHBOARD_BASIC_AUTH_USERNAME",
+                    "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD",
+                    "HERMES_DASHBOARD_BASIC_AUTH_SECRET", "OPENVIKING_API_KEY",
+                    "HERMES_GITHUB_TOKEN", "TELEGRAM_BOT_TOKEN",
+                    "TELEGRAM_ALLOWED_USERS", "OPENROUTER_API_KEY"):
+            self.assertIn(":?", env[key])
+        for key in ("OPENVIKING_ROOT_API_KEY", "OPENVIKING_CODEX_API_KEY",
+                    "SUDO_PASSWORD", "DISCORD_BOT_TOKEN"):
+            self.assertNotIn(key, env)
+        self.assertEqual(env["TELEGRAM_ALLOW_ALL_USERS"], "false")
+        self.assertEqual(service["networks"]["npm_proxy_backends"]["aliases"],
+                         ["hermes-dashboard"])
+        self.assertIn("./managed:/etc/hermes:ro", service["volumes"])
+        self.assertIn("no-new-privileges:true", service["security_opt"])
+        self.assertEqual(service["volumes"][0]["bind"]["create_host_path"], False)
+
+    def test_hermes_preserves_memory_and_non_mcp_approvals(self) -> None:
+        config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
+        self.assertEqual(config["approvals"]["mode"], "manual")
+        self.assertEqual(config["approvals"]["cron_mode"], "deny")
+        self.assertEqual(config["memory"]["openviking"]["agent"], "hermes")
+        self.assertFalse(config["mcp_servers"]["openviking"]["enabled"])
+        self.assertFalse(config["mcp_servers"]["spider"]["enabled"])
+        self.assertIn("browser", config["agent"]["disabled_toolsets"])
+        ha_events = config["platforms"]["homeassistant"]["extra"]
+        self.assertFalse(ha_events["watch_all"])
+        self.assertEqual(ha_events["watch_domains"], [])
+        self.assertEqual(ha_events["watch_entities"], [])
+        self.assertEqual(config["timezone"], "Europe/London")
+        mail = config["mcp_servers"]["rusty_imap"]["tools"]["include"]
+        for tool in ("export_messages", "expunge", "delete_folder"):
+            self.assertNotIn(tool, mail)
+        telegram = config["platforms"]["telegram"]
+        self.assertTrue(telegram["enabled"])
+        self.assertFalse(telegram["gateway_restart_notification"])
+        for name, channel in config["platforms"].items():
+            if name != "telegram":
+                self.assertFalse(channel["enabled"])
+
+    def test_shared_tool_endpoints_remain_available_to_trusted_consumers(self) -> None:
+        self.assertIn("general_brg", self.services["playwright-mcp"]["networks"])
+        self.assertIn("general_brg", self.services["rusty-imap-mcp"]["networks"])
+        self.assertIn("npm_proxy_backends", self.services["openviking"]["networks"])
+
+    def test_configured_mcp_servers_are_permanently_trusted(self) -> None:
+        config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
+        servers = config["mcp_servers"]
+        for name in ("github", "playwright", "rusty_imap"):
+            self.assertEqual(servers[name]["trust"], "full")
+            self.assertFalse(servers[name]["sampling"]["enabled"])
+            self.assertFalse(servers[name]["supports_parallel_tool_calls"])
+        github = servers["github"]
+        self.assertEqual(github["url"], "https://api.githubcopilot.com/mcp/")
+        self.assertEqual(github["headers"]["Authorization"], "Bearer ${HERMES_GITHUB_TOKEN}")
+        self.assertTrue({"get_me", "get_file_contents", "pull_request_read", "actions_list"}
+                        <= set(github["tools"]["include"]))
+        self.assertFalse({"create_repository", "delete_file", "fork_repository"}
+                         & set(github["tools"]["include"]))
+        self.assertLessEqual(len(github["tools"]["include"]), 25)
+        for name, service in self.services.items():
+            if name != "hermes-agent":
+                self.assertNotIn("HERMES_GITHUB_TOKEN", service.get("environment", {}))
+
+    def test_shared_host_concurrency_and_context_are_bounded(self) -> None:
+        config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
+        delegation = config["delegation"]
+        self.assertEqual(delegation["max_concurrent_children"], 2)
+        self.assertEqual(delegation["max_iterations"], 60)
+        self.assertEqual(delegation["max_spawn_depth"], 1)
+        self.assertFalse(delegation["subagent_auto_approve"])
+        compression = config["compression"]
+        self.assertEqual(compression["proactive_prune_tokens"], 48000)
+        self.assertGreaterEqual(compression["proactive_prune_min_reclaim_tokens"], 4096)
+        self.assertGreaterEqual(compression["protect_last_n"], 20)
+        memory = config["memory"]
+        self.assertEqual(memory["provider"], "openviking")
+        self.assertFalse(memory["memory_enabled"])
+        self.assertFalse(memory["user_profile_enabled"])
+        self.assertEqual(memory["nudge_interval"], 0)
+
+    def test_openrouter_models_are_split_by_role_without_codex(self) -> None:
+        config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
+        self.assertEqual(
+            config["model"],
+            {"provider": "openrouter", "default": "deepseek/deepseek-v4.1-flash"},
+        )
+        self.assertEqual(config["agent"]["reasoning_effort"], "high")
+        self.assertEqual(config["provider_routing"]["data_collection"], "deny")
+        self.assertTrue(config["provider_routing"]["require_parameters"])
+        self.assertEqual(
+            [entry["model"] for entry in config["fallback_providers"]],
+            ["z-ai/glm-5.3-flash", "qwen/qwen3.8-flash"],
+        )
+
+        auxiliary = config["auxiliary"]
+        # This global switch also blocks explicitly selected paid auxiliaries;
+        # cost control comes from pinning every role and using a free auto SKU.
+        self.assertFalse(auxiliary["free_only"])
+        self.assertTrue(auxiliary["openrouter_model"].endswith(":free"))
+        self.assertFalse(auxiliary["background_review"]["enabled"])
+        expected = {
+            "compression": "deepseek/deepseek-v4.1-flash",
+            "vision": "qwen/qwen3.8-flash",
+            "title_generation": "qwen/qwen3.7-flash",
+            "approval": "qwen/qwen3.8-flash",
+            "mcp": "qwen/qwen3.8-flash",
+            "goal_judge": "qwen/qwen3.8-flash",
+            "triage_specifier": "qwen/qwen3.8-flash",
+            "kanban_decomposer": "qwen/qwen3.8-flash",
+            "review": "z-ai/glm-5.3-flash",
+        }
+        for role, model in expected.items():
+            self.assertEqual(auxiliary[role]["provider"], "openrouter", role)
+            self.assertEqual(auxiliary[role]["model"], model, role)
+        self.assertEqual(config["delegation"]["provider"], "openrouter")
+        self.assertEqual(config["delegation"]["model"], "z-ai/glm-5.3-flash")
+
+        serialized = (ROOT / "managed/config.yaml").read_text()
+        self.assertNotIn("openai-codex", serialized)
+        self.assertNotIn("gpt-5", serialized)
+        self.assertNotIn("anthropic/", serialized)
+
+    def test_moa_uses_only_inexpensive_chinese_models(self) -> None:
+        config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
+        preset = config["moa"]["presets"]["default"]
+        models = [entry["model"] for entry in preset["reference_models"]]
+        models.append(preset["aggregator"]["model"])
+        self.assertEqual(
+            models,
+            [
+                "z-ai/glm-5.3-flash",
+                "qwen/qwen3.8-flash",
+                "deepseek/deepseek-v4.1-flash",
+            ],
+        )
+
+    def test_no_orphaned_or_undeclared_networks(self) -> None:
+        declared = set(self.networks)
+        used: set[str] = set()
+        for service in self.services.values():
+            nets = service.get("networks")
+            if isinstance(nets, dict):
+                used |= set(nets)
+            elif isinstance(nets, list):
+                used |= set(nets)
+        self.assertEqual(declared - used, set(), "orphaned networks")
+        self.assertEqual(used - declared, set(), "undeclared networks")
+
+
+if __name__ == "__main__":
+    unittest.main()

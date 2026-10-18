@@ -1,0 +1,30 @@
+# Quark's storage guard owns startup and crash recovery through Dockhand.
+# Docker must never restart these independently before the USB mirror is ready.
+# Stable deployment identity; Dockhand uses the same stack name.
+name: media
+
+services:
+  plex:
+    extends: {file: compose.base.yaml, service: plex}
+    restart: "no"
+    volumes:
+      - type: bind
+        source: ${PLEX_TRANSCODE_PATH:-/mnt/services/plex-transcode}
+        target: /transcode
+        bind: {create_host_path: false}
+  jellyfin:
+    extends: {file: compose.base.yaml, service: jellyfin}
+    restart: "no"
+  optimisarr:
+    extends: {file: compose.base.yaml, service: optimisarr}
+    restart: "no"
+    networks:
+      general_brg:
+
+networks:
+  arr_stack_brg:
+    name: ${ARR_NETWORK:-arr_stack_brg}
+    external: true
+  general_brg:
+    name: general_brg
+    external: true

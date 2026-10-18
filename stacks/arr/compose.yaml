@@ -1,0 +1,63 @@
+# Storage guard owns startup/recovery through Dockhand; restart:no is deliberate.
+# gw_priority keeps outbound traffic on the Arr bridge when NPM also joins.
+# Only qBittorrent shares Gluetun's namespace. Other apps use its HTTP proxy
+# where configured, so metadata and local API traffic do not inherit the VPN.
+# Stable deployment identity; Dockhand uses the same stack name.
+name: arr
+
+services:
+  gluetun:
+    extends: {file: compose.base.yaml, service: gluetun}
+    restart: "no"
+    networks:
+      vpn_stack_brg: {gw_priority: 1}
+      npm_proxy_backends: {}
+  qbittorrent:
+    extends: {file: compose.base.yaml, service: qbittorrent}
+    restart: "no"
+  radarr:
+    extends: {file: compose.base.yaml, service: radarr}
+    restart: "no"
+    networks:
+      vpn_stack_brg: {gw_priority: 1}
+      npm_proxy_backends: {}
+  sonarr:
+    extends: {file: compose.base.yaml, service: sonarr}
+    restart: "no"
+    networks:
+      vpn_stack_brg: {gw_priority: 1}
+      npm_proxy_backends: {}
+  prowlarr:
+    extends: {file: compose.base.yaml, service: prowlarr}
+    restart: "no"
+    networks:
+      vpn_stack_brg: {gw_priority: 1}
+      npm_proxy_backends: {}
+  byparr:
+    extends: {file: compose.base.yaml, service: byparr}
+    restart: "no"
+  cleanuparr:
+    extends: {file: compose.base.yaml, service: cleanuparr}
+    restart: "no"
+    networks:
+      vpn_stack_brg: {gw_priority: 1}
+      npm_proxy_backends: {}
+  seerr:
+    extends: {file: compose.base.yaml, service: seerr}
+    restart: "no"
+    networks:
+      vpn_stack_brg: {gw_priority: 1}
+      npm_proxy_backends: {}
+  gluetun-guard:
+    extends: {file: compose.base.yaml, service: gluetun-guard}
+    restart: "no"
+    profiles: [manual-network-repair]
+
+networks:
+  npm_proxy_backends:
+    name: npm_proxy_backends
+    external: true
+  vpn_stack_brg:
+    # Shared existing bridge; preserve its existing identity across project renames.
+    external: true
+    name: ${NETWORK:-arr_stack_brg}

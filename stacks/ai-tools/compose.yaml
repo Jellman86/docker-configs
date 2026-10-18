@@ -1,0 +1,380 @@
+# Independent AI stack. One-shot model/bootstrap services exiting 0 are healthy;
+# do not give them a restart loop or a server-style inherited healthcheck.
+# Internal DNS connects backends; only selected authenticated UI/API routes use NPM.
+# Resource caps are ceilings, not reserved memory. Ollama embeddings intentionally
+# use CPU here to leave Intel GPU/NPU capacity for media and camera workloads.
+# Stable deployment identity; Dockhand uses the same stack name.
+name: ai-tools
+
+services:
+  hermes-agent:
+    image: nousresearch/hermes-agent:v2026.8.31@sha256:64923faeae267792bf9bf87fe3b4c4869e35004e360c7df01730ad801b74d524
+    platform: linux/amd64
+    container_name: hermes-agent
+    restart: unless-stopped
+    command: ["gateway", "run"]
+    stop_grace_period: 60s
+    shm_size: "1gb"
+    cpus: "${HERMES_CPUS:-2.0}"
+    mem_limit: "${HERMES_MEMORY_LIMIT:-4g}"
+    pids_limit: 512
+    # The official s6 bootstrap remaps UID/GID before dropping to hermes.
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      TZ: "${TZ:-Europe/London}"
+      HERMES_TIMEZONE: Europe/London
+      HERMES_MANAGED_DIR: /etc/hermes
+      HERMES_DASHBOARD: "1"
+      HERMES_DASHBOARD_HOST: 0.0.0.0
+      HERMES_DASHBOARD_PORT: "9119"
+      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: "${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:?Hermes dashboard username required}"
+      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: "${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:?Hermes dashboard password required}"
+      HERMES_DASHBOARD_BASIC_AUTH_SECRET: "${HERMES_DASHBOARD_BASIC_AUTH_SECRET:?Hermes session secret required}"
+      API_SERVER_ENABLED: "false"
+      TERMINAL_ENV: ssh
+      TERMINAL_SSH_HOST: host.docker.internal
+      TERMINAL_SSH_USER: "${TERMINAL_SSH_USER:-jellman86}"
+      TERMINAL_SSH_PORT: "22"
+      TERMINAL_SSH_KEY: /opt/data/host-control/id_ed25519
+      TERMINAL_SSH_PERSISTENT: "true"
+      HERMES_HOST_WORKDIR: "${HERMES_HOST_WORKDIR:-/home/jellman86}"
+      HERMES_GITHUB_TOKEN: "${HERMES_GITHUB_TOKEN:?GitHub MCP token required}"
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:?Telegram bot token required}"
+      TELEGRAM_ALLOWED_USERS: "${TELEGRAM_ALLOWED_USERS:?Telegram user allowlist required}"
+      TELEGRAM_ALLOW_ALL_USERS: "false"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:?OpenRouter API key required}"
+      OPENVIKING_ENDPOINT: http://openviking:1933
+      OPENVIKING_API_KEY: "${OPENVIKING_API_KEY:?shared OpenViking user key required}"
+      OPENVIKING_AGENT: hermes
+      HASS_URL: http://host.docker.internal:8123
+      HASS_TOKEN: "${HASS_TOKEN:-}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - type: bind
+        source: "${DOCKERCONFIGPATH:-/mnt/apps/docker}/hermes"
+        target: /opt/data
+        bind:
+          create_host_path: false
+      - ./managed:/etc/hermes:ro
+    expose:
+      - "9119"
+    networks:
+      general_brg: {}
+      npm_proxy_backends:
+        aliases: [hermes-dashboard]
+      openviking_private: {}
+    depends_on:
+      playwright-mcp:
+        condition: service_healthy
+      rusty-imap-mcp:
+        condition: service_healthy
+      openviking-bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9119/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  playwright-mcp:
+    image: mcr.microsoft.com/playwright/mcp:v0.0.78@sha256:3d871c22ea2d4cca0966e2cfb1860e1cb03eb7353725a3d6cffd133296fb04eb
+    container_name: playwright-mcp
+    restart: unless-stopped
+    init: true
+    read_only: true
+    shm_size: "1gb"
+    pids_limit: 512
+    mem_limit: "${PLAYWRIGHT_MCP_MEMORY_LIMIT:-1536m}"
+    cpus: "${PLAYWRIGHT_MCP_CPUS:-1.25}"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command:
+      - --host=0.0.0.0
+      - --port=8931
+      - --allowed-hosts=playwright-mcp,playwright-mcp:8931,playwright-mcp.pownet.uk
+      - --isolated
+      - --block-service-workers
+      - --output-mode=stdout
+    tmpfs:
+      - /home/node:rw,nosuid,nodev,noexec,size=256m,mode=0700,uid=1000,gid=1000
+      - /tmp:rw,nosuid,nodev,noexec,size=512m,mode=1777
+    expose:
+      - "8931"
+    networks:
+      general_brg:
+        aliases:
+          - playwright-mcp
+    healthcheck:
+      test: ["CMD", "node", "-e", "const s=require('net').createConnection({host:'127.0.0.1',port:8931},()=>{s.end();process.exit(0)});s.setTimeout(3000,()=>{s.destroy();process.exit(1)});s.on('error',()=>process.exit(1));"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
+  openviking:
+    platform: linux/amd64
+    image: ghcr.io/volcengine/openviking:v0.4.11@sha256:6bca0c71301a918b6cb6a614677d0a15556ce2d62ba3e491e3be78c490008bbe
+    container_name: openviking
+    restart: unless-stopped
+    init: true
+    user: "${PUID:-1000}:${PGID:-1000}"
+    read_only: true
+    pids_limit: 512
+    mem_limit: "${OPENVIKING_MEMORY_LIMIT:-3g}"
+    cpus: "${OPENVIKING_CPUS:-1.5}"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - python /opt/openviking-managed/render_config.py && exec /usr/local/bin/openviking-entrypoint --without-bot
+    environment:
+      HOME: /app
+      PYTHONDONTWRITEBYTECODE: "1"
+      OPENVIKING_CONFIG_FILE: /app/.openviking/ov.conf
+      OPENVIKING_CLI_CONFIG_FILE: /app/.openviking/ovcli.conf
+      OPENVIKING_CODEX_AUTH_PATH: /app/.openviking/codex_auth.json
+      OPENVIKING_ROOT_API_KEY: "${OPENVIKING_ROOT_API_KEY:?OpenViking root API key is required}"
+      OPENVIKING_VLM_MODEL: "${OPENVIKING_VLM_MODEL:-inclusionai/ling-3.0-flash-vl:free}"
+      OPENVIKING_VLM_PROVIDER: "${OPENVIKING_VLM_PROVIDER:-openrouter}"
+      OPENVIKING_VLM_API_BASE: "${OPENVIKING_VLM_API_BASE:-https://openrouter.ai/api/v1}"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:?OpenRouter API key required}"
+      OPENVIKING_EMBED_MODEL: "${OPENVIKING_EMBED_MODEL:-qwen3-embedding:0.6b}"
+      OPENVIKING_EMBED_DIMENSION: "${OPENVIKING_EMBED_DIMENSION:-1024}"
+      OPENVIKING_WITH_BOT: "0"
+    volumes:
+      - type: bind
+        source: "${DOCKERCONFIGPATH:-/mnt/apps/docker}/openviking"
+        target: /app/.openviking
+        bind:
+          create_host_path: true
+      - ./openviking:/opt/openviking-managed:ro
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m,mode=1777
+    expose:
+      - "1933"
+    networks:
+      openviking_private:
+        aliases:
+          - openviking
+      npm_proxy_backends:
+        aliases:
+          - openviking
+    depends_on:
+      openviking-ollama-model:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:1933/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  openviking-bootstrap:
+    platform: linux/amd64
+    image: ghcr.io/volcengine/openviking:v0.4.11@sha256:6bca0c71301a918b6cb6a614677d0a15556ce2d62ba3e491e3be78c490008bbe
+    container_name: openviking-bootstrap
+    restart: "no"
+    # The server image's inherited healthcheck is inappropriate for this
+    # successful one-shot tenant bootstrap job.
+    healthcheck:
+      disable: true
+    user: "${PUID:-1000}:${PGID:-1000}"
+    read_only: true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.25
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    entrypoint: ["python", "/opt/openviking-managed/bootstrap_tenant.py"]
+    environment:
+      OPENVIKING_ENDPOINT: http://openviking:1933
+      OPENVIKING_ROOT_API_KEY: "${OPENVIKING_ROOT_API_KEY:?OpenViking root API key is required}"
+      OPENVIKING_HERMES_KEY_SEED: "${OPENVIKING_HERMES_KEY_SEED:?legacy shared OpenViking user key seed is required}"
+      OPENVIKING_API_KEY: "${OPENVIKING_API_KEY:?legacy shared OpenViking user API key is required}"
+      OPENVIKING_CODEX_KEY_SEED: "${OPENVIKING_CODEX_KEY_SEED:?OpenViking Codex user key seed is required}"
+      OPENVIKING_CODEX_API_KEY: "${OPENVIKING_CODEX_API_KEY:?dedicated OpenViking Codex user API key is required}"
+    volumes:
+      - ./openviking:/opt/openviking-managed:ro
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=16m,mode=1777
+    networks:
+      - openviking_private
+    depends_on:
+      openviking:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  openviking-ollama:
+    platform: linux/amd64
+    image: ollama/ollama:0.32.1@sha256:1d9f0b83b852efef42435e65fd53d0dc4f462a60dabf5c719058c99d47f32e36
+    container_name: openviking-ollama
+    restart: unless-stopped
+    init: true
+    user: "${PUID:-1000}:${PGID:-1000}"
+    read_only: true
+    pids_limit: 256
+    mem_limit: "${OPENVIKING_OLLAMA_MEMORY_LIMIT:-4g}"
+    cpus: "${OPENVIKING_OLLAMA_CPUS:-1.0}"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      HOME: /var/lib/ollama
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_MODELS: /var/lib/ollama/models
+      OLLAMA_KEEP_ALIVE: 10m
+    volumes:
+      - type: bind
+        source: "${DOCKERCONFIGPATH:-/mnt/apps/docker}/openviking-ollama"
+        target: /var/lib/ollama
+        bind:
+          create_host_path: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=128m,mode=1777
+    expose:
+      - "11434"
+    networks:
+      openviking_private:
+        aliases:
+          - openviking-ollama
+    healthcheck:
+      test: ["CMD-SHELL", "OLLAMA_HOST=http://127.0.0.1:11434 ollama list >/dev/null"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  openviking-ollama-model:
+    platform: linux/amd64
+    image: ollama/ollama:0.32.1@sha256:1d9f0b83b852efef42435e65fd53d0dc4f462a60dabf5c719058c99d47f32e36
+    container_name: openviking-ollama-model
+    restart: "no"
+    user: "${PUID:-1000}:${PGID:-1000}"
+    read_only: true
+    pids_limit: 64
+    mem_limit: 512m
+    cpus: 0.50
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      HOME: /tmp
+      OLLAMA_HOST: http://openviking-ollama:11434
+    command: ["pull", "${OPENVIKING_EMBED_MODEL:-qwen3-embedding:0.6b}"]
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=32m,mode=1777
+    networks:
+      - openviking_private
+    depends_on:
+      openviking-ollama:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+  rusty-imap-mcp:
+    platform: linux/amd64
+    build:
+      context: ./rusty-imap-mcp
+      args:
+        MCP_PROXY_COMMIT: f1ae01420086011ae53e6d895b1cd02838b34f42
+        MCP_PROXY_SHA256: e8b2c07638826e168e24083e684f4308256caa96de49f5f580f07ce41c92d65a
+        RUSTY_IMAP_MCP_VERSION: "0.1.0"
+        RUSTY_IMAP_MCP_SHA256: 784ab5b5295ff2412555c4a8a883e2f440c780dad588003162e7e311291c5c21
+    container_name: rusty-imap-mcp
+    restart: unless-stopped
+    init: true
+    pids_limit: 64
+    mem_limit: 384m
+    cpus: 0.50
+    user: "65532:65532"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      RUSTY_IMAP_MCP_CONFIG: /etc/rusty-imap-mcp/config.toml
+      RUSTY_IMAP_MCP_IMAP_PASSWORD: ${RUSTY_IMAP_MCP_IMAP_PASSWORD:?iCloud app-specific password is required}
+      RUSTY_IMAP_MCP_SMTP_PASSWORD: ${RUSTY_IMAP_MCP_IMAP_PASSWORD:?iCloud app-specific password is required}
+    command:
+      - --host=0.0.0.0
+      - --port=8080
+      - --pass-environment
+      - --
+      - /usr/local/bin/rusty-imap-mcp
+      - --config
+      - /etc/rusty-imap-mcp/config.toml
+    volumes:
+      - ./rusty-imap-mcp/config.toml:/etc/rusty-imap-mcp/config.toml:ro
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777
+      - /var/lib/rusty-imap-mcp:rw,nosuid,nodev,noexec,size=32m,mode=0700,uid=65532,gid=65532
+    networks:
+      rusty_imap_mcp:
+        aliases:
+          - rusty-imap-mcp
+      general_brg:
+        aliases:
+          - rusty-imap-mcp
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/status', timeout=5).read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  general_brg:
+    external: true
+  npm_proxy_backends:
+    external: true
+  rusty_imap_mcp:
+    driver: bridge
+  openviking_private:
+    driver: bridge

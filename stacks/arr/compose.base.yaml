@@ -1,0 +1,517 @@
+# Quark deployment uses compose.yaml, which extends these services.
+# /data is one shared bind for downloads and libraries: hardlinks and atomic
+# imports require both paths on the same filesystem. Keep app settings in /config.
+# Image contract: https://docs.linuxserver.io/images/docker-qbittorrent/
+
+# Pinned to a release, and anchored so the same reference reaches qbittorrent's
+# labels below. The reference has to change whenever the image does, which is
+# what makes Compose recreate qbittorrent in the same operation as gluetun —
+# qbittorrent shares gluetun's network namespace and is left with a dead one
+# otherwise. A floating tag (`latest`, `v3`, `v3.41`) is a constant string, so
+# it would silently disable that and leave the repair to gluetun-guard after the
+# fact. `latest` is also built from master rather than a release, which is not
+# what should be enforcing a killswitch unattended.
+x-gluetun-image: &gluetun-image ${GLUETUN_IMAGE:-qmcgaw/gluetun:v3.41.3}
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# Stable deployment identity; Dockhand uses the same stack name.
+name: arr
+
+services:
+#-----------------------------------------------
+  gluetun:
+    image: *gluetun-image
+    container_name: gluetun
+    restart: unless-stopped
+    logging: *default-logging
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      vpn_stack_brg:
+    ports:
+      - "${QBITTORRENT_PORT:-5041}:5041/tcp"
+      - "${QBITTORRENT_PORT:-5041}:5041/udp"
+      - "${QBITTORRENT_WEBUI_PORT:-8081}:8081/tcp"
+      - "${GLUETUN_CONTROL_BIND_ADDRESS:-192.168.213.102}:${GLUETUN_CONTROL_PORT:-8000}:8000/tcp"
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/gluetun
+        target: /gluetun
+        bind:
+          create_host_path: true
+    environment:
+      VPN_SERVICE_PROVIDER: ${VPNHOST:-nordvpn}
+      VPN_TYPE: ${VPNPROTOCOL:-wireguard}
+      WIREGUARD_PRIVATE_KEY: ${WGPRIVKEY:-}
+      OPENVPN_USER: ${OPENVPNUSER:-}
+      OPENVPN_PASSWORD: ${OPENVPNPASSWORD:-}
+      TZ: ${TZ:-Europe/London}
+      SERVER_COUNTRIES: ${VPNCOUNTRY:-Netherlands,Switzerland,Sweden,Denmark,Germany,Belgium,France,Ireland,Norway,Spain}
+      UPDATER_PERIOD: ${UPDATER_PERIOD:-12h}
+      DNS_UPSTREAM_RESOLVER_TYPE: ${DNS_UPSTREAM_RESOLVER_TYPE:-dot}
+      DNS_UPSTREAM_RESOLVERS: ${DNS_UPSTREAM_RESOLVERS:-cloudflare}
+      DNS_CACHING: ${DNS_CACHING:-on}
+      DNS_UPSTREAM_IPV6: ${DNS_UPSTREAM_IPV6:-off}
+      BLOCK_MALICIOUS: ${BLOCK_MALICIOUS:-off}
+      # On, because Byparr browses through this proxy and hands Prowlarr every
+      # cookie the page set — including third-party ad cookies. Prowlarr loads
+      # them with System.Net.CookieContainer, which rejects a value containing
+      # an unquoted comma and then abandons the whole jar, cf_clearance with it:
+      #
+      #   Invalid cookie in https://kickass.ws/new/?field=time_add&sorder=desc
+      #   CookieException: The 'Value'='iqoption.com,iqtrading.asia' part of the
+      #   cookie is invalid.  at CookieContainer.Add
+      #
+      # The solve succeeded; the retry still gets challenged because it carries
+      # no clearance, and Prowlarr records an indexer failure. Ad hostnames that
+      # never resolve set no cookies. This is partial cover — the list holds
+      # mc.yandex.ru but not the rotating hosts kickass.ws also loads — so treat
+      # it as removing an avoidable failure mode, not as a fix for that indexer.
+      # No indexer or stack hostname appears in the list; checked before enabling.
+      BLOCK_ADS: ${BLOCK_ADS:-on}
+      HTTPPROXY: ${HTTPPROXY:-on}
+      HTTPPROXY_LISTENING_ADDRESS: ${HTTPPROXY_LISTENING_ADDRESS:-:8888}
+      HTTPPROXY_STEALTH: ${HTTPPROXY_STEALTH:-on}
+      HTTP_CONTROL_SERVER_AUTH_DEFAULT_ROLE: '{"auth":"none"}'
+      FIREWALL_INPUT_PORTS: ${FIREWALL_INPUT_PORTS:-5041,8000,8081,8888,9696,7878,8989,8191}
+      FIREWALL_OUTBOUND_SUBNETS: ${FIREWALL_OUTBOUND_SUBNETS:-192.168.211.0/24,192.168.212.0/24,192.168.213.0/24,192.168.214.0/24,192.168.215.0/24}
+    healthcheck:
+      test: ["CMD", "/gluetun-entrypoint", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+#-----------------------------------------------
+  qbittorrent:
+    image: ${QBITTORRENT_IMAGE:-lscr.io/linuxserver/qbittorrent:latest}
+    container_name: qbittorrent
+    restart: unless-stopped
+    logging: *default-logging
+    labels:
+      com.jellman86.gluetun-image: *gluetun-image
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true
+    stop_grace_period: 60s
+    environment:
+      PUID: ${PUID:-568}
+      PGID: ${PGID:-568}
+      TZ: ${TZ:-Europe/London}
+      WEBUI_PORT: 8081
+      TORRENTING_PORT: 5041
+      DOCKER_MODS: ${QBITTORRENT_DOCKER_MODS:-ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest}
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/qbittorrent
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/qbittorrent/logs
+        target: /logs
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DATAPATH:-/mnt/tank}
+        target: /data
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          grep -Eq '^[^[:space:]]+[[:space:]]+00000000[[:space:]]'
+          /proc/net/route &&
+          curl --fail --silent --show-error http://localhost:8081 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 2
+      # 30s/2 marks a broken namespace in about a minute instead of three, but
+      # it would also condemn a slow start. qBittorrent has to wait for
+      # Gluetun's namespace and then load its torrent state before the WebUI
+      # answers, so startup is given its own, longer allowance.
+      start_period: 90s
+#-----------------------------------------------
+  prowlarr:
+    image: ${PROWLARR_IMAGE:-lscr.io/linuxserver/prowlarr:latest}
+    container_name: prowlarr
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      vpn_stack_brg:
+    ports:
+      - "${PROWLARR_PORT:-9696}:9696/tcp"
+    environment:
+      PUID: ${PUID:-568}
+      PGID: ${PGID:-568}
+      TZ: ${TZ:-Europe/London}
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/prowlarr
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DATAPATH:-/mnt/tank}
+        target: /data
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:9696/ping || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+#-----------------------------------------------
+  radarr:
+    image: ${RADARR_IMAGE:-lscr.io/linuxserver/radarr:latest}
+    container_name: radarr
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      vpn_stack_brg:
+    ports:
+      - "${RADARR_PORT:-7878}:7878/tcp"
+    environment:
+      PUID: ${PUID:-568}
+      PGID: ${PGID:-568}
+      TZ: ${TZ:-Europe/London}
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/radarr
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DATAPATH:-/mnt/tank}
+        target: /data
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:7878/ping || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+#-----------------------------------------------
+  sonarr:
+    image: ${SONARR_IMAGE:-lscr.io/linuxserver/sonarr:latest}
+    container_name: sonarr
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      vpn_stack_brg:
+    ports:
+      - "${SONARR_PORT:-8989}:8989/tcp"
+    environment:
+      PUID: ${PUID:-568}
+      PGID: ${PGID:-568}
+      TZ: ${TZ:-Europe/London}
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/sonarr
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DATAPATH:-/mnt/tank}
+        target: /data
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent --show-error http://localhost:8989/ping || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+#-----------------------------------------------
+  byparr:
+    image: ${BYPARR_IMAGE:-ghcr.io/thephaseless/byparr:latest}
+    container_name: byparr
+    init: true
+    restart: unless-stopped
+    logging: *default-logging
+    # Byparr drives a real browser, and Docker gives every container 64MB of
+    # /dev/shm by default — the shared memory a browser uses for its renderer
+    # processes. Browsers stall or crash when it runs out, which surfaces here
+    # as a challenge that never finishes rather than as an obvious failure.
+    # This is a cap on a tmpfs, not a reservation, so it costs nothing until it
+    # is used.
+    shm_size: ${BYPARR_SHM_SIZE:-1gb}
+    ports:
+      - "${BYPARR_PORT:-8191}:8191/tcp"
+    networks:
+      vpn_stack_brg:
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-Europe/London}
+      PORT: 8191
+      PROXY_SERVER: ${BYPARR_PROXY_SERVER:-http://gluetun:8888}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS --max-time 30 http://localhost:$${PORT:-8191}/health >/dev/null || exit 1"]
+      interval: 1m
+      timeout: 30s
+      retries: 3
+      # Byparr answers /health about fifteen seconds after start on a warm
+      # image, but the interval here is now 1m rather than 15m, so the first
+      # real probe lands early enough for a cold start — a fresh pull, or a
+      # browser still unpacking — to be mistaken for a failure. Startup gets its
+      # own allowance so the steady-state check can stay quick.
+      start_period: 60s
+#-----------------------------------------------
+  cleanuparr:
+    image: ${CLEANUPARR_IMAGE:-ghcr.io/cleanuparr/cleanuparr:latest}
+    container_name: cleanuparr
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      vpn_stack_brg:
+    ports:
+      - "${CLEANUPARR_PORT:-11011}:11011/tcp"
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/cleanuparr
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DATAPATH:-/mnt/tank}
+        target: /data
+        bind:
+          create_host_path: false
+    environment:
+      PORT: 11011
+      BASE_PATH: ${CLEANUPARR_BASE_PATH:-}
+      PUID: ${PUID:-568}
+      PGID: ${PGID:-568}
+      UMASK: ${UMASK:-022}
+      TZ: ${TZ:-Europe/London}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS --max-time 10 http://localhost:11011/health >/dev/null || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+#-----------------------------------------------
+  # Official Seerr requires an init process; PUID/PGID alone do not set its UID.
+  # Native user: below matches ownership of the migrated /app/config tree.
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    init: true
+    container_name: seerr
+    user: "${PUID:-568}:${PGID:-568}"
+    logging: *default-logging
+    environment:
+      - TZ=${TZ}
+      - PORT=5055
+    networks:
+      vpn_stack_brg:
+    ports:
+      - "5055:5055"
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/services/docker}/seerr
+        target: /app/config
+        bind:
+          create_host_path: true
+    restart: unless-stopped
+    healthcheck:
+      test: "wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1"
+      start_period: 20s
+      interval: 15s
+      timeout: 3s
+      retries: 3
+#-----------------------------------------------
+  # Repairs the containers that lose their network when gluetun goes away.
+  #
+  # qbittorrent shares gluetun's network namespace, and that namespace is
+  # destroyed whenever gluetun's container stops. It comes back with no routes
+  # at all and stays that way: `depends_on.restart` does not cover this, because
+  # the Compose spec limits it to restarts Compose itself performs and excludes
+  # "automated restart by the container runtime after the container dies".
+  # prowlarr and byparr survive — they reach gluetun's HTTP proxy over the
+  # bridge — but they hold pooled connections and cached DNS for a proxy that
+  # has gone, which matters most when gluetun comes back on a different bridge
+  # address. Restarting them drops that state. It does not clear a disabled
+  # indexer: Prowlarr keeps escalation and DisabledTill in IndexerStatus on
+  # disk, and those survive any restart.
+  #
+  # Every repair goes through Dockhand's API, never the Docker socket or CLI, so
+  # this obeys the same rule as everything else here: Dockhand owns lifecycle.
+  gluetun-guard:
+    image: ${GLUETUN_GUARD_IMAGE:-python:3.13-alpine}
+    container_name: gluetun-guard
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      vpn_stack_brg:
+    environment:
+      TZ: ${TZ:-Europe/London}
+      DOCKHAND_URL: ${DOCKHAND_URL:-http://192.168.213.102:3000}
+      DOCKHAND_ENV_ID: ${DOCKHAND_ENV_ID:-1}
+      DOCKHAND_TOKEN: ${DOCKHAND_TOKEN:-}
+      STACK_NAME: ${GLUETUN_GUARD_STACK:-arr}
+      ANCHOR_CONTAINER: ${GLUETUN_GUARD_ANCHOR:-gluetun}
+      NAMESPACE_DEPENDENTS: ${GLUETUN_GUARD_NAMESPACE_DEPENDENTS:-qbittorrent}
+      # byparr is deliberately not in this list. A challenge solve can occupy it
+      # for two minutes, and restarting it mid-solve returns a 408 to Prowlarr,
+      # which Prowlarr records as an indexer failure and escalates — the restart
+      # would manufacture the very failures it is meant to help with. It also
+      # resolves `gluetun` through Docker's DNS on each request, so it has no
+      # stale address to shed. Add it here only if it is seen to need it.
+      PROXY_DEPENDENTS: ${GLUETUN_GUARD_PROXY_DEPENDENTS:-prowlarr}
+      POLL_SECONDS: ${GLUETUN_GUARD_POLL_SECONDS:-10}
+      READY_TIMEOUT_SECONDS: ${GLUETUN_GUARD_READY_TIMEOUT_SECONDS:-180}
+      COOLDOWN_SECONDS: ${GLUETUN_GUARD_COOLDOWN_SECONDS:-120}
+    entrypoint: ["python3", "-u", "-c"]
+    command:
+      - |
+        import json
+        import os
+        import time
+        import urllib.request
+
+        BASE = os.environ.get("DOCKHAND_URL", "").rstrip("/")
+        ENV_ID = os.environ.get("DOCKHAND_ENV_ID", "1")
+        TOKEN = os.environ.get("DOCKHAND_TOKEN", "")
+        STACK = os.environ.get("STACK_NAME", "arr")
+        ANCHOR = os.environ.get("ANCHOR_CONTAINER", "gluetun")
+        NAMESPACE_DEPS = os.environ.get("NAMESPACE_DEPENDENTS", "qbittorrent").split()
+        PROXY_DEPS = os.environ.get("PROXY_DEPENDENTS", "prowlarr").split()
+        POLL = float(os.environ.get("POLL_SECONDS", "10"))
+        READY_TIMEOUT = float(os.environ.get("READY_TIMEOUT_SECONDS", "180"))
+        COOLDOWN = float(os.environ.get("COOLDOWN_SECONDS", "120"))
+
+        def log(message):
+            print(time.strftime("%Y-%m-%dT%H:%M:%S"), message, flush=True)
+
+        def call(method, path, timeout):
+            request = urllib.request.Request(BASE + path, method=method)
+            request.add_header("Accept", "application/json")
+            if TOKEN:
+                request.add_header("Authorization", "Bearer " + TOKEN)
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return response.status, response.read().decode("utf-8", "replace")
+
+        QUIET = {"failing": False}
+
+        def anchor():
+            # Identity and liveness of the container whose namespace is shared. Id
+            # distinguishes a recreate from a restart; StartedAt is the only field a
+            # restart too fast to observe still moves.
+            try:
+                status, body = call("GET", "/api/containers/" + ANCHOR + "/inspect?env=" + ENV_ID, 20)
+                payload = json.loads(body) if status == 200 else None
+            except Exception as error:
+                if not QUIET["failing"]:
+                    log("inspect " + ANCHOR + " failed, will keep trying quietly: " + repr(error))
+                    QUIET["failing"] = True
+                return None
+            if payload is None:
+                return None
+            if QUIET["failing"]:
+                log("inspect " + ANCHOR + " recovered")
+                QUIET["failing"] = False
+            state = payload.get("State") or {}
+            return {
+                "id": payload.get("Id") or "",
+                "started": state.get("StartedAt") or "",
+                "running": bool(state.get("Running")),
+                "health": (state.get("Health") or {}).get("Status") or "",
+            }
+
+        def wait_until_ready():
+            # Repairing before the tunnel is up would only put the dependents back
+            # behind a killswitch, so give it a bounded chance to report healthy.
+            deadline = time.monotonic() + READY_TIMEOUT
+            while time.monotonic() < deadline:
+                state = anchor()
+                if state and state["running"] and state["health"] in ("", "healthy"):
+                    return
+                time.sleep(POLL)
+            log("gave up waiting for " + ANCHOR + " to report healthy; repairing anyway")
+
+        def restart(names):
+            # Returns False if any dependent was not repaired, so the caller can keep
+            # the old baseline and try again rather than record a repair that failed.
+            ok = True
+            for name in names:
+                try:
+                    status, body = call("POST", "/api/containers/" + name + "/restart?env=" + ENV_ID, 300)
+                    log("restart " + name + ": HTTP " + str(status) + " " + body.strip()[:120])
+                    ok = ok and status == 200
+                except Exception as error:
+                    log("restart " + name + " failed: " + repr(error))
+                    ok = False
+            return ok
+
+        def recreate_stack():
+            # The only repair for a stale namespace reference. Dockhand runs
+            # `compose stop` then `up -d --force-recreate`; this container goes with it.
+            log("recreating " + STACK + " through Dockhand; this container will be replaced")
+            try:
+                path = "/api/stacks/" + STACK + "/restart?env=" + ENV_ID + "&mode=recreate"
+                status, body = call("POST", path, 1800)
+                log("recreate " + STACK + ": HTTP " + str(status) + " " + body.strip()[-200:])
+                return status == 200
+            except Exception as error:
+                log("recreate " + STACK + " failed: " + repr(error))
+                return False
+
+        baseline = None
+        announced = False
+        while baseline is None:
+            baseline = anchor()
+            if baseline is None:
+                if not announced:
+                    log("waiting for Dockhand and " + ANCHOR)
+                    announced = True
+                time.sleep(POLL)
+        log("watching " + ANCHOR + " id=" + baseline["id"][:12] + " started=" + baseline["started"])
+
+        while True:
+            time.sleep(POLL)
+            current = anchor()
+            if current is None or not current["running"]:
+                continue
+            if current["id"] != baseline["id"]:
+                log(ANCHOR + " recreated (" + baseline["id"][:12] + " -> " + current["id"][:12]
+                    + "); namespace references are stale")
+                wait_until_ready()
+                repaired = recreate_stack()
+                time.sleep(COOLDOWN)
+                if repaired:
+                    baseline = anchor() or current
+            elif current["started"] != baseline["started"]:
+                log(ANCHOR + " restarted in place at " + current["started"])
+                wait_until_ready()
+                repaired = restart(NAMESPACE_DEPS + PROXY_DEPS)
+                time.sleep(COOLDOWN)
+                if repaired:
+                    baseline = anchor() or current
+    healthcheck:
+      # Healthy only while it can reach the control plane it repairs through.
+      # A guard that has quietly lost Dockhand is a safety net that is not there.
+      test: ["CMD-SHELL", "wget -q -T 5 -O /dev/null \"$${DOCKHAND_URL}/api/health\" || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      # On a host reboot this can easily start before Dockhand does. The guard
+      # itself waits quietly for that; the healthcheck needs the same patience
+      # or every boot reports it as failed before it has had a chance.
+      start_period: 60s
+networks:
+  vpn_stack_brg:
+    name: ${NETWORK:-arr_stack_brg}
+    external: true
