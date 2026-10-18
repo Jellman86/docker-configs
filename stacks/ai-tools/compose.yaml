@@ -403,6 +403,9 @@ services:
           create_host_path: false
     tmpfs:
       - /tmp:rw,nosuid,nodev,noexec,size=256m,mode=1777
+      # The server resolves its account home from passwd (/home/node), not
+      # $HOME, and needs a writable ~/.ok for its local authority registry.
+      - /home/node:rw,nosuid,nodev,noexec,size=64m,mode=0700,uid=1000,gid=1000
     expose:
       - "8080"
     networks:
