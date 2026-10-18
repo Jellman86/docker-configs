@@ -57,9 +57,9 @@ lists, certificate assignments, advanced configuration and application settings.
 | `birdnet` | `http://birdnet-go:8080` | Stable service name |
 | `yawamf` | `http://yawamf:8080` | Canonical target accepted; old bridge alias retained for clients |
 | `homeassistant` | `http://192.168.213.102:8123` | Host endpoint accepted; no bridge IP dependency |
-| `openviking` | `http://openviking:1933` | Preserve application authentication |
+| `openviking` | retired 2026-10-18 | Proxy host and DNS removed with the service; see ai-tools README |
 | `openknowledge` | `http://openknowledge:8080` | NPM access list (Basic auth) is the only auth; preserve Host/`X-Forwarded-Proto`, WebSockets, unbuffered `/mcp` |
-| `hermes` | `http://hermes-dashboard:9119` | Intentional trusted-proxy network alias |
+| `hermes` | retired 2026-10-18 | Proxy host and DNS removed with the service; see ai-tools README |
 | `playwright-mcp` | `http://playwright-mcp:8931` | Preserve NPM access list and application allow-list |
 | `optimisarr-sidecar` | `http://192.168.213.102:8788` | Existing host-bound endpoint |
 | `cockpit` | `https://192.168.213.102:9090` | Native host service; preserve TLS/origin settings |
