@@ -255,10 +255,14 @@ class AiToolsPolicyTests(unittest.TestCase):
         self.assertIn("@inkeep/open-knowledge@${OPENKNOWLEDGE_VERSION}", dockerfile)
         self.assertNotIn("ENV OK_ALLOW_EXTERNAL", dockerfile)
         config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
+        ok_mcp = config["mcp_servers"]["openknowledge"]
+        self.assertEqual(ok_mcp["url"], "https://openknowledge.pownet.uk/mcp")
         self.assertEqual(
-            config["mcp_servers"]["openknowledge"]["url"],
-            "http://openknowledge:8080/mcp",
+            ok_mcp["headers"]["Authorization"],
+            "${OPENKNOWLEDGE_MCP_AUTHORIZATION}",
         )
+        hermes_env = self.services["hermes-agent"]["environment"]
+        self.assertIn(":?", hermes_env["OPENKNOWLEDGE_MCP_AUTHORIZATION"])
 
     def test_no_orphaned_or_undeclared_networks(self) -> None:
         declared = set(self.networks)
