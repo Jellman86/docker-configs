@@ -345,6 +345,16 @@ mcp_servers:
         - rename_folder
       resources: false
       prompts: false
+  openknowledge:
+    url: http://openknowledge:8080/mcp
+    # Internal Docker-network path; external clients use the NPM access list.
+    # The operator authorized this writable knowledge base for Hermes.
+    trust: full
+    timeout: 120
+    connect_timeout: 60
+    supports_parallel_tool_calls: false
+    sampling: {enabled: false}
+    tools: {resources: false, prompts: false}
   # Managed config is deep-merged with retained user config. Keep explicit
   # tombstones so deleting these blocks cannot resurrect the old servers.
   openviking: {enabled: false}

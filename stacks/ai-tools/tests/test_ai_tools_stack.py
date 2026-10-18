@@ -18,7 +18,7 @@ class AiToolsPolicyTests(unittest.TestCase):
 
     def test_required_services_exist(self) -> None:
         self.assertTrue(
-            {"hermes-agent", "playwright-mcp", "openviking", "openviking-ollama", "rusty-imap-mcp"}
+            {"hermes-agent", "playwright-mcp", "openviking", "openviking-ollama", "rusty-imap-mcp", "openknowledge"}
             <= self.services.keys()
         )
 
@@ -136,7 +136,7 @@ class AiToolsPolicyTests(unittest.TestCase):
     def test_configured_mcp_servers_are_permanently_trusted(self) -> None:
         config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
         servers = config["mcp_servers"]
-        for name in ("github", "playwright", "rusty_imap"):
+        for name in ("github", "playwright", "rusty_imap", "openknowledge"):
             self.assertEqual(servers[name]["trust"], "full")
             self.assertFalse(servers[name]["sampling"]["enabled"])
             self.assertFalse(servers[name]["supports_parallel_tool_calls"])
@@ -223,6 +223,37 @@ class AiToolsPolicyTests(unittest.TestCase):
                 "qwen/qwen3.8-flash",
                 "deepseek/deepseek-v4.1-flash",
             ],
+        )
+
+    def test_openknowledge_stays_private_pinned_and_behind_npm(self) -> None:
+        service = self.services["openknowledge"]
+        self.assertEqual(service.get("cap_drop"), ["ALL"])
+        self.assertIn("no-new-privileges:true", service.get("security_opt", []))
+        self.assertIn("mem_limit", service)
+        self.assertIn("cpus", service)
+        self.assertTrue(service.get("read_only"))
+        env = service["environment"]
+        self.assertEqual(env["OK_ALLOW_EXTERNAL"], "1")
+        self.assertEqual(
+            env["OK_EXTERNAL_URL"],
+            "${OPENKNOWLEDGE_EXTERNAL_URL:-https://openknowledge.pownet.uk}",
+        )
+        # Only the NPM backend network: no general_brg bypass of the NPM
+        # access list, and Hermes reaches /mcp over this same network.
+        self.assertEqual(set(service["networks"]), {"npm_proxy_backends"})
+        self.assertEqual(service["volumes"][0]["target"], "/data")
+        self.assertEqual(
+            service["build"]["args"]["OPENKNOWLEDGE_VERSION"],
+            "${OPENKNOWLEDGE_VERSION:-0.86.22}",
+        )
+        dockerfile = (ROOT / "openknowledge/Dockerfile").read_text()
+        self.assertIn("node:24-slim@sha256:", dockerfile)
+        self.assertIn("@inkeep/open-knowledge@${OPENKNOWLEDGE_VERSION}", dockerfile)
+        self.assertNotIn("ENV OK_ALLOW_EXTERNAL", dockerfile)
+        config = yaml.safe_load((ROOT / "managed/config.yaml").read_text())
+        self.assertEqual(
+            config["mcp_servers"]["openknowledge"]["url"],
+            "http://openknowledge:8080/mcp",
         )
 
     def test_no_orphaned_or_undeclared_networks(self) -> None:
