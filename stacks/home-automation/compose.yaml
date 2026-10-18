@@ -1,0 +1,309 @@
+# Quark GPU/NPU stack. Keep camera/MQTT credentials in Dockhand variables.
+# Upstream: https://docs.frigate.video/frigate/installation/
+# /mnt/apps aliases resolve to the added apps SSD; they are not OS-disk copies.
+# Device exposure and application provider selection are separate requirements.
+# Stable deployment identity; Dockhand uses the same stack name.
+name: home-automation
+
+services:
+#-----------------------------------------------
+  frigate:
+    container_name: frigate
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    stop_grace_period: 30s # allow enough time to shut down the various services
+    image: ghcr.io/blakeblackshear/frigate:stable
+    # Sized for this camera configuration. Recalculate from upstream's shared
+    # memory formula before changing resolution/camera count; not a RAM reservation.
+    shm_size: "1024mb"
+    devices:
+      - /dev/dri:/dev/dri            # Intel iGPU (VAAPI decode + OpenVINO GPU fallback)
+      - /dev/accel/accel0:/dev/accel/accel0  # Intel AI Boost NPU (OpenVINO object detection)
+    # Intel GPU performance counters require elevated perf access on this kernel.
+    # These are not required to give every other service broad privileges.
+    cap_add:
+      - CAP_PERFMON
+      - SYS_ADMIN
+    group_add:
+      - "${RENDER_GID:-105}"
+    volumes:
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/frigate/config
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/frigate/media
+        target: /media/frigate
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${SECURITY_EXPORT_PATH:-/mnt/apps/security_inference_stack}/frigate/clips
+        target: /media/frigate/clips
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${SECURITY_EXPORT_PATH:-/mnt/apps/security_inference_stack}/frigate/exports
+        target: /media/frigate/exports
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/frigate/models
+        target: /models
+        bind:
+          create_host_path: true
+      - type: tmpfs
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+    networks:
+        general_brg:
+    ports:
+      - "8971:8971"
+      - "8554:8554" # RTSP feeds
+      - "8555:8555/tcp" # WebRTC over tcp
+      - "8555:8555/udp" # WebRTC over udp
+    environment:
+      - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD}
+      - FRIGATE_CAMERA_USER=${FRIGATE_CAMERA_USER:-admin}
+      - FRIGATE_CAMERA_PASSWORD=${FRIGATE_CAMERA_PASSWORD:?FRIGATE_CAMERA_PASSWORD is required}
+      - MQTT_USERNAME=${MQTT_USERNAME:?MQTT_USERNAME is required}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:?MQTT_PASSWORD is required}
+      - TZ=${TZ:-Europe/London}
+      - LIBVA_DRIVER_NAME=${LIBVA_DRIVER_NAME:-iHD}
+      - LIBVA_DRIVERS_PATH=${LIBVA_DRIVERS_PATH:-/usr/lib/x86_64-linux-gnu/dri}
+    healthcheck:
+      test: "curl -f http://localhost:5000/api/version || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 3
+#-----------------------------------------------
+  birdnet-go:
+    image: ghcr.io/tphakala/birdnet-go:nightly
+    container_name: birdnet-go
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    devices:
+      - /dev/dri:/dev/dri            # Intel iGPU (OpenVINO inference; the entrypoint joins the render group)
+    ports:
+      - "${BN_WEBPORT:-8080}:8080"
+    networks:
+        general_brg:
+    environment:
+      - TZ=${TZ:-Europe/London}
+      - BIRDNET_UID=${SECURITY_STACK_UID:-1000}
+      - BIRDNET_GID=${SECURITY_STACK_GID:-1000}
+      # BirdNET Configuration
+      - BIRDNET_LOCALE=en-uk                      # Locale code (2-10 chars, e.g., "en" or "en-us")
+      - BIRDNET_LATITUDE=${BN_LAT}                 # Valid range: -90.0 to 90.0
+      - BIRDNET_LONGITUDE=${BN_LONG}              # Valid range: -180.0 to 180.0
+      - BIRDNET_SENSITIVITY=${BIRDNET_SENSITIVITY:-1.0}          # 0.1-1.5 (higher = more sensitive)
+      - BIRDNET_THRESHOLD=${BIRDNET_THRESHOLD:-0.7}              # 0.0-1.0 confidence threshold
+      - BIRDNET_OVERLAP=${BIRDNET_OVERLAP:-2.7}                  # 0.0-2.9s chunk overlap; 2.7 = high recall for continuous camera mic
+      - BIRDNET_THREADS=${BIRDNET_THREADS:-4}                    # 0 = all CPUs; 4 keeps up at overlap 2.7 across 2 streams
+      - BIRDNET_DEBUG=false                       # Enable debug logging (true/false)
+      - BIRDNET_USEXNNPACK=true                   # Use XNNPACK acceleration (true/false)
+      - MQTT_USERNAME=${MQTT_USERNAME:?MQTT_USERNAME is required}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:?MQTT_PASSWORD is required}
+      # Range Filter Configuration
+      - BIRDNET_RANGEFILTER_MODEL=latest
+      - BIRDNET_RANGEFILTER_THRESHOLD=${BIRDNET_RANGEFILTER_THRESHOLD:-0.03}  # 0.03 restricts to locally-plausible species (fewer false positives from noisy 16kHz camera mic)
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:8080/ || exit 1"
+        ]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/birdnet-go/config
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/birdnet-go/data
+        target: /data
+        bind:
+          create_host_path: true
+#-----------------------------------------------
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}
+    command:
+      - sh
+      - -c
+      - |
+        : "$${MQTT_USERNAME:?MQTT_USERNAME is required}"
+        : "$${MQTT_PASSWORD:?MQTT_PASSWORD is required}"
+        mosquitto_passwd -b -c /mosquitto/config/password_file "$${MQTT_USERNAME}" "$${MQTT_PASSWORD}"
+        cat > /mosquitto/config/mosquitto.conf <<'EOF'
+        listener 1883 0.0.0.0
+        allow_anonymous false
+        password_file /mosquitto/config/password_file
+        persistence true
+        persistence_location /mosquitto/data/
+        log_dest stdout
+        log_dest file /mosquitto/log/mosquitto.log
+        EOF
+        exec mosquitto -c /mosquitto/config/mosquitto.conf
+    environment:
+      - TZ=${TZ:-Europe/London}
+      - MQTT_USERNAME=${MQTT_USERNAME:?MQTT_USERNAME is required}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:?MQTT_PASSWORD is required}
+    networks:
+      - general_brg
+    # Home Assistant runs with network_mode: host, so it cannot use the
+    # container name and the bridge IP changes on every recreate. Publish the
+    # broker on the host loopback only; nothing on the LAN can reach it.
+    ports:
+      - "127.0.0.1:1883:1883"
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/mosquitto/config
+        target: /mosquitto/config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/mosquitto/data
+        target: /mosquitto/data
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/mosquitto/log
+        target: /mosquitto/log
+        bind:
+          create_host_path: true
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_pub -h 127.0.0.1 -p 1883 -u \"$${MQTT_USERNAME}\" -P \"$${MQTT_PASSWORD}\" -t dockhand/healthcheck -m ok || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+#-----------------------------------------------
+  yawamf:
+    image: ghcr.io/jellman86/yawamf-monalithic:dev-intel
+    container_name: yawamf
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "${YAWAMF_CONTAINER_LOG_MAX_SIZE:-10m}"
+        max-file: "${YAWAMF_CONTAINER_LOG_MAX_FILES:-3}"
+    user: ${SECURITY_STACK_UID:-1000}:${SECURITY_STACK_GID:-1000}
+    devices:
+      - /dev/dri:/dev/dri                    # Intel iGPU (OpenVINO intel_gpu)
+      - /dev/accel/accel0:/dev/accel/accel0  # Intel AI Boost NPU (OpenVINO intel_npu)
+    group_add:
+      - "${RENDER_GID:-105}"
+    networks:
+      general_brg:
+        # Preserve existing NPM/client DNS during the container rename.
+        aliases: [yawamf-monalithic]
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/yawamf/config
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/yawamf/data
+        target: /data
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${SECURITY_EXPORT_PATH:-/mnt/apps/security_inference_stack}/YA-WAMF/captures
+        target: /data/captures
+        bind:
+          create_host_path: true
+    ports:
+      - "9852:8080"
+    environment:
+      - TZ=${TZ:-Europe/London}
+      - FRIGATE__FRIGATE_URL=${FRIGATE_URL:-http://frigate:5000}
+      - FRIGATE__FRIGATE_AUTH_TOKEN=${FRIGATE_AUTH_TOKEN:-}
+      - FRIGATE__MQTT_SERVER=${MQTT_SERVER:-mosquitto}
+      - FRIGATE__MQTT_PORT=${MQTT_PORT:-1883}
+      - FRIGATE__MQTT_AUTH=${MQTT_AUTH:-true}
+      - FRIGATE__MQTT_USERNAME=${MQTT_USERNAME:?MQTT_USERNAME is required}
+      - FRIGATE__MQTT_PASSWORD=${MQTT_PASSWORD:?MQTT_PASSWORD is required}
+      - FRIGATE__BIRDNET_URL=${BIRDNET_URL:-http://birdnet-go:8080}
+      - FRIGATE__BIRDNET_EXTERNAL_URL=${BIRDNET_EXTERNAL_URL:-}
+      - FRIGATE__AUDIO_TOPIC=${YAWAMF_AUDIO_TOPIC:-birdnet}
+      - SYSTEM__DEBUG_UI_ENABLED=${DEBUG_UI_ENABLED:-true}
+      # Quark is the Intel NPU validation target. Keep this overridable in
+      # Dockhand without rewriting YA-WAMF's persisted /config preference.
+      - CLASSIFICATION__INFERENCE_PROVIDER=${YAWAMF_INFERENCE_PROVIDER:-intel_npu}
+      # Model/provider validation is performed before activation. Avoid blocking app readiness
+      # on the optional synthetic GPU-vs-CPU startup benchmark.
+      - CLASSIFIER_RUNTIME_BENCHMARK_ENABLED=${CLASSIFIER_RUNTIME_BENCHMARK_ENABLED:-0}
+      - DB_PRE_MIGRATION_BACKUP_RETENTION=${YAWAMF_DB_PRE_MIGRATION_BACKUP_RETENTION:-10}
+      - LIBVA_DRIVER_NAME=${LIBVA_DRIVER_NAME:-iHD}
+      - LIBVA_DRIVERS_PATH=${LIBVA_DRIVERS_PATH:-/usr/lib/x86_64-linux-gnu/dri}
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+#-----------------------------------------------
+  # Upstream Container setup uses host networking and D-Bus for discovery.
+  # Privileged mode is deliberate here; this is not a confined untrusted workload.
+  # https://www.home-assistant.io/installation/linux#install-home-assistant-container
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    privileged: true
+    network_mode: host
+    environment:
+      - TZ=${TZ:-Europe/London}
+    volumes:
+      - type: bind
+        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/homeassistant/config
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /etc/localtime
+        target: /etc/localtime
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /run/dbus
+        target: /run/dbus
+        read_only: true
+        bind:
+          create_host_path: false
+#-----------------------------------------------
+networks:
+    general_brg:
+      external: true

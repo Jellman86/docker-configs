@@ -2,15 +2,16 @@ name: Quark storage migration checks
 on:
   push:
     paths: &paths
+      - tools/**
       - host/quark/**
-      - arr_vpn_stack/**
-      - media_related_stack/**
-      - immich/**
-      - stirling_pdf/**
-      - management/**
-      - web_services/**
-      - security_inference_stack/docker-compose.yml
-      - optimisarr_sidecar/**
+      - stacks/arr/**
+      - stacks/media/**
+      - stacks/immich/**
+      - stacks/stirling-pdf/**
+      - stacks/management/**
+      - stacks/ingress/**
+      - stacks/home-automation/compose.yaml
+      - stacks/optimisarr-sidecar/**
       - .github/workflows/quark-storage.yml
   pull_request:
     paths: *paths
@@ -30,7 +31,7 @@ jobs:
           BN_LAT: "0"
           BN_LONG: "0"
         run: |
-          for source in management/docker-compose.yml management/maintenance-compose.yml web_services/docker-compose.yml web_services/docker-compose.quark.yml security_inference_stack/docker-compose.yml optimisarr_sidecar/docker-compose.yml media_related_stack/docker-compose.quark.yml; do
+          for source in stacks/management/compose.yaml tools/dockhand-maintenance/compose.yaml stacks/ingress/compose.yaml stacks/home-automation/compose.yaml stacks/optimisarr-sidecar/compose.yaml stacks/media/compose.yaml; do
             docker compose -f "$source" config --format json > /tmp/logging-model.json
             python - "$source" <<'PY'
           import json, re, sys
@@ -53,7 +54,7 @@ jobs:
           python-version: '3.11'
       - run: python -m unittest discover -s host/quark/tests -v
       - run: pip install pyyaml
-      - run: python -m unittest discover -s immich/tests -v
+      - run: python -m unittest discover -s stacks/immich/tests -v
       - name: Validate native file-server configuration
         run: |
           sudo apt-get update -qq
@@ -68,9 +69,9 @@ jobs:
           IMMICH_DB_PASSWORD: ci-placeholder-only
           TZ: Europe/London
         run: |
-          docker compose -f media_related_stack/docker-compose.quark.yml config --format json > /tmp/quark-media.json
-          docker compose -f arr_vpn_stack/docker-compose.quark.yml config --format json > /tmp/quark-arr.json
-          docker compose -f immich/docker-compose.quark-server.yml config --format json > /tmp/quark-immich.json
-          docker compose -f immich/postgres-upgrade.compose.yml config --quiet
-          docker compose -f stirling_pdf/docker-compose.quark.yml config --format json > /tmp/quark-stirling.json
+          docker compose -f stacks/media/compose.yaml config --format json > /tmp/quark-media.json
+          docker compose -f stacks/arr/compose.yaml config --format json > /tmp/quark-arr.json
+          docker compose -f stacks/immich/compose.yaml config --format json > /tmp/quark-immich.json
+          docker compose -f tools/immich-postgres-upgrade/compose.yaml config --quiet
+          docker compose -f stacks/stirling-pdf/compose.yaml config --format json > /tmp/quark-stirling.json
           python host/quark/tests/check_compose.py /tmp/quark-media.json /tmp/quark-arr.json /tmp/quark-immich.json /tmp/quark-stirling.json

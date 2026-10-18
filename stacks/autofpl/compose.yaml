@@ -1,0 +1,115 @@
+# Stable deployment identity; Dockhand uses the same stack name.
+name: autofpl
+
+services:
+  autofpl:
+    image: ghcr.io/jellman86/autofpl:dev
+    pull_policy: always
+    container_name: autofpl
+    restart: unless-stopped
+    user: "1654:1654"
+    init: true
+    read_only: true
+    environment:
+      AutoFpl__Analytics__ShadowInboxPath: "/analytics-inbox"
+      AutoFpl__Analytics__ShadowInboxPollIntervalMinutes: "1"
+      AutoFpl__Analytics__SnapshotPath: "/analytics-snapshot/autofpl.db"
+      AutoFpl__Analytics__SnapshotPollIntervalMinutes: "1"
+      AutoFpl__Research__ByparrUrl: "http://192.168.213.102:8191/"
+      AutoFpl__Research__FbrefMatchLogCaptureIntervalMinutes: "60"
+      AutoFpl__Research__FbrefMatchLogCaptureBatchSize: "5"
+      AutoFpl__Research__FplFormPollIntervalMinutes: "360"
+      AutoFpl__Research__OfficialFplPollIntervalMinutes: "360"
+      AutoFpl__Research__ResearchSourcePollIntervalMinutes: "360"
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=16m
+    volumes:
+      - type: bind
+        source: /mnt/apps/docker/autofpl/data
+        target: /data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /mnt/apps/docker/autofpl/analytics-inbox
+        target: /analytics-inbox
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /mnt/apps/docker/autofpl/analytics-snapshot
+        target: /analytics-snapshot
+        bind:
+          create_host_path: false
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 512m
+    cpus: 1.0
+    stop_grace_period: 30s
+    expose:
+      - "8080"
+    networks:
+      general_brg:
+        aliases:
+          - autofpl-api
+      research_private: {}
+    healthcheck:
+      test: ["CMD", "dotnet", "AutoFpl.Api.dll", "--health-check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  autofpl-analytics:
+    image: ghcr.io/jellman86/autofpl-analytics:dev
+    pull_policy: always
+    container_name: autofpl-analytics
+    restart: unless-stopped
+    user: "1654:1654"
+    init: true
+    read_only: true
+    network_mode: none
+    depends_on:
+      autofpl:
+        condition: service_healthy
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=32m
+    volumes:
+      - type: bind
+        source: /mnt/apps/docker/autofpl/analytics-snapshot
+        target: /analytics-snapshot
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /mnt/apps/docker/autofpl/analytics-inbox
+        target: /analytics-inbox
+        bind:
+          create_host_path: false
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 1g
+    cpus: 2.0
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  general_brg:
+    name: general_brg
+    external: true
+  research_private:
+    name: ai_tools_research_private
+    external: true

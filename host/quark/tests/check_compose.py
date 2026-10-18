@@ -17,7 +17,7 @@ for source in sys.argv[1:]:
         qbit = model['services']['qbittorrent']
         assert qbit['network_mode'] == 'service:gluetun'
         assert qbit['depends_on']['gluetun']['condition'] == 'service_healthy'
-        assert not model['networks']['vpn_stack_brg'].get('external', False)
+        assert model['networks']['vpn_stack_brg'].get('external', False)
         assert 'gluetun-guard' not in model['services'], 'Ungated repair watchdog must be excluded from normal deployment'
         for name in ['gluetun', 'radarr', 'sonarr', 'prowlarr', 'cleanuparr', 'seerr']:
             assert 'npm_proxy_backends' in model['services'][name]['networks'], (name, 'unreachable from Quark NPM')

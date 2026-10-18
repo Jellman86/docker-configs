@@ -9,13 +9,13 @@ use filesystem UUIDs and the guard also verifies the actual ATA member serials.
 
 The Quark variants extend the existing service definitions:
 
-- `arr_vpn_stack/docker-compose.quark.yml` owns `arr_stack_brg` and joins the
+- `stacks/arr/compose.yaml` uses the existing external `arr_stack_brg` and joins the
   proxied services to Quark's existing `npm_proxy_backends`. The arr network
   retains default-gateway priority, including for Gluetun.
-- `media_related_stack/docker-compose.quark.yml` joins that network and Quark's
+- `stacks/media/compose.yaml` joins that network and Quark's
   existing NPM `general_brg`. Plex transcode temporary files use the SSD.
-- `immich/docker-compose.quark-server.yml` reuses the existing Quark ML worker.
-- `stirling_pdf/docker-compose.quark.yml` preserves the document toolkit's
+- `stacks/immich/compose.yaml` reuses the existing Quark ML worker.
+- `stacks/stirling-pdf/compose.yaml` preserves the document toolkit's
   configs, custom files and OCR data on the incoming apps SSD.
 
 Set all application config paths to `/mnt/services/docker`, including Plex's
@@ -211,7 +211,7 @@ native state and forwarding settings.
 Container stdout/stderr logs use bounded Docker rotation. The newly covered
 services retain three 10 MB files each. This does not bound application-specific
 files such as camera recordings or logs an app writes inside its config folder.
-For the manager itself, `management/maintenance-compose.yml` provides a temporary
+For the manager itself, `tools/dockhand-maintenance/compose.yaml` provides a temporary
 loopback-only second Dockhand process. Seed it with a private online database
 backup and encryption key, sync/deploy the manager's Git stack through that
 process, then remove the temporary stack/state through the original manager.

@@ -5,12 +5,12 @@ machine. Captured 2026-06-14 from the live containers.
 
 Two compose stacks make up the "arr stack":
 
-- `arr_vpn_stack/` — gluetun (VPN) + qbittorrent, prowlarr, radarr, sonarr,
+- `stacks/arr/` — gluetun (VPN) + qbittorrent, prowlarr, radarr, sonarr,
   byparr, cleanuparr, seerr.
-- `media_related_stack/` — plex and optimisarr.
+- `stacks/media/` — plex and optimisarr.
 
 > **Secrets are intentionally redacted below.** VPN keys live in
-> `arr_vpn_stack/.env` (git-ignored) and app API keys live inside each app's
+> `stacks/arr/.env` (git-ignored) and app API keys live inside each app's
 > `config.xml` under its bind-mounted config directory. Carry these across with the files,
 > don't retype them.
 
@@ -91,7 +91,7 @@ ports are therefore published *on the gluetun container*, not on qbittorrent.
 ```
 VPN_SERVICE_PROVIDER = nordvpn
 VPN_TYPE             = wireguard
-WIREGUARD_PRIVATE_KEY = <REDACTED — arr_vpn_stack/.env WGPRIVKEY>
+WIREGUARD_PRIVATE_KEY = <REDACTED — stacks/arr/.env WGPRIVKEY>
 SERVER_COUNTRIES    = Netherlands,Switzerland,Sweden,Denmark,Germany,Belgium,France,Ireland,Norway,Spain
 DNS over TLS via Cloudflare; HTTP proxy ON at :8888 (used by byparr)
 FIREWALL_INPUT_PORTS    = 5041,8081,9696,7878,8989,8191

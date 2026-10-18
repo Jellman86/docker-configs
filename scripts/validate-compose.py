@@ -21,7 +21,7 @@ FIXTURES = {
 
 
 def validate(root=ROOT):
-    sources = sorted(p for p in root.rglob('*compose*.yml') if not p.name.startswith('._') and '.github' not in p.parts)
+    sources = sorted(p for p in root.rglob('*compose*') if p.suffix in {'.yaml', '.yml'} and not p.name.startswith('._') and '.github' not in p.parts)
     env = {'PATH': os.environ['PATH'], 'HOME': os.environ.get('HOME', '/tmp')}
     # Populate only required/un-defaulted variables. Keep defaults active so CI
     # catches wrong host ports, paths and types hidden by deployment overrides.
@@ -39,6 +39,18 @@ def validate(root=ROOT):
         if result.returncode:
             raise RuntimeError(f'{source.relative_to(root)} failed to render:\n{result.stderr}')
         model = json.loads(result.stdout)
+        project = model['name']
+        expected_project = 'immich-ml' if source.name == 'compose.ml.yaml' else source.parent.name
+        assert project == expected_project, (source, 'project differs from documented stack', project)
+        assert re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', project), (source, 'use lowercase kebab-case')
+        pinned_volumes = {
+            ('optimisarr-sidecar', 'sidecar-config'): 'optimisarr_sidecar_sidecar-config',
+            ('immich-ml', 'model-cache'): 'immich_ml_model-cache',
+        }
+        for (owner, key), identity in pinned_volumes.items():
+            if project == owner:
+                volume = model['volumes'][key]
+                assert volume['name'] == identity and volume.get('external'), (source, 'state identity changed', key)
         for name, service in model['services'].items():
             log = service.get('logging', {})
             options = log.get('options', {})
