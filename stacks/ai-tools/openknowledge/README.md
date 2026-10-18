@@ -31,11 +31,13 @@ with supply-chain pins, matching the other built images in this stack.
 
 ## Endpoints
 
-Trusted containers (Hermes) connect without the NPM credential:
-
-```text
-http://openknowledge:8080/mcp
-```
+The server only allows its external Host (`openknowledge.pownet.uk`), so
+even Hermes connects through NPM with the access-list credential — a direct
+`http://openknowledge:8080/mcp` request is rejected with
+`403 Host header not allowed`. Hermes receives the full
+`Basic <base64>` header as the Dockhand secret
+`OPENKNOWLEDGE_MCP_AUTHORIZATION`. Direct service-name access is only used
+for the `/readyz` healthcheck, which has no Host restriction.
 
 Trusted LAN/Tailscale clients use the authenticated TLS proxy:
 

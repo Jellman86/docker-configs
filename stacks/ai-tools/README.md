@@ -156,7 +156,7 @@ Create or migrate the Git stack with:
 - Force recreation: enabled for deliberate upgrades
 
 Copy the required values from the ignored `.env` into Dockhand's stack-variable
-panel. Mark `RUSTY_IMAP_MCP_IMAP_PASSWORD`, `TELEGRAM_BOT_TOKEN`,
+panel. Mark `RUSTY_IMAP_MCP_IMAP_PASSWORD`, `OPENKNOWLEDGE_MCP_AUTHORIZATION`, `TELEGRAM_BOT_TOKEN`,
 `TELEGRAM_ALLOWED_USERS`, `OPENVIKING_ROOT_API_KEY`, `OPENROUTER_API_KEY`, both
 OpenViking key seeds, and both derived user keys as secrets. Never commit
 generated keys or `.env.dockhand`.
@@ -203,10 +203,11 @@ Rusty IMAP MCP is available to trusted containers on `general_brg` at:
 http://rusty-imap-mcp:8080/mcp
 ```
 
-OpenKnowledge is available to Hermes on `npm_proxy_backends` at
-`http://openknowledge:8080/mcp`. Trusted LAN/Tailscale clients use the
-authenticated TLS proxy (NPM access list, Basic auth — the service itself has
-no login; see [openknowledge/README.md](openknowledge/README.md)):
+OpenKnowledge's server only allows its external Host, so Hermes and
+trusted LAN/Tailscale clients alike use the authenticated TLS proxy (NPM
+access list, Basic auth — the service itself has no login; Hermes receives
+the header as the Dockhand secret `OPENKNOWLEDGE_MCP_AUTHORIZATION`; see
+[openknowledge/README.md](openknowledge/README.md)):
 
 ```text
 https://openknowledge.pownet.uk/mcp
@@ -279,5 +280,6 @@ and only after stopping the affected service through Dockhand.
    are denied, login works, and browser/mail/memory/HA tools are available.
 8. Confirm OpenKnowledge rejects unauthenticated requests through NPM, the
    editor loads with the access-list credential, and an MCP `initialize`
-   through `https://openknowledge.pownet.uk/mcp` succeeds with it (and from
-   Hermes over `http://openknowledge:8080/mcp` without it).
+   through `https://openknowledge.pownet.uk/mcp` succeeds with it, including
+   from Hermes (whose direct service-name request is expected to get
+   `403 Host header not allowed`).

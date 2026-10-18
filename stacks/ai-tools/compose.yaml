@@ -48,6 +48,9 @@ services:
       OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:?OpenRouter API key required}"
       OPENVIKING_ENDPOINT: http://openviking:1933
       OPENVIKING_API_KEY: "${OPENVIKING_API_KEY:?shared OpenViking user key required}"
+      # Full "Basic <base64>" header for the NPM access list; OpenKnowledge
+      # only allows its external Host, so Hermes cannot use the service name.
+      OPENKNOWLEDGE_MCP_AUTHORIZATION: "${OPENKNOWLEDGE_MCP_AUTHORIZATION:?OpenKnowledge MCP authorization required}"
       OPENVIKING_AGENT: hermes
       HASS_URL: http://host.docker.internal:8123
       HASS_TOKEN: "${HASS_TOKEN:-}"

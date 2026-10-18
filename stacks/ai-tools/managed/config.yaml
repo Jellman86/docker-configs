@@ -346,8 +346,11 @@ mcp_servers:
       resources: false
       prompts: false
   openknowledge:
-    url: http://openknowledge:8080/mcp
-    # Internal Docker-network path; external clients use the NPM access list.
+    # The server only allows its external Host, so Hermes goes through NPM
+    # with the access-list credential, like external MCP clients.
+    url: https://openknowledge.pownet.uk/mcp
+    headers:
+      Authorization: "${OPENKNOWLEDGE_MCP_AUTHORIZATION}"
     # The operator authorized this writable knowledge base for Hermes.
     trust: full
     timeout: 120
