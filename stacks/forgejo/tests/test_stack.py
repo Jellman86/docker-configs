@@ -22,7 +22,7 @@ class ForgejoContract(unittest.TestCase):
         self.assertEqual(env['FORGEJO__service__ENABLE_REVERSE_PROXY_AUTHENTICATION'], 'false')
         paths = {v['target']:v['source'] for v in service['volumes']}
         self.assertEqual(paths['/var/lib/gitea'], '/mnt/services/quark/docker/forgejo/data')
-        self.assertEqual(paths['/etc/gitea'], '/mnt/services/quark/docker/forgejo/config')
+        self.assertEqual(set(paths), {'/var/lib/gitea'})
         self.assertTrue(all(not v['bind']['create_host_path'] for v in service['volumes']))
         import json
         backup = json.loads((ROOT / 'host/quark/app-backup.example.json').read_text())
