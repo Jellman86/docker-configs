@@ -112,9 +112,8 @@ Agents should use the JSON format. It has no login; private-network
 reachability is the boundary, as for OpenKnowledge. Its settings live in
 [`searxng/settings.yml`](searxng/settings.yml) (JSON enabled, limiter off so
 programmatic clients are not rejected as bots, upstream valkey sidecar
-deliberately omitted: it is only needed for the limiter). The image is the
-newest stable upstream release pinned by digest; bump the tag and digest
-together. A SearXNG instance was previously retired on 2026-08-23 as part of
+deliberately omitted: it is only needed for the limiter). The image rolls on upstream `latest` (stateless service; Dockhand
+re-pulls on every deploy). A SearXNG instance was previously retired on 2026-08-23 as part of
 the Hermes research stack; this one returns as a standalone agent tool.
 
 Playwright MCP is available to containers on `general_brg` at:

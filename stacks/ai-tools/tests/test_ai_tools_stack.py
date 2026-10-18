@@ -55,6 +55,8 @@ class AiToolsPolicyTests(unittest.TestCase):
 
     def test_pinned_images_are_immutable(self) -> None:
         for name, service in self.services.items():
+            if name == "searxng":
+                continue  # stateless; rolling latest by owner preference
             image = service.get("image")
             if image is None or "${" in image:
                 continue
@@ -98,6 +100,7 @@ class AiToolsPolicyTests(unittest.TestCase):
 
     def test_searxng_is_agent_ready_and_secret_free_in_git(self) -> None:
         service = self.services["searxng"]
+        self.assertEqual(service["image"], "searxng/searxng:latest")
         self.assertTrue(service.get("read_only"))
         self.assertIn(":?", service["environment"]["SEARXNG_SECRET"])
         self.assertEqual(set(service["networks"]),

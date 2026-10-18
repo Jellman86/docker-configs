@@ -104,7 +104,9 @@ services:
         max-file: "3"
 
   searxng:
-    image: searxng/searxng:2026.10.17-1c10abe2d@sha256:8bdd9aa136b2dc3b9332cf24714fa34a375b8a1949a1201ec900c24d7378596e
+    # Stateless (settings in Git, cache in tmpfs): rolling latest by
+    # owner preference; no digest pin without a data/contract reason.
+    image: searxng/searxng:latest
     platform: linux/amd64
     container_name: searxng
     restart: unless-stopped
