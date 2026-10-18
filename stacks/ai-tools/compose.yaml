@@ -369,6 +369,58 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  openknowledge:
+    platform: linux/amd64
+    build:
+      context: ./openknowledge
+      args:
+        OPENKNOWLEDGE_VERSION: "${OPENKNOWLEDGE_VERSION:-0.86.22}"
+    container_name: openknowledge
+    restart: unless-stopped
+    init: true
+    user: "${PUID:-1000}:${PGID:-1000}"
+    read_only: true
+    pids_limit: 512
+    mem_limit: "${OPENKNOWLEDGE_MEMORY_LIMIT:-1g}"
+    cpus: "${OPENKNOWLEDGE_CPUS:-1.0}"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      HOME: /tmp
+      PORT: "8080"
+      OK_BIND: 0.0.0.0
+      # Consent is safe only behind the authenticating NPM edge; see
+      # openknowledge/README.md. Without this pair proxied requests get 403.
+      OK_ALLOW_EXTERNAL: "1"
+      OK_EXTERNAL_URL: "${OPENKNOWLEDGE_EXTERNAL_URL:-https://openknowledge.pownet.uk}"
+    volumes:
+      - type: bind
+        source: "${DOCKERCONFIGPATH:-/mnt/apps/docker}/openknowledge"
+        target: /data
+        bind:
+          create_host_path: false
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=256m,mode=1777
+    expose:
+      - "8080"
+    networks:
+      npm_proxy_backends:
+        aliases:
+          - openknowledge
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/readyz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 networks:
   general_brg:
     external: true

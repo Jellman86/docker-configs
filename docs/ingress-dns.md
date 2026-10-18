@@ -58,6 +58,7 @@ lists, certificate assignments, advanced configuration and application settings.
 | `yawamf` | `http://yawamf:8080` | Canonical target accepted; old bridge alias retained for clients |
 | `homeassistant` | `http://192.168.213.102:8123` | Host endpoint accepted; no bridge IP dependency |
 | `openviking` | `http://openviking:1933` | Preserve application authentication |
+| `openknowledge` | `http://openknowledge:8080` | NPM access list (Basic auth) is the only auth; preserve Host/`X-Forwarded-Proto`, WebSockets, unbuffered `/mcp` |
 | `hermes` | `http://hermes-dashboard:9119` | Intentional trusted-proxy network alias |
 | `playwright-mcp` | `http://playwright-mcp:8931` | Preserve NPM access list and application allow-list |
 | `optimisarr-sidecar` | `http://192.168.213.102:8788` | Existing host-bound endpoint |

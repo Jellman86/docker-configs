@@ -40,8 +40,8 @@ data directories and least-privilege tenant keys are preserved.
 - The historical `hermes/hermes` identity and `hermes` agent scope remain fixed.
   MCP additionally sends `X-OpenViking-Agent: hermes`. Never pass root/recovery
   keys or seeds to Hermes. SearXNG and Spider remain retired.
-- Dashboard **MCP** (`/mcp`) lists `github`, `rusty_imap` (email) and
-  `playwright`. These explicitly allowlisted servers use `trust: full`, so
+- Dashboard **MCP** (`/mcp`) lists `github`, `rusty_imap` (email),
+  `playwright` and `openknowledge`. These explicitly allowlisted servers use `trust: full`, so
   their calls do not pause for per-call approval. Native OpenViking memory is selected under
   **Plugins** (`/plugins`), in the memory-provider section. Endpoint and API-key
   configuration come from the container environment; a blank secret input does
@@ -118,6 +118,7 @@ python -m unittest discover -s stacks/ai-tools/openviking -v
 | `openviking-ollama` | Private embedding model server | Private OpenViking network only |
 | `openviking-ollama-model` | One-shot embedding-model pull | Private OpenViking network only |
 | `rusty-imap-mcp` | iCloud IMAP/SMTP MCP with non-destructive limits | `general_brg` and a dedicated private network; no host port |
+| `openknowledge` | AI-native markdown knowledge base, editor and MCP | `npm_proxy_backends` only; no host port |
 
 No service publishes a host port. `general_brg` and `npm_proxy_backends` are
 external networks. Playwright reaches the public web directly over `general_brg`.
@@ -130,6 +131,12 @@ deployment:
 ```bash
 install -d -m 0700 /mnt/apps/docker/openviking
 install -d -m 0700 /mnt/apps/docker/openviking-ollama
+```
+
+Before the first OpenKnowledge deployment, also create its project directory:
+
+```bash
+install -d -m 0700 -o 1000 -g 1000 /mnt/apps/docker/openknowledge
 ```
 
 Both directories are owned by UID/GID 1000. OpenViking stores its configuration
@@ -196,6 +203,21 @@ Rusty IMAP MCP is available to trusted containers on `general_brg` at:
 http://rusty-imap-mcp:8080/mcp
 ```
 
+OpenKnowledge is available to Hermes on `npm_proxy_backends` at
+`http://openknowledge:8080/mcp`. Trusted LAN/Tailscale clients use the
+authenticated TLS proxy (NPM access list, Basic auth — the service itself has
+no login; see [openknowledge/README.md](openknowledge/README.md)):
+
+```text
+https://openknowledge.pownet.uk/mcp
+https://openknowledge.pownet.uk/        (editor)
+```
+
+Its private URL is `https://openknowledge.pownet.uk`; the UniFi static A
+record points to Quark at `192.168.213.102`. Do not add a public DNS record
+or Cloudflare Tunnel route. NPM must preserve the client `Host`, set
+`X-Forwarded-Proto: https`, allow WebSockets and never buffer `/mcp`.
+
 Playwright reaches the public web directly. The Squid egress gateway that
 previously denied private, loopback, link-local, metadata, multicast, reserved
 and Docker-internal destinations was removed on 2026-08-23, so the browser can
@@ -255,3 +277,7 @@ and only after stopping the affected service through Dockhand.
    client and message body fetches do not set `\\Seen`.
 7. Confirm DNS resolves to Quark, TLS validates, anonymous dashboard API requests
    are denied, login works, and browser/mail/memory/HA tools are available.
+8. Confirm OpenKnowledge rejects unauthenticated requests through NPM, the
+   editor loads with the access-list credential, and an MCP `initialize`
+   through `https://openknowledge.pownet.uk/mcp` succeeds with it (and from
+   Hermes over `http://openknowledge:8080/mcp` without it).
