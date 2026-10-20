@@ -73,6 +73,16 @@ state. Archives are under `/mnt/tank/backups/apps`; current evidence is
 `/mnt/services/host/app-backup/status.json`. Limits are three successful archives,
 4 GiB per generation and 20 GiB including working data. Applications remain online.
 
+The current selection includes Forgejo, OpenKnowledge and Twenty persistent data. Remove explicitly retired
+applications from the configured directory list when decommissioning them; do not
+create empty replacement directories or silently skip missing active application
+state. The backup fails closed when a required directory disappears.
+
+After changing the selection, run `sudo systemctl start quark-app-backup.service`
+and check the status JSON, archive manifest and recovery checks. These array
+archives protect against an application SSD failure, but are not an off-site or
+independent host backup. Media, photos, VM disks and developer work are excluded.
+
 SQLite uses consistent online recovery copies. Immich uses a logical PostgreSQL
 dump; its restored database properties, including `vchordrq.probes`, also matter.
 Keep PostgreSQL 18 at `/mnt/services/docker/immich/postgres18`, mounted at
