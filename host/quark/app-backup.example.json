@@ -25,10 +25,10 @@
     "/mnt/services/quark/docker/birdnet-go/data",
     "/mnt/services/quark/docker/mosquitto/config",
     "/mnt/services/quark/docker/mosquitto/data",
-    "/mnt/services/quark/docker/hermes",
-    "/mnt/services/quark/docker/openviking",
     "/mnt/services/quark/docker-engine/volumes/optimisarr_sidecar_sidecar-config/_data",
-    "/mnt/services/quark/docker/forgejo"
+    "/mnt/services/quark/docker/forgejo",
+    "/mnt/services/quark/docker/openknowledge",
+    "/mnt/services/quark/docker-engine/volumes/twenty_twenty_data/_data"
   ],
   "files": [
     "/etc/fstab",
