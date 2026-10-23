@@ -1,9 +1,9 @@
 name: All Compose contracts
 on:
   push:
-    paths: ['**/*.yml', '**/*.yaml', 'scripts/**', '**/tests/**']
+    paths: ['**/*.yml', '**/*.yaml', '**/*.yaml.local', 'scripts/**', '**/tests/**']
   pull_request:
-    paths: ['**/*.yml', '**/*.yaml', 'scripts/**', '**/tests/**']
+    paths: ['**/*.yml', '**/*.yaml', '**/*.yaml.local', 'scripts/**', '**/tests/**']
 permissions:
   contents: read
 jobs:
@@ -20,3 +20,4 @@ jobs:
       - run: python -m unittest discover -s stacks/media/tests -v
       - run: python -m unittest discover -s stacks/autofpl/tests -v
       - run: python -m unittest discover -s stacks/forgejo/tests -v
+      - run: python -m unittest discover -s stacks/crowdsec/tests -v

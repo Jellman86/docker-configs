@@ -1,0 +1,11 @@
+# Merged over the generated /etc/crowdsec/config.yaml.
+db_config:
+  # The one-shot machine registration and LAPI share this SQLite database.
+  use_wal: true
+api:
+  server:
+    # Only the dashboard's fixed address may delete alerts.
+    trusted_ips:
+      - 127.0.0.1
+      - ::1
+      - 172.24.24.20

@@ -92,6 +92,12 @@ application that put credentials in query strings (YA-WAMF) has stopped doing so
 real fix, so this is deliberately left alone. If it is ever revisited: test the bind on a
 throwaway NPM container first, never on this one.
 
+## CrowdSec
+
+The separate [`crowdsec`](../crowdsec/README.md) stack reads `nginx-proxy-manager/data/logs`
+read-only; it never recreates this stack. Keep NPM's shipped log format, and keep the
+CrowdSec real-IP block on proxy hosts that have public tunnel routes.
+
 ## Native Tailscale on Quark
 
 Install the stable signed Fedora package from Tailscale. During the one-time

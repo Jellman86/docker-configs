@@ -1,0 +1,15 @@
+# Never alert on or ban the home network. crowdsecurity/whitelists already
+# covers RFC1918; this adds the tailnet (Mac, Picard, phones) and keeps the
+# private ranges explicit in case that hub parser is ever removed.
+name: quark/private-whitelist
+description: "Ignore Quark LAN, Docker bridges and the Tailscale tailnet"
+whitelist:
+  reason: "trusted home network"
+  cidr:
+    - 127.0.0.0/8
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+    - 100.64.0.0/10
+    - ::1/128
+    - fd7a:115c:a1e0::/48

@@ -45,6 +45,7 @@ combine entrypoints with `-f` overlays. The separate photo worker uses
 |---|---|
 | [management](stacks/management/README.md) | Dockhand control plane |
 | [ingress](stacks/ingress/README.md) | Nginx Proxy Manager and Cloudflare Tunnel |
+| [crowdsec](stacks/crowdsec/README.md) | CrowdSec detection on NPM logs and its web dashboard |
 | [home-automation](stacks/home-automation/README.md) | Cameras, bird detection, MQTT and Home Assistant |
 | [ai-tools](stacks/ai-tools/README.md) | OpenKnowledge, Playwright browser MCP and SearXNG |
 | [arr](stacks/arr/README.md) | VPN, downloads, indexers and media requests |
