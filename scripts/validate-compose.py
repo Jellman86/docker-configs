@@ -58,7 +58,7 @@ def validate(root=ROOT):
             assert re.fullmatch(r'[1-9][0-9]*[kKmM]', str(options.get('max-size', ''))), (source, name, 'log size missing')
             assert 1 <= int(options.get('max-file', '0')) <= 5, (source, name, 'log file count')
             # Profiled bootstrap/acceptance jobs may exit successfully by design.
-            if name in {'restore', 'openviking-bootstrap', 'openviking-ollama-model'}:
+            if name in {'restore', 'openviking-bootstrap', 'openviking-ollama-model', 'web-ui-machine'}:
                 assert service['restart'] == 'no', (source, name, 'one-shot restart loop')
         count += len(model['services'])
         print(f'{source.relative_to(root)}: {len(model["services"])} service definitions passed')

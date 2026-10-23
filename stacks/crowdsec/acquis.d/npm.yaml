@@ -1,0 +1,11 @@
+# NPM proxy-host, default-host and fallback logs (mounted read-only).
+# The hub parser crowdsecurity/nginx-proxy-manager-logs matches NPM's shipped
+# `proxy`/`standard` formats; keep NPM's log format unmodified.
+source: file
+filenames:
+  - /var/log/npm/proxy-host-*_access.log
+  - /var/log/npm/proxy-host-*_error.log
+  - /var/log/npm/fallback_*access.log
+  - /var/log/npm/fallback_*error.log
+labels:
+  type: nginx-proxy-manager
