@@ -14,6 +14,11 @@ services:
     restart: unless-stopped
     environment:
       TZ: ${TZ:-Europe/London}
+      # CrowdSec Console (app.crowdsec.net) enrollment. The key is an encrypted
+      # Dockhand variable; empty skips enrollment. A wrong key stops startup.
+      ENROLL_KEY: ${CROWDSEC_ENROLL_KEY:-}
+      ENROLL_INSTANCE_NAME: quark
+      ENROLL_TAGS: quark homelab
       # Observation of private media apps' sign-in failures; see README.
       COLLECTIONS: >-
         crowdsecurity/nginx-proxy-manager

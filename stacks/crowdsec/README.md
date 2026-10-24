@@ -95,6 +95,7 @@ Add the two included paths to the live `/etc/quark-app-backup.json` as well as t
 | Variable | Kind | Purpose |
 |---|---|---|
 | `CROWDSEC_WEB_UI_LAPI_PASSWORD` | Encrypted Dockhand secret | Dashboard's LAPI machine password (`openssl rand -hex 32`) |
+| `CROWDSEC_ENROLL_KEY` | Encrypted Dockhand secret, optional | CrowdSec Console enrollment key from app.crowdsec.net; enrolls as `quark` on start. Accept the instance in the Console afterwards. A wrong key stops CrowdSec from starting. |
 | `TZ` | Optional | Defaults to `Europe/London` |
 
 Rotating the secret and redeploying re-registers the machine with the new value.
@@ -120,7 +121,7 @@ clients is Cloudflare, in front of the tunnel. When that is wanted, add the offi
 as a service in this stack. Scope `routes_to_protect` to the public hostnames, set
 `only_include_decisions_from: [crowdsec, cscli]` to keep KV writes small, choose the
 route fail mode deliberately, and store its LAPI key and Cloudflare token in Dockhand.
-Optional: enroll in the CrowdSec Console (`cscli console enroll`) for its hosted view.
+The CrowdSec Console (app.crowdsec.net) is the primary dashboard; the self-hosted Web UI remains a private fallback.
 
 ## Rollback
 
