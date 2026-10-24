@@ -1,6 +1,6 @@
 # CrowdSec security engine and dashboard. The engine reads NPM's access/error
-# logs read-only, so ingress is never recreated by a CrowdSec update. Nothing
-# here publishes a host port; the dashboard is reached only through NPM.
+# logs read-only, so ingress is never recreated by a CrowdSec update. The only
+# host port is LAN-bound UniFi syslog; the dashboard is reached only through NPM.
 # https://docs.crowdsec.net/u/getting_started/installation/docker
 # https://github.com/TheDuffman85/crowdsec-web-ui
 # Stable deployment identity; Dockhand uses the same stack name.
@@ -24,6 +24,7 @@ services:
         schiz0phr3ne/radarr
         schiz0phr3ne/prowlarr
         gilbsgilbs/qbittorrent
+        crowdsecurity/unifi
     volumes:
       # Engine config (machine credentials, Console enrollment) is recovery state.
       - type: bind
@@ -84,6 +85,9 @@ services:
       - ./acquis.d:/etc/crowdsec/acquis.d:ro
       - ./parsers/quark-private-whitelist.yaml:/etc/crowdsec/parsers/s02-enrich/quark-private-whitelist.yaml:ro
       - ./config.yaml.local:/etc/crowdsec/config.yaml.local:ro
+    ports:
+      # UniFi remote syslog from the UCG-Max. LAN address only, never WAN/tailnet.
+      - "192.168.213.102:5514:5514/udp"
     networks:
       lapi:
         ipv4_address: 172.24.24.10
