@@ -13,3 +13,9 @@ whitelist:
     - 100.64.0.0/10
     - ::1/128
     - fd7a:115c:a1e0::/48
+    # Apps such as qBittorrent log IPv4 clients in IPv4-mapped IPv6 form.
+    - ::ffff:127.0.0.0/104
+    - ::ffff:10.0.0.0/104
+    - ::ffff:172.16.0.0/108
+    - ::ffff:192.168.0.0/112
+    - ::ffff:100.64.0.0/106

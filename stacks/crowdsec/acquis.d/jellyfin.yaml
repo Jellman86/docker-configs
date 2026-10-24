@@ -1,0 +1,6 @@
+# Jellyfin daily logs: denied authentication requests (LePresidente/jellyfin).
+source: file
+filenames:
+  - /var/log/apps/jellyfin/log_*.log
+labels:
+  type: jellyfin

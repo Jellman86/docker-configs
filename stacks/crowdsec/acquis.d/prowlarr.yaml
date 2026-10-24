@@ -1,0 +1,6 @@
+# Prowlarr Auth-Failure lines (schiz0phr3ne/prowlarr).
+source: file
+filenames:
+  - /var/log/apps/prowlarr/prowlarr.txt
+labels:
+  type: Prowlarr

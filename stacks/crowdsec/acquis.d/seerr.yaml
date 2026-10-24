@@ -1,0 +1,6 @@
+# Seerr writes Overseerr-format sign-in failures (LePresidente/overseerr).
+source: file
+filenames:
+  - /var/log/apps/seerr/seerr.log
+labels:
+  type: overseerr
