@@ -56,14 +56,14 @@ class CrowdSecContract(unittest.TestCase):
         self.assertEqual(acquis['listen_port'], 5514)
         self.assertIn('crowdsecurity/unifi', self.services['crowdsec']['environment']['COLLECTIONS'])
 
-    def test_local_unifi_scenarios_are_observation_only_and_mounted(self):
+    def test_unifi_hostname_repair_parser_runs_first(self):
         mounts = {m.split(':')[0]: m.split(':')[1] for m in self.services['crowdsec']['volumes'] if isinstance(m, str)}
-        for f in (STACK / 'scenarios').glob('*.yaml'):
-            scenario = yaml.safe_load(f.read_text())
-            self.assertFalse(scenario['labels']['remediation'], f.name)
-            self.assertEqual(mounts['./scenarios/' + f.name], '/etc/crowdsec/scenarios/' + f.name)
-        self.assertTrue(mounts['./parsers/quark-unifi-cef-syslog.yaml'].endswith('/s00-raw/a-quark-unifi-cef-syslog.yaml'))
-        self.assertTrue(mounts['./parsers/quark-unifi-cef-source.yaml'].endswith('/s02-enrich/a-quark-unifi-cef-source.yaml'))
+        target = mounts['./parsers/quark-unifi-syslog-host.yaml']
+        self.assertEqual(target, '/etc/crowdsec/parsers/s00-raw/a-quark-unifi-syslog-host.yaml')
+        parser = yaml.safe_load((STACK / 'parsers/quark-unifi-syslog-host.yaml').read_text())
+        self.assertEqual(parser['onsuccess'], 'next_stage')
+        self.assertNotIn('debug', parser)
+        self.assertFalse((STACK / 'scenarios').exists())
 
     def test_dashboard_requires_login_and_secret(self):
         ui = self.services['crowdsec-web-ui']
