@@ -9,3 +9,6 @@ filenames:
   - /var/log/npm/fallback_*error.log
 labels:
   type: nginx-proxy-manager
+# Drop lines no parser uses before parsing (an empty list emits no event),
+# so routine app/device chatter is not counted as unparsed.
+transform: "(!(evt.Line.Raw contains 'buffered to a temporary file')) ? [evt.Line.Raw] : []"

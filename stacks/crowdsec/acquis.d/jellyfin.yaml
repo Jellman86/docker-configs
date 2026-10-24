@@ -4,3 +4,6 @@ filenames:
   - /var/log/apps/jellyfin/log_*.log
 labels:
   type: jellyfin
+# Drop lines no parser uses before parsing (an empty list emits no event),
+# so routine app/device chatter is not counted as unparsed.
+transform: "(evt.Line.Raw contains 'has been denied') ? [evt.Line.Raw] : []"

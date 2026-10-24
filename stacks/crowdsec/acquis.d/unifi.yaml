@@ -7,3 +7,6 @@ listen_addr: 0.0.0.0
 listen_port: 5514
 labels:
   type: unifi
+# Drop lines no parser uses before parsing (an empty list emits no event),
+# so routine app/device chatter is not counted as unparsed.
+transform: "(evt.Line.Raw contains '[WAN_' || evt.Line.Raw contains 'dropbear') ? [evt.Line.Raw] : []"

@@ -4,3 +4,6 @@ filenames:
   - /var/log/apps/prowlarr/prowlarr.txt
 labels:
   type: Prowlarr
+# Drop lines no parser uses before parsing (an empty list emits no event),
+# so routine app/device chatter is not counted as unparsed.
+transform: "(evt.Line.Raw contains 'Auth-Failure') ? [evt.Line.Raw] : []"

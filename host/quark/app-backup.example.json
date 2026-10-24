@@ -29,7 +29,6 @@
     "/mnt/services/quark/docker/forgejo",
     "/mnt/services/quark/docker/openknowledge",
     "/mnt/services/quark/docker/crowdsec/config",
-    "/mnt/services/quark/docker/crowdsec/web-ui",
     "/mnt/services/quark/docker-engine/volumes/twenty_twenty_data/_data"
   ],
   "files": [
