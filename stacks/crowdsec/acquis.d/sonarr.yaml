@@ -1,0 +1,6 @@
+# Sonarr Auth-Failure lines (schiz0phr3ne/sonarr).
+source: file
+filenames:
+  - /var/log/apps/sonarr/sonarr.txt
+labels:
+  type: Sonarr

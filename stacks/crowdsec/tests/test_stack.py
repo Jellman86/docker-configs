@@ -30,6 +30,22 @@ class CrowdSecContract(unittest.TestCase):
         self.assertEqual(acquis['labels']['type'], 'nginx-proxy-manager')
         self.assertTrue(all(f.startswith('/var/log/npm/') for f in acquis['filenames']))
 
+    def test_app_logs_are_read_only_log_directories(self):
+        mounts = [v for v in self.services['crowdsec']['volumes']
+                  if isinstance(v, dict) and v['target'].startswith('/var/log/apps/')]
+        self.assertEqual({m['target'].rsplit('/', 1)[1] for m in mounts},
+                         {'jellyfin', 'seerr', 'sonarr', 'radarr', 'prowlarr', 'qbittorrent'})
+        for m in mounts:
+            self.assertTrue(m['read_only'], m)
+            self.assertFalse(m['bind']['create_host_path'], m)
+            self.assertRegex(m['source'], r'/logs?$')
+        acquired = set()
+        for f in (STACK / 'acquis.d').glob('*.yaml'):
+            acquis = yaml.safe_load(f.read_text())
+            acquired.update(acquis['filenames'])
+        for m in mounts:
+            self.assertTrue(any(name.startswith(m['target'] + '/') for name in acquired), m['target'])
+
     def test_dashboard_requires_login_and_secret(self):
         ui = self.services['crowdsec-web-ui']
         env = ui['environment']

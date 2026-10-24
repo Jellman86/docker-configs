@@ -14,9 +14,16 @@ services:
     restart: unless-stopped
     environment:
       TZ: ${TZ:-Europe/London}
+      # Observation of private media apps' sign-in failures; see README.
       COLLECTIONS: >-
         crowdsecurity/nginx-proxy-manager
         crowdsecurity/whitelist-good-actors
+        LePresidente/jellyfin
+        LePresidente/overseerr
+        schiz0phr3ne/sonarr
+        schiz0phr3ne/radarr
+        schiz0phr3ne/prowlarr
+        gilbsgilbs/qbittorrent
     volumes:
       # Engine config (machine credentials, Console enrollment) is recovery state.
       - type: bind
@@ -36,8 +43,45 @@ services:
         read_only: true
         bind:
           create_host_path: false
+      # Media/arr app log directories only, never their config or databases.
+      - type: bind
+        source: /mnt/services/docker/jellyfin/log
+        target: /var/log/apps/jellyfin
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /mnt/services/docker/seerr/logs
+        target: /var/log/apps/seerr
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /mnt/services/docker/sonarr/logs
+        target: /var/log/apps/sonarr
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /mnt/services/docker/radarr/logs
+        target: /var/log/apps/radarr
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /mnt/services/docker/prowlarr/logs
+        target: /var/log/apps/prowlarr
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /mnt/services/docker/qbittorrent/qBittorrent/logs
+        target: /var/log/apps/qbittorrent
+        read_only: true
+        bind:
+          create_host_path: false
       # Reviewed Git config layered over the generated defaults.
-      - ./acquis.d/npm.yaml:/etc/crowdsec/acquis.d/npm.yaml:ro
+      - ./acquis.d:/etc/crowdsec/acquis.d:ro
       - ./parsers/quark-private-whitelist.yaml:/etc/crowdsec/parsers/s02-enrich/quark-private-whitelist.yaml:ro
       - ./config.yaml.local:/etc/crowdsec/config.yaml.local:ro
     networks:

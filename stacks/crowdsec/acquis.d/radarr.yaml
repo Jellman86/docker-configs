@@ -1,0 +1,6 @@
+# Radarr Auth-Failure lines (schiz0phr3ne/radarr).
+source: file
+filenames:
+  - /var/log/apps/radarr/radarr.txt
+labels:
+  type: Radarr

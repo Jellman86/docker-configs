@@ -33,7 +33,20 @@ No host ports are published. The `lapi` subnet is fixed (`172.24.24.0/24`) so
 
 - [`acquis.d/npm.yaml`](acquis.d/npm.yaml): NPM proxy-host, default-host and fallback access/error logs, type `nginx-proxy-manager`.
 - Collections: `crowdsecurity/nginx-proxy-manager` (parser plus base HTTP scenarios) and `crowdsecurity/whitelist-good-actors`.
-- [`parsers/quark-private-whitelist.yaml`](parsers/quark-private-whitelist.yaml): RFC1918, Docker bridges and the tailnet `100.64.0.0/10` are never alerted on or banned.
+- Observation of private apps' sign-in failures (read-only log directories, never config or databases):
+
+  | App | Log mounted at `/var/log/apps/…` | Hub collection |
+  |---|---|---|
+  | Jellyfin | `jellyfin/log_*.log` | `LePresidente/jellyfin` |
+  | Seerr | `seerr/seerr.log` (Overseerr format) | `LePresidente/overseerr` |
+  | Sonarr / Radarr / Prowlarr | `<app>/<app>.txt` | `schiz0phr3ne/<app>` |
+  | qBittorrent | `qbittorrent/qbittorrent.log` | `gilbsgilbs/qbittorrent` |
+
+  These apps are reachable only from the LAN/tailnet (Seerr publicly only behind
+  Cloudflare Access), so their alerts fire only for sources outside the home whitelist.
+  Plex has no sign-in log to parse (authentication happens at plex.tv); its direct
+  WAN port forward (6001 -> 32400) is visible only to a firewall-level source.
+- [`parsers/quark-private-whitelist.yaml`](parsers/quark-private-whitelist.yaml): RFC1918, Docker bridges and the tailnet `100.64.0.0/10` (including IPv4-mapped IPv6 forms) are never alerted on or banned.
 
 Internet clients arrive from Cloudflare Tunnel through the Docker host gateway
 (`172.18.0.1`). NPM's global real-IP header is `X-Real-IP`, which Cloudflare does

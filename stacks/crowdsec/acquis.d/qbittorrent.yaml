@@ -1,0 +1,6 @@
+# qBittorrent WebAPI login failures (gilbsgilbs/qbittorrent).
+source: file
+filenames:
+  - /var/log/apps/qbittorrent/qbittorrent.log
+labels:
+  type: qbittorrent
