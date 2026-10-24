@@ -1,0 +1,19 @@
+# Observation only: an internet source repeatedly dropped by the UCG-Max
+# firewall (CEF 203 "Blocked by Firewall"), e.g. persistent scanners probing
+# the WAN address around the Plex forward. LAN/tailnet sources are
+# whitelisted. UniFi 10.6 omits ports, so this counts attempts, not ports.
+type: leaky
+name: quark/unifi-wan-blocked
+description: "Repeated UniFi firewall blocks from one source"
+filter: "evt.Meta.service == 'unifi' && evt.Parsed.cef_signature_id == '203' && evt.Meta.source_ip != ''"
+groupby: evt.Meta.source_ip
+capacity: 10
+leakspeed: 1m
+blackhole: 30m
+labels:
+  remediation: false
+  service: unifi
+  behavior: "tcp:scan"
+  label: "Repeated UniFi WAN firewall blocks"
+  confidence: 1
+  spoofable: 0
