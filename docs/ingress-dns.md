@@ -64,7 +64,6 @@ lists, certificate assignments, advanced configuration and application settings.
 | `playwright-mcp` | `http://playwright-mcp:8931` | Preserve NPM access list and application allow-list |
 | `optimisarr-sidecar` | `http://192.168.213.102:8788` | Existing host-bound endpoint |
 | `cockpit` | `https://192.168.213.102:9090` | Native host service; preserve TLS/origin settings |
-| `crowdsec` | `http://crowdsec-web-ui:3000` | Dashboard login required; `npm_proxy_backends`; WebSockets on |
 | `sonarr` | `http://sonarr:8989` | Preserve allowed hosts and app authentication |
 | `radarr` | `http://radarr:7878` | Preserve allowed hosts and app authentication |
 | `prowlarr` | `http://prowlarr:9696` | Preserve allowed hosts and app authentication |
@@ -117,7 +116,8 @@ Only `yetanotherwhosatmyfeeder.pownet.uk` (no Access) and `cross5-donkey-means.p
 the Docker host gateway, so those two proxy hosts (`yawamf` and `seerr`) carry a
 server-level `real_ip_header CF-Connecting-IP` trusted only from `172.18.0.1`; see the
 [CrowdSec stack](../stacks/crowdsec/README.md). Add the same block when another
-hostname gains a public route. `crowdsec.pownet.uk` itself is private only.
+hostname gains a public route. CrowdSec's dashboard is the hosted CrowdSec Console;
+the self-hosted `crowdsec.pownet.uk` route was retired on 24 October 2026.
 
 ## Private Git hosting
 

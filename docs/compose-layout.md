@@ -20,7 +20,7 @@ See the [cutover sequence and acceptance](cutover-plan.md).
 |---|---|---|
 | `management` | `stacks/management/compose.yaml` | Dockhand |
 | `ingress` | `stacks/ingress/compose.yaml` | NPM, Cloudflare connector |
-| `crowdsec` | `stacks/crowdsec/compose.yaml` | CrowdSec engine/LAPI on NPM logs and its dashboard |
+| `crowdsec` | `stacks/crowdsec/compose.yaml` | CrowdSec engine (NPM, media-app and UniFi logs); dashboard is the hosted Console |
 | `home-automation` | `stacks/home-automation/compose.yaml` | Frigate, BirdNET-Go, MQTT, YA-WAMF, Home Assistant |
 | `ai-tools` | `stacks/ai-tools/compose.yaml` | OpenKnowledge, Playwright browser MCP and SearXNG (Hermes/OpenViking retired 2026-10-18) |
 | `arr` | `stacks/arr/compose.yaml` | VPN, downloads, indexers, requests and library management |

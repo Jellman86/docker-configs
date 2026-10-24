@@ -4,3 +4,6 @@ filenames:
   - /var/log/apps/seerr/seerr.log
 labels:
   type: overseerr
+# Drop lines no parser uses before parsing (an empty list emits no event),
+# so routine app/device chatter is not counted as unparsed.
+transform: "(evt.Line.Raw contains 'Failed sign-in attempt' || evt.Line.Raw contains 'Failed login attempt') ? [evt.Line.Raw] : []"

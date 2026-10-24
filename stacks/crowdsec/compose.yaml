@@ -1,8 +1,8 @@
-# CrowdSec security engine and dashboard. The engine reads NPM's access/error
-# logs read-only, so ingress is never recreated by a CrowdSec update. The only
-# host port is LAN-bound UniFi syslog; the dashboard is reached only through NPM.
+# CrowdSec security engine (observation only). It reads NPM and media-app
+# logs read-only, so ingress is never recreated by a CrowdSec update, and
+# receives UniFi syslog on the LAN. The dashboard is the hosted CrowdSec
+# Console (app.crowdsec.net); there is no self-hosted UI.
 # https://docs.crowdsec.net/u/getting_started/installation/docker
-# https://github.com/TheDuffman85/crowdsec-web-ui
 # Stable deployment identity; Dockhand uses the same stack name.
 name: crowdsec
 
@@ -95,9 +95,6 @@ services:
     ports:
       # UniFi remote syslog from the UCG-Max. LAN address only, never WAN/tailnet.
       - "192.168.213.102:5514:5514/udp"
-    networks:
-      lapi:
-        ipv4_address: 172.24.24.10
     security_opt:
       - no-new-privileges:true
     pids_limit: 256
@@ -114,92 +111,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-  web-ui-machine:
-    # One-shot, idempotent: (re)registers the dashboard's LAPI machine with the
-    # Dockhand-held password on every deploy, so no manual cscli step exists.
-    image: crowdsecurity/crowdsec:latest
-    container_name: crowdsec-web-ui-machine
-    restart: "no"
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - cscli machines add crowdsec-web-ui --password "$$WEB_UI_LAPI_PASSWORD" --force -f /dev/null
-    environment:
-      WEB_UI_LAPI_PASSWORD: ${CROWDSEC_WEB_UI_LAPI_PASSWORD:?Set a random secret in Dockhand}
-    volumes:
-      - type: bind
-        source: /mnt/services/quark/docker/crowdsec/config
-        target: /etc/crowdsec
-        bind:
-          create_host_path: true
-      - type: bind
-        source: /mnt/services/quark/docker/crowdsec/data
-        target: /var/lib/crowdsec/data
-        bind:
-          create_host_path: true
-      - ./config.yaml.local:/etc/crowdsec/config.yaml.local:ro
-    network_mode: none
-    security_opt:
-      - no-new-privileges:true
-    depends_on:
-      crowdsec:
-        condition: service_healthy
-    logging:
-      driver: json-file
-      options:
-        max-size: "1m"
-        max-file: "1"
-
-  crowdsec-web-ui:
-    image: ghcr.io/theduffman85/crowdsec-web-ui:latest
-    container_name: crowdsec-web-ui
-    # Upstream `node` user; the data directory is pre-created as 1000:1000.
-    user: "1000:1000"
-    restart: unless-stopped
-    environment:
-      TZ: ${TZ:-Europe/London}
-      CONFIG_INSTANCE_LAPI_URL: http://crowdsec:8080
-      CONFIG_INSTANCE_LAPI_AUTH_USERNAME: crowdsec-web-ui
-      CONFIG_INSTANCE_LAPI_AUTH_PASSWORD: ${CROWDSEC_WEB_UI_LAPI_PASSWORD:?Set a random secret in Dockhand}
-      CONFIG_INSTANCE_METRICS_URL: http://crowdsec:6060/metrics
-      # Local admin login is always required, even on the private network.
-      CONFIG_AUTH_ENABLED: "true"
-    volumes:
-      # Dashboard accounts, sessions and notification settings (SQLite + WAL).
-      - type: bind
-        source: /mnt/services/quark/docker/crowdsec/web-ui
-        target: /app/data
-        bind:
-          create_host_path: false
-    expose:
-      - "3000"
-    networks:
-      lapi:
-        ipv4_address: 172.24.24.20
-      npm_proxy_backends:
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    pids_limit: 256
-    mem_limit: 512m
-    cpus: 1.0
-    depends_on:
-      web-ui-machine:
-        condition: service_completed_successfully
-    # Upstream image HEALTHCHECK probes /api/health.
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-networks:
-  # Private LAPI segment. Fixed so config.yaml.local can trust only the dashboard.
-  lapi:
-    ipam:
-      config:
-        - subnet: 172.24.24.0/24
-  npm_proxy_backends:
-    name: npm_proxy_backends
-    external: true
