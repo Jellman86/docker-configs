@@ -14,7 +14,10 @@ class CrowdSecContract(unittest.TestCase):
 
     def test_no_host_ports_and_ingress_untouched(self):
         for name, service in self.services.items():
-            self.assertNotIn('ports', service, name)
+            if name == 'crowdsec':
+                self.assertEqual(service['ports'], ['192.168.213.102:5514:5514/udp'])
+            else:
+                self.assertNotIn('ports', service, name)
             self.assertNotIn('general_brg', service.get('networks', {}), name)
         ui = self.services['crowdsec-web-ui']
         self.assertIn('npm_proxy_backends', ui['networks'])
@@ -42,9 +45,16 @@ class CrowdSecContract(unittest.TestCase):
         acquired = set()
         for f in (STACK / 'acquis.d').glob('*.yaml'):
             acquis = yaml.safe_load(f.read_text())
-            acquired.update(acquis['filenames'])
+            acquired.update(acquis.get('filenames', []))
         for m in mounts:
             self.assertTrue(any(name.startswith(m['target'] + '/') for name in acquired), m['target'])
+
+    def test_unifi_syslog_listener_matches_published_port(self):
+        acquis = yaml.safe_load((STACK / 'acquis.d/unifi.yaml').read_text())
+        self.assertEqual(acquis['source'], 'syslog')
+        self.assertEqual(acquis['labels']['type'], 'unifi')
+        self.assertEqual(acquis['listen_port'], 5514)
+        self.assertIn('crowdsecurity/unifi', self.services['crowdsec']['environment']['COLLECTIONS'])
 
     def test_dashboard_requires_login_and_secret(self):
         ui = self.services['crowdsec-web-ui']

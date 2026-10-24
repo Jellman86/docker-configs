@@ -22,11 +22,11 @@ self-hosted dashboard for alerts, decisions, metrics and notifications.
 
 | Service | Role | Access |
 |---|---|---|
-| `crowdsec` | Agent and Local API (LAPI) | `lapi` network only (`172.24.24.10:8080`, metrics `:6060`) |
+| `crowdsec` | Agent and Local API (LAPI) | `lapi` network only (`172.24.24.10:8080`, metrics `:6060`); UniFi syslog `192.168.213.102:5514/udp` |
 | `web-ui-machine` | One-shot `cscli machines add --force`; exits 0 | No network |
 | `crowdsec-web-ui` | Dashboard | `https://crowdsec.pownet.uk` through NPM (`crowdsec-web-ui:3000` on `npm_proxy_backends`) |
 
-No host ports are published. The `lapi` subnet is fixed (`172.24.24.0/24`) so
+The only host port is the LAN-bound UniFi syslog listener. The `lapi` subnet is fixed (`172.24.24.0/24`) so
 `config.yaml.local` can grant LAPI `trusted_ips` (alert deletion) to the dashboard alone.
 
 ## Detection inputs
@@ -46,6 +46,12 @@ No host ports are published. The `lapi` subnet is fixed (`172.24.24.0/24`) so
   Cloudflare Access), so their alerts fire only for sources outside the home whitelist.
   Plex has no sign-in log to parse (authentication happens at plex.tv); its direct
   WAN port forward (6001 -> 32400) is visible only to a firewall-level source.
+- UniFi gateway syslog ([`acquis.d/unifi.yaml`](acquis.d/unifi.yaml), `crowdsecurity/unifi`): the
+  UCG-Max sends remote syslog to `192.168.213.102:5514/udp` (LAN-bound). Logging is enabled
+  on the predefined External -> Gateway and External -> Internal "Block All Traffic" policies,
+  so WAN scans, including probes around the Plex forward (WAN 6001 -> 32400), reach the
+  `iptables-scan-multi_ports` scenario. Upstream's rsyslog relay is needed only for UniFi CEF
+  activity events, which no scenario in the collection uses; they are left unparsed.
 - [`parsers/quark-private-whitelist.yaml`](parsers/quark-private-whitelist.yaml): RFC1918, Docker bridges and the tailnet `100.64.0.0/10` (including IPv4-mapped IPv6 forms) are never alerted on or banned.
 
 Internet clients arrive from Cloudflare Tunnel through the Docker host gateway

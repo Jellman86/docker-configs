@@ -1,0 +1,9 @@
+# UCG-Max remote syslog (plain format: kernel firewall drops, dropbear SSH).
+# UniFi's syslog is not RFC-compliant, so the type must be `unifi`
+# (crowdsecurity/unifi). CEF activity events are not parsed here; none of the
+# collection's alert scenarios use them.
+source: syslog
+listen_addr: 0.0.0.0
+listen_port: 5514
+labels:
+  type: unifi
