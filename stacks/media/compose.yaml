@@ -7,15 +7,6 @@ services:
   plex:
     extends: {file: compose.base.yaml, service: plex}
     restart: "no"
-    volumes:
-      # Transcode workspace in RAM: no SSD wear and faster segment I/O. Capped
-      # so a large download/sync conversion cannot exhaust host memory; the
-      # contents are disposable. Plex's TranscoderTempDirectory is /transcode.
-      - type: tmpfs
-        target: /transcode
-        tmpfs:
-          size: 4294967296
-          mode: 01777
   jellyfin:
     extends: {file: compose.base.yaml, service: jellyfin}
     restart: "no"

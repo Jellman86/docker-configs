@@ -82,7 +82,7 @@ tone-mapping test on this host.
 | `${MEDIA_PATH:-/mnt/tank/media}` | Plex library at `/library` |
 | `${IMMICH_PHOTOS_PATH:-/mnt/tank/photos}/library` | Immich storage-template originals, read-only in Plex at `/immich/library` |
 | `${IMMICH_PHOTOS_PATH:-/mnt/tank/photos}/upload` | Immich non-template originals, read-only in Plex at `/immich/upload` |
-| tmpfs (RAM, 4 GiB cap) at `/transcode` | Plex transcode workspace; disposable, set as Plex's transcoder temporary directory. The old `/mnt/services/plex-transcode` SSD directory is unused. |
+| `/dev/shm` (RAM, `shm_size: 4gb`) | Plex transcode workspace; disposable, set as Plex's transcoder temporary directory. The old `/mnt/services/plex-transcode` SSD directory is unused. |
 | `${DOCKERCONFIGPATH:-/mnt/services/docker}/jellyfin` | Jellyfin configuration, database, metadata, cache, and identity at `/config` |
 | `${MEDIA_PATH:-/mnt/tank/media}` | The same media tree mounted read-only in Jellyfin at `/library` |
 | `${DOCKERCONFIGPATH:-/mnt/services/docker}/optimisarr` | Optimisarr configuration and database |
