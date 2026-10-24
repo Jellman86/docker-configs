@@ -84,6 +84,11 @@ services:
       # Reviewed Git config layered over the generated defaults.
       - ./acquis.d:/etc/crowdsec/acquis.d:ro
       - ./parsers/quark-private-whitelist.yaml:/etc/crowdsec/parsers/s02-enrich/quark-private-whitelist.yaml:ro
+      # UniFi CEF over syslog; "a-" prefixes order these before hub parsers.
+      - ./parsers/quark-unifi-cef-syslog.yaml:/etc/crowdsec/parsers/s00-raw/a-quark-unifi-cef-syslog.yaml:ro
+      - ./parsers/quark-unifi-cef-source.yaml:/etc/crowdsec/parsers/s02-enrich/a-quark-unifi-cef-source.yaml:ro
+      - ./scenarios/quark-unifi-wan-blocked.yaml:/etc/crowdsec/scenarios/quark-unifi-wan-blocked.yaml:ro
+      - ./scenarios/quark-unifi-ips.yaml:/etc/crowdsec/scenarios/quark-unifi-ips.yaml:ro
       - ./config.yaml.local:/etc/crowdsec/config.yaml.local:ro
     ports:
       # UniFi remote syslog from the UCG-Max. LAN address only, never WAN/tailnet.

@@ -1,0 +1,12 @@
+# UniFi 10.6 "Blocked by Firewall" (CEF 203) events carry no `src`; the
+# source is in UNIFIsrcClientIp (LAN clients) or UNIFIsrcIp. Fill meta
+# source_ip before GeoIP/whitelists (mounted with an "a-" prefix in s02).
+name: quark/unifi-cef-source
+description: "Fill source_ip for UniFi CEF events that lack src"
+filter: "evt.Meta.service == 'unifi' && evt.Meta.source_ip == ''"
+statics:
+  - meta: source_ip
+    expression: >-
+      evt.Unmarshaled.unifi.UNIFIsrcIp ?? evt.Unmarshaled.unifi.UNIFIsrcClientIp ?? ''
+  - meta: firewall_policy
+    expression: evt.Unmarshaled.unifi.UNIFIfirewallPolicy ?? ''

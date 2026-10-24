@@ -47,11 +47,21 @@ The only host port is the LAN-bound UniFi syslog listener. The `lapi` subnet is 
   Plex has no sign-in log to parse (authentication happens at plex.tv); its direct
   WAN port forward (6001 -> 32400) is visible only to a firewall-level source.
 - UniFi gateway syslog ([`acquis.d/unifi.yaml`](acquis.d/unifi.yaml), `crowdsecurity/unifi`): the
-  UCG-Max sends remote syslog to `192.168.213.102:5514/udp` (LAN-bound). Logging is enabled
-  on the predefined External -> Gateway and External -> Internal "Block All Traffic" policies,
-  so WAN scans, including probes around the Plex forward (WAN 6001 -> 32400), reach the
-  `iptables-scan-multi_ports` scenario. Upstream's rsyslog relay is needed only for UniFi CEF
-  activity events, which no scenario in the collection uses; they are left unparsed.
+  UCG-Max sends remote syslog (UniFi "SIEM server" mode) to `192.168.213.102:5514/udp`, LAN-bound.
+  UniFi Network 10.6 sends firewall and IPS events only as CEF, and the predefined "Block All
+  Traffic" policies cannot log. A custom UniFi policy, **CrowdSec: log WAN TCP probes**
+  (External -> Gateway, TCP, new connections, Block, Syslog logging), therefore logs the drops
+  the default policy already makes; no TCP is allowed External -> Gateway, so behaviour is unchanged.
+  - [`parsers/quark-unifi-cef-syslog.yaml`](parsers/quark-unifi-cef-syslog.yaml) routes CEF lines
+    from the syslog stream to the hub `crowdsecurity/unifi-cef` parser (upstream instead suggests
+    an rsyslog relay that splits CEF into a `type: cef` file).
+  - [`parsers/quark-unifi-cef-source.yaml`](parsers/quark-unifi-cef-source.yaml) fills the source
+    for CEF 203 "Blocked by Firewall", which carries `UNIFIsrcIp`/`UNIFIsrcClientIp`, not `src`.
+  - [`scenarios/quark-unifi-wan-blocked.yaml`](scenarios/quark-unifi-wan-blocked.yaml): 10+ blocks
+    from one internet source within about 10 minutes. UniFi 10.6 omits ports, so the hub's
+    port-scan scenario cannot fire from UniFi data.
+  - [`scenarios/quark-unifi-ips.yaml`](scenarios/quark-unifi-ips.yaml): any CyberSecure IPS detection.
+  Both are observation-only (`remediation: false`).
 - [`parsers/quark-private-whitelist.yaml`](parsers/quark-private-whitelist.yaml): RFC1918, Docker bridges and the tailnet `100.64.0.0/10` (including IPv4-mapped IPv6 forms) are never alerted on or banned.
 
 Internet clients arrive from Cloudflare Tunnel through the Docker host gateway

@@ -1,0 +1,25 @@
+# UniFi sends CEF events (firewall blocks, IPS) over the same syslog stream as
+# its plain logs. CrowdSec's syslog source re-serialises them as
+# "<ts> <host> CEF: 0|Ubiquiti|...", so this s00 parser (mounted with an "a-"
+# prefix to run before crowdsecurity/unifi-logs) applies the hub cef-logs
+# header grok to type=unifi lines. crowdsecurity/unifi-cef then parses fields.
+name: quark/unifi-cef-syslog
+description: "Route UniFi CEF events received via syslog to the CEF parsers"
+filter: "evt.Line.Labels.type == 'unifi' && evt.Line.Raw contains '|Ubiquiti|UniFi Network|'"
+onsuccess: next_stage
+debug: true
+pattern_syntax:
+  QUARK_CEF_HEADER: '(?:CEF:\s?)?%{INT:cef_version}\|%{DATA:cef_device_vendor}\|%{DATA:cef_device_product}\|%{DATA:cef_device_version}\|%{DATA:cef_signature_id}\|%{DATA:cef_event_name}\|%{INT:cef_severity}'
+nodes:
+  - grok:
+      pattern: '%{QUARK_CEF_HEADER}%{SPACE}\|?%{GREEDYDATA:message}'
+      apply_on: Line.Raw
+statics:
+  - parsed: program
+    expression: evt.Parsed.cef_device_vendor
+  - parsed: logsource
+    value: cef
+  - meta: datasource_path
+    expression: evt.Line.Src
+  - meta: datasource_type
+    expression: evt.Line.Module
