@@ -5,12 +5,17 @@
 # header grok to type=unifi lines. crowdsecurity/unifi-cef then parses fields.
 name: quark/unifi-cef-syslog
 description: "Route UniFi CEF events received via syslog to the CEF parsers"
-filter: "evt.Line.Labels.type == 'unifi' && evt.Line.Raw contains '|Ubiquiti|UniFi Network|'"
+filter: "evt.Line.Labels.type == 'unifi' && (evt.Line.Raw contains '|Ubiquiti|UniFi Network|' || evt.Line.Raw contains '3-Bank-Street 3:')"
 onsuccess: next_stage
 debug: true
 pattern_syntax:
   QUARK_CEF_HEADER: '(?:CEF:\s?)?%{INT:cef_version}\|%{DATA:cef_device_vendor}\|%{DATA:cef_device_product}\|%{DATA:cef_device_version}\|%{DATA:cef_signature_id}\|%{DATA:cef_event_name}\|%{INT:cef_severity}'
 nodes:
+  # TEMPORARY diagnostic: capture one full gateway line in debug output.
+  - filter: "evt.Line.Raw contains '3-Bank-Street 3:'"
+    grok:
+      pattern: '%{GREEDYDATA:diag_raw}'
+      apply_on: Line.Raw
   - grok:
       pattern: '%{QUARK_CEF_HEADER}%{SPACE}\|?%{GREEDYDATA:message}'
       apply_on: Line.Raw
