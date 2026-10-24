@@ -12,7 +12,9 @@ for source in sys.argv[1:]:
         app = model['services']['optimisarr']
         assert {'default', 'arr_stack_brg', 'general_brg'} <= set(app['networks'])
         plex = model['services']['plex']
-        assert [v['source'] for v in plex['volumes'] if v['target'] == '/transcode'] == ['/mnt/services/plex-transcode']
+        transcode = [v for v in plex['volumes'] if v['target'] == '/transcode']
+        assert [v['type'] for v in transcode] == ['tmpfs'], 'Plex transcodes in RAM'
+        assert 0 < int(transcode[0]['tmpfs']['size']) <= 8 * 1024 ** 3, 'RAM transcode must stay capped'
     if 'qbittorrent' in model['services']:
         qbit = model['services']['qbittorrent']
         assert qbit['network_mode'] == 'service:gluetun'
