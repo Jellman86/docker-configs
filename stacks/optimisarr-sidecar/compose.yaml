@@ -4,7 +4,7 @@ name: optimisarr-sidecar
 
 services:
   optimisarr-sidecar:
-    image: ghcr.io/jellman86/optimisarr-sidecar:dev
+    image: ${OPTIMISARR_SIDECAR_IMAGE:-ghcr.io/jellman86/optimisarr-sidecar:dev}
     container_name: optimisarr-sidecar
     restart: unless-stopped
     logging:
