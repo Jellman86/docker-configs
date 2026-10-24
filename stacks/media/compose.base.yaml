@@ -48,11 +48,10 @@ services:
           read_only: true
           bind:
             create_host_path: false
-        - type: bind
-          source: ${MEDIA_PATH:-/mnt/tank/media}/transcode
-          target: /transcode
-          bind:
-            create_host_path: true
+      # Transcode in RAM: Plex's TranscoderTempDirectory is /dev/shm. Capped so a
+      # large download/sync conversion cannot exhaust host memory. Do not use a
+      # tmpfs at an old bind target: Compose recreation inherits the old mount.
+      shm_size: 4gb
       devices:
         - /dev/dri:/dev/dri
       network_mode: host
