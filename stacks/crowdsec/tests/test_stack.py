@@ -65,6 +65,11 @@ class CrowdSecContract(unittest.TestCase):
         self.assertNotIn('debug', parser)
         self.assertFalse((STACK / 'scenarios').exists())
 
+    def test_console_enrollment_is_optional_secret(self):
+        env = self.services['crowdsec']['environment']
+        self.assertEqual(env['ENROLL_KEY'], '${CROWDSEC_ENROLL_KEY:-}')
+        self.assertEqual(env['ENROLL_INSTANCE_NAME'], 'quark')
+
     def test_dashboard_requires_login_and_secret(self):
         ui = self.services['crowdsec-web-ui']
         env = ui['environment']
