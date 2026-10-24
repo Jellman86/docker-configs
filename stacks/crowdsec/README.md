@@ -47,21 +47,19 @@ The only host port is the LAN-bound UniFi syslog listener. The `lapi` subnet is 
   Plex has no sign-in log to parse (authentication happens at plex.tv); its direct
   WAN port forward (6001 -> 32400) is visible only to a firewall-level source.
 - UniFi gateway syslog ([`acquis.d/unifi.yaml`](acquis.d/unifi.yaml), `crowdsecurity/unifi`): the
-  UCG-Max sends remote syslog (UniFi "SIEM server" mode) to `192.168.213.102:5514/udp`, LAN-bound.
-  UniFi Network 10.6 sends firewall and IPS events only as CEF, and the predefined "Block All
-  Traffic" policies cannot log. A custom UniFi policy, **CrowdSec: log WAN TCP probes**
-  (External -> Gateway, TCP, new connections, Block, Syslog logging), therefore logs the drops
-  the default policy already makes; no TCP is allowed External -> Gateway, so behaviour is unchanged.
-  - [`parsers/quark-unifi-cef-syslog.yaml`](parsers/quark-unifi-cef-syslog.yaml) routes CEF lines
-    from the syslog stream to the hub `crowdsecurity/unifi-cef` parser (upstream instead suggests
-    an rsyslog relay that splits CEF into a `type: cef` file).
-  - [`parsers/quark-unifi-cef-source.yaml`](parsers/quark-unifi-cef-source.yaml) fills the source
-    for CEF 203 "Blocked by Firewall", which carries `UNIFIsrcIp`/`UNIFIsrcClientIp`, not `src`.
-  - [`scenarios/quark-unifi-wan-blocked.yaml`](scenarios/quark-unifi-wan-blocked.yaml): 10+ blocks
-    from one internet source within about 10 minutes. UniFi 10.6 omits ports, so the hub's
-    port-scan scenario cannot fire from UniFi data.
-  - [`scenarios/quark-unifi-ips.yaml`](scenarios/quark-unifi-ips.yaml): any CyberSecure IPS detection.
-  Both are observation-only (`remediation: false`).
+  UCG-Max sends remote syslog (UniFi "SIEM server" mode; the console's own copy is then off) to
+  `192.168.213.102:5514/udp`, LAN-bound. The predefined "Block All Traffic" policies are locked and
+  cannot log, so a custom UniFi policy, **CrowdSec: log WAN TCP probes** (External -> Gateway, TCP,
+  new connections, Block, Syslog logging), logs the drops the default policy already makes. No TCP is
+  allowed External -> Gateway, so behaviour is unchanged. Its kernel lines (`[WAN_LOCAL-D-10000] ...
+  SRC= DPT=`) feed the hub `iptables-scan-multi_ports` scenario, and gateway dropbear lines feed `ssh-bf`.
+  - [`parsers/quark-unifi-syslog-host.yaml`](parsers/quark-unifi-syslog-host.yaml): CrowdSec's syslog
+    server reads the leading digits of the gateway hostname `3-Bank-Street` as the RFC3164 tag, so
+    gateway lines arrive as `3-Bank-Street 3: -Bank-Street ...`. This s00 parser re-splits them
+    exactly as `crowdsecurity/unifi-logs` would. Keep it if the gateway is renamed; it only matches
+    the mangled form.
+  - UniFi also emits CEF events (for example 203 "Blocked by Firewall", without ports). No hub
+    scenario uses them, so they are not parsed.
 - [`parsers/quark-private-whitelist.yaml`](parsers/quark-private-whitelist.yaml): RFC1918, Docker bridges and the tailnet `100.64.0.0/10` (including IPv4-mapped IPv6 forms) are never alerted on or banned.
 
 Internet clients arrive from Cloudflare Tunnel through the Docker host gateway
