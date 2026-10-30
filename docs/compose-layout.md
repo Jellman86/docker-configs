@@ -29,7 +29,6 @@ See the [cutover sequence and acceptance](cutover-plan.md).
 | `immich-ml` | `stacks/immich/compose.ml.yaml` | Independently operated Intel inference worker |
 | `optimisarr-sidecar` | `stacks/optimisarr-sidecar/compose.yaml` | Separate development worker and pairing identity |
 | `stirling-pdf` | `stacks/stirling-pdf/compose.yaml` | PDF application |
-| `twenty` | `stacks/twenty/compose.yaml` | Research workbench |
 | `autofpl` (optional) | `stacks/autofpl/compose.yaml` | API and optional analytics job |
 | `monitoring` (optional) | `stacks/monitoring/compose.yaml` | Metrics, exporters and dashboards |
 

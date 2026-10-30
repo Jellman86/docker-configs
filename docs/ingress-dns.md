@@ -75,7 +75,6 @@ lists, certificate assignments, advanced configuration and application settings.
 | `optimisarr` | `http://optimisarr:8787` | Stable service name |
 | `stirling` | `http://stirling-pdf:8080` | Stable service name |
 | `immich` | `http://immich-server:2283` | Preserve upload limits, timeouts and WebSockets |
-| `twenty` | `http://twenty-api:8080` | Intentional network alias |
 
 NPM uses the shared `general_brg` and `npm_proxy_backends` networks. Keep both
 external during a project rename. Do not point a bridge service at a container IP

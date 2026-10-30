@@ -54,7 +54,6 @@ combine entrypoints with `-f` overlays. The separate photo worker uses
 | [optimisarr-sidecar](stacks/optimisarr-sidecar/README.md) | Separate development worker |
 | [stirling-pdf](stacks/stirling-pdf/README.md) | PDF and OCR toolkit |
 | [forgejo](stacks/forgejo/README.md) | Private Git repositories, SQLite and SSH |
-| [twenty](stacks/twenty/README.md) | Private research workbench |
 | [autofpl](stacks/autofpl/README.md) | Optional API and analytics |
 | [monitoring](stacks/monitoring/README.md) | Optional metrics and dashboards |
 
