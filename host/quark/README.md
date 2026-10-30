@@ -73,7 +73,7 @@ state. Archives are under `/mnt/tank/backups/apps`; current evidence is
 `/mnt/services/host/app-backup/status.json`. Limits are three successful archives,
 4 GiB per generation and 20 GiB including working data. Applications remain online.
 
-The current selection includes Forgejo, OpenKnowledge and Twenty persistent data. Remove explicitly retired
+The current selection includes Forgejo and OpenKnowledge persistent data. Twenty was retired on 30 October 2026. Remove explicitly retired
 applications from the configured directory list when decommissioning them; do not
 create empty replacement directories or silently skip missing active application
 state. The backup fails closed when a required directory disappears.
