@@ -285,3 +285,16 @@ All apps share `/data`; do not add remote path mappings for paths already identi
 The Quark variant disables the old Gluetun repair container by profile. The native
 storage guard handles namespace repair and orders qBittorrent/Prowlarr after VPN
 readiness. Never enable both repair owners simultaneously.
+
+## Download and scene-mapping connectivity
+
+Bind qBittorrent's Advanced > Network interface setting to `tun0`, keeping the
+optional address unset. This setting lives in qBittorrent's persistent app config
+and can be changed through its Web API. Automatic interface selection on the
+multi-network Gluetun namespace can choose a bridge address; the VPN firewall
+then rejects tracker and DHT traffic. Keep the firewall enabled.
+
+The Quark Sonarr override uses Cloudflare DNS for external names because the LAN
+DNS filter returns `0.0.0.0` for `thexem.info`. Docker's embedded resolver still
+handles local Compose service names. Scene mappings should resolve and connect
+without adding a fixed CDN address or changing LAN-wide filtering.

@@ -24,6 +24,11 @@ services:
   sonarr:
     extends: {file: compose.base.yaml, service: sonarr}
     restart: "no"
+    # The LAN DNS filter sinkholes thexem.info, breaking scene mappings.
+    # Docker still resolves service names locally; forward external queries here.
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
     networks:
       vpn_stack_brg: {gw_priority: 1}
       npm_proxy_backends: {}
