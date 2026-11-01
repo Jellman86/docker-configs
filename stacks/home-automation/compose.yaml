@@ -6,6 +6,28 @@
 name: home-automation
 
 services:
+  matter-server:
+    image: ghcr.io/matter-js/python-matter-server:stable
+    container_name: matter-server
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - type: bind
+        source: ${MATTER_DATA_PATH:-/mnt/services/docker/matter-server}
+        target: /data
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /run/dbus
+        target: /run/dbus
+        read_only: true
+        bind:
+          create_host_path: false
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 #-----------------------------------------------
   frigate:
     container_name: frigate
