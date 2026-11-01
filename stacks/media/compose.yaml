@@ -7,6 +7,9 @@ services:
   plex:
     extends: {file: compose.base.yaml, service: plex}
     restart: "no"
+  tautulli:
+    extends: {file: compose.base.yaml, service: tautulli}
+    restart: "no"
   jellyfin:
     extends: {file: compose.base.yaml, service: jellyfin}
     restart: "no"

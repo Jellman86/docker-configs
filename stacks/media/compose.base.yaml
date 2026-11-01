@@ -7,6 +7,33 @@
 name: media
 
 services:
+    tautulli:
+      image: lscr.io/linuxserver/tautulli:latest
+      container_name: tautulli
+      restart: unless-stopped
+      environment:
+        - PUID=${PUID:-568}
+        - PGID=${PGID:-568}
+        - TZ=${TZ:-Europe/London}
+      volumes:
+        - type: bind
+          source: ${TAUTULLI_CONFIG_PATH:-/mnt/services/docker/tautulli}
+          target: /config
+          bind:
+            create_host_path: true
+      networks:
+        - general_brg
+      logging:
+        driver: json-file
+        options:
+          max-size: "10m"
+          max-file: "3"
+      healthcheck:
+        test: ["CMD-SHELL", "curl -fsS http://localhost:8181/status >/dev/null || exit 1"]
+        interval: 1m
+        timeout: 10s
+        retries: 3
+        start_period: 1m
 #-----------------------------------------------
     plex:
       image: lscr.io/linuxserver/plex:latest
@@ -194,4 +221,8 @@ networks:
   # Optimisarr joins it without trying to create or manage it.
   arr_stack_brg:
     name: ${ARR_NETWORK:-arr_stack_brg}
+    external: true
+
+  general_brg:
+    name: general_brg
     external: true
