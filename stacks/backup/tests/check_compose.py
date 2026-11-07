@@ -13,7 +13,9 @@ assert set(service['networks']) == {'npm_proxy_backends', 'egress'}
 assert not model['networks']['egress'].get('internal', False)
 assert service['networks']['egress']['gw_priority'] == 1
 mounts = {v['target']: v for v in service['volumes']}
-assert set(mounts) == {'/data', '/source/quark-apps'}
+assert set(mounts) == {'/data', '/source/quark-apps', '/opt/quark-backup-quota-guard'}
+assert mounts['/opt/quark-backup-quota-guard']['read_only']
+assert mounts['/opt/quark-backup-quota-guard']['source'].endswith('/quota-guard.sh')
 assert mounts['/source/quark-apps']['source'] == '/mnt/tank/backups/apps'
 assert mounts['/source/quark-apps']['read_only']
 # Compose v2 omits false values from its rendered JSON; v5 preserves them.

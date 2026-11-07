@@ -27,6 +27,12 @@ services:
         read_only: true
         bind:
           create_host_path: false
+      - type: bind
+        source: ./quota-guard.sh
+        target: /opt/quark-backup-quota-guard
+        read_only: true
+        bind:
+          create_host_path: false
     logging:
       driver: json-file
       options:
