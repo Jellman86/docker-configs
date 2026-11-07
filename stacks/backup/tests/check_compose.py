@@ -9,7 +9,9 @@ assert re.fullmatch(r'duplicati/duplicati:latest@sha256:[0-9a-f]{64}', service['
 assert not service.get('privileged')
 assert service.get('network_mode') != 'host'
 assert not service.get('ports'), 'UI must be reached through NPM only'
-assert set(service['networks']) == {'npm_proxy_backends'}
+assert set(service['networks']) == {'npm_proxy_backends', 'egress'}
+assert not model['networks']['egress'].get('internal', False)
+assert service['networks']['egress']['gw_priority'] == 1
 mounts = {v['target']: v for v in service['volumes']}
 assert set(mounts) == {'/data', '/source/quark-apps'}
 assert mounts['/source/quark-apps']['source'] == '/mnt/tank/backups/apps'
