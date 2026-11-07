@@ -8,8 +8,8 @@ service = model['services']['duplicati']
 assert re.fullmatch(r'duplicati/duplicati:latest@sha256:[0-9a-f]{64}', service['image'])
 assert not service.get('privileged')
 assert service.get('network_mode') != 'host'
-assert len(service['ports']) == 1
-assert service['ports'][0]['host_ip'] == '100.122.27.35'
+assert not service.get('ports'), 'UI must be reached through NPM only'
+assert set(service['networks']) == {'npm_proxy_backends'}
 mounts = {v['target']: v for v in service['volumes']}
 assert set(mounts) == {'/data', '/source/quark-apps'}
 assert mounts['/source/quark-apps']['source'] == '/mnt/tank/backups/apps'

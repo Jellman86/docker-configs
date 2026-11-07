@@ -9,10 +9,9 @@ services:
       TZ: Europe/London
       SETTINGS_ENCRYPTION_KEY: ${DUPLICATI_SETTINGS_KEY:?Set a secret in Dockhand}
       DUPLICATI__WEBSERVICE_PASSWORD: ${DUPLICATI_UI_PASSWORD:?Set a secret in Dockhand}
-      DUPLICATI__WEBSERVICE_ALLOWED_HOSTNAMES: ${DUPLICATI_ALLOWED_HOSTNAMES:-quark.dinosaur-algieba.ts.net}
+      DUPLICATI__WEBSERVICE_ALLOWED_HOSTNAMES: ${DUPLICATI_ALLOWED_HOSTNAMES:-backup.pownet.uk}
       DUPLICATI__WEBSERVICE_INTERFACE: any
-    ports:
-      - '${DUPLICATI_BIND_IP:-100.122.27.35}:8200:8200'
+    networks: [npm_proxy_backends]
     volumes:
       - type: bind
         source: /mnt/services/quark/docker/duplicati
@@ -32,3 +31,7 @@ services:
         max-file: '3'
     mem_limit: 1g
     cpus: 1.0
+
+networks:
+  npm_proxy_backends:
+    external: true

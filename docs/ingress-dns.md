@@ -51,6 +51,7 @@ lists, certificate assignments, advanced configuration and application settings.
 
 | Private URL prefix (`.pownet.uk`) | Backend | Cutover note |
 |---|---|---|
+| `backup` | `http://duplicati:8200` | Private UniFi A record to `.102`; HTTPS via NPM, no published app port |
 | `dockhand` | `http://dockhand:3000` | Stable container/service name |
 | `npm` | `http://npm:81` | Administrative endpoint |
 | `frigate` | `http://frigate:5000` | Current trusted-network, unauthenticated origin policy |

@@ -8,13 +8,13 @@ The only backup source mounted is `/mnt/tank/backups/apps`, read-only at `/sourc
 
 The container runs as root to read the root-only archives, without privileged mode. It only writes its own `/data` directory. Mount creation fails if the source is absent; never create an empty replacement. Check the tank mount and current archive before accepting an upload; a mounted path alone does not prove filesystem health or freshness.
 
-The web UI is bound only to Quark's Tailscale IP, initially `http://100.122.27.35:8200`. Tailscale encrypts transport; this URL is not a public website. Access requires the UI password, stored as secret `DUPLICATI_UI_PASSWORD` in Dockhand. The independent `DUPLICATI_SETTINGS_KEY` encrypts stored credential fields. Neither is the backup decryption passphrase.
+The web UI has no published host port. UniFi private DNS maps `backup.pownet.uk` to `192.168.213.102`; NPM terminates HTTPS and proxies to `duplicati:8200` on `npm_proxy_backends`. No public Cloudflare route is created. Access requires the UI password, stored as secret `DUPLICATI_UI_PASSWORD` in Dockhand. The independent `DUPLICATI_SETTINGS_KEY` encrypts stored credential fields. Neither is the backup decryption passphrase.
 
 ## Deployment
 
 1. Require CI success for the exact Git commit. Create a Dockhand Git stack named `backup`, Compose path `stacks/backup/compose.yaml`, environment Quark. Keep repullImages and forceRedeploy enabled and automatic updates disabled.
 2. Generate and save independent settings/UI secrets in Dockhand's variable store. No database or generated env edits. Confirm `/mnt/tank` is mounted and the source directory exists before deployment.
-3. Sync through `/api/git/stacks/{id}/sync`, verify the exact lastCommit and no syncError, then deploy through `/api/git/stacks/{id}/deploy`. Verify running image digest, mounts and private web access. Do not use Docker CLI lifecycle commands.
+3. Sync through `/api/git/stacks/{id}/sync`, verify the exact lastCommit and no syncError, then deploy through `/api/git/stacks/{id}/deploy`. Verify running image digest, mounts and private HTTPS access through NPM. Add the UniFi static A record and an NPM proxy host with the existing pownet.uk wildcard certificate, SSL forced, HTTP/2 and websocket forwarding. Do not edit unrelated routes. Do not use Docker CLI lifecycle commands.
 4. Sign into the UI and connect personal Microsoft OneDrive via its AuthID authorization flow. This requires the owner's Microsoft sign-in. Do not paste OAuth tokens into Git, logs or chat.
 
 ## Initial job (requires Microsoft authorization)
