@@ -16,7 +16,8 @@ mounts = {v['target']: v for v in service['volumes']}
 assert set(mounts) == {'/data', '/source/quark-apps'}
 from pathlib import Path
 expected_script = (Path(__file__).resolve().parents[1] / 'quota-guard.sh').read_text()
-assert service['environment']['QUARK_QUOTA_GUARD_SCRIPT'] == expected_script
+# Compose config re-escapes literal dollars when serializing the resolved model.
+assert service['environment']['QUARK_QUOTA_GUARD_SCRIPT'].replace('$$', '$') == expected_script
 assert service['command'][:2] == ['/bin/sh', '-ec']
 assert 'exec duplicati-server' in service['command'][2]
 assert mounts['/source/quark-apps']['source'] == '/mnt/tank/backups/apps'
