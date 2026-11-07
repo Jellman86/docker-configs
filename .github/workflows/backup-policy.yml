@@ -1,0 +1,28 @@
+name: Backup policy
+on:
+  push:
+    paths: &paths
+      - stacks/backup/**
+      - .github/workflows/backup-policy.yml
+  pull_request:
+    paths: *paths
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Validate isolated backup service
+        env:
+          DUPLICATI_SETTINGS_KEY: ci-placeholder-settings
+          DUPLICATI_UI_PASSWORD: ci-placeholder-password
+        run: |
+          docker compose -f stacks/backup/compose.yaml config --format json > /tmp/backup-model.json
+          python3 stacks/backup/tests/check_compose.py /tmp/backup-model.json
+      - name: Missing secrets must fail closed
+        run: |
+          if docker compose -f stacks/backup/compose.yaml config --quiet 2>/dev/null; then
+            echo 'Missing secrets unexpectedly accepted'
+            exit 1
+          fi

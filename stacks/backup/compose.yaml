@@ -1,0 +1,34 @@
+# Duplicati reads completed recovery archives; it never controls other containers.
+name: backup
+services:
+  duplicati:
+    image: duplicati/duplicati:latest@sha256:5df64d95abd79ddaa41897a6c234c956d6de03df767a1b8eb8c5baecf3162bbf
+    container_name: duplicati
+    restart: unless-stopped
+    environment:
+      TZ: Europe/London
+      SETTINGS_ENCRYPTION_KEY: ${DUPLICATI_SETTINGS_KEY:?Set a secret in Dockhand}
+      DUPLICATI__WEBSERVICE_PASSWORD: ${DUPLICATI_UI_PASSWORD:?Set a secret in Dockhand}
+      DUPLICATI__WEBSERVICE_ALLOWED_HOSTNAMES: ${DUPLICATI_ALLOWED_HOSTNAMES:-quark.dinosaur-algieba.ts.net}
+      DUPLICATI__WEBSERVICE_INTERFACE: any
+    ports:
+      - '${DUPLICATI_BIND_IP:-100.122.27.35}:8200:8200'
+    volumes:
+      - type: bind
+        source: /mnt/services/quark/docker/duplicati
+        target: /data
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /mnt/tank/backups/apps
+        target: /source/quark-apps
+        read_only: true
+        bind:
+          create_host_path: false
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    mem_limit: 1g
+    cpus: 1.0
