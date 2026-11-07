@@ -1,0 +1,8 @@
+{
+  "total_offsite_bytes": 200000000000,
+  "allocations": {
+    "quark-app-recovery": 100000000000,
+    "croftview-reserved": 100000000000
+  },
+  "units": "decimal bytes; budgets include temporary upload/compaction headroom"
+}

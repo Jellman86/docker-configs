@@ -26,3 +26,5 @@ jobs:
             echo 'Missing secrets unexpectedly accepted'
             exit 1
           fi
+      - name: Test budget guard and shared allocations
+        run: python3 -m unittest discover -s stacks/backup/tests -v
