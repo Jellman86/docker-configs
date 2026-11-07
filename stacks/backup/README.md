@@ -8,7 +8,7 @@ The only backup source mounted is `/mnt/tank/backups/apps`, read-only at `/sourc
 
 The container runs as root to read the root-only archives, without privileged mode. It only writes its own `/data` directory. Mount creation fails if the source is absent; never create an empty replacement. Check the tank mount and current archive before accepting an upload; a mounted path alone does not prove filesystem health or freshness.
 
-The web UI has no published host port. UniFi private DNS maps `backup.pownet.uk` to `192.168.213.102`; NPM terminates HTTPS and proxies to `duplicati:8200` on `npm_proxy_backends`. No public Cloudflare route is created. Access requires the UI password, stored as secret `DUPLICATI_UI_PASSWORD` in Dockhand. The independent `DUPLICATI_SETTINGS_KEY` encrypts stored credential fields. Neither is the backup decryption passphrase.
+The web UI has no published host port. UniFi private DNS maps `backup.pownet.uk` to `192.168.213.102`; NPM terminates HTTPS and proxies to `duplicati:8200` on `npm_proxy_backends`. No public Cloudflare route is created. A dedicated egress bridge gives Duplicati access to Microsoft and its OAuth service; the existing NPM backend network is internal and cannot provide that access alone. Access requires the UI password, stored as secret `DUPLICATI_UI_PASSWORD` in Dockhand. The independent `DUPLICATI_SETTINGS_KEY` encrypts stored credential fields. Neither is the backup decryption passphrase.
 
 ## Deployment
 

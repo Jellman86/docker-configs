@@ -11,7 +11,10 @@ services:
       DUPLICATI__WEBSERVICE_PASSWORD: ${DUPLICATI_UI_PASSWORD:?Set a secret in Dockhand}
       DUPLICATI__WEBSERVICE_ALLOWED_HOSTNAMES: ${DUPLICATI_ALLOWED_HOSTNAMES:-backup.pownet.uk}
       DUPLICATI__WEBSERVICE_INTERFACE: any
-    networks: [npm_proxy_backends]
+    networks:
+      npm_proxy_backends: {}
+      egress:
+        gw_priority: 1
     volumes:
       - type: bind
         source: /mnt/services/quark/docker/duplicati
@@ -35,3 +38,4 @@ services:
 networks:
   npm_proxy_backends:
     external: true
+  egress: {}
