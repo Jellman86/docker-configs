@@ -1,33 +1,24 @@
-# Optimisarr Linux sidecar — Quark dev
+# Optimisarr Linux development worker
 
-Deployment entrypoint: [`compose.yaml`](compose.yaml). See the [deployment map](../../docs/compose-layout.md) and [cutover sequence](../../docs/cutover-plan.md) before changing a live project.
+Git-backed Dockhand entrypoint: [compose.yaml](compose.yaml). The worker is being moved from Quark to Boothby, preserving worker 5's existing pairing. [Migration runbook](migration-boothby.md) records the sequence, rollback and verification. Do not run both hosts with the copied identity.
 
-A dedicated Git-backed Dockhand stack for testing the development worker on
-Quark's Intel GPU. The image reuses Optimisarr's Linux media runtime and shared
-worker engine. Its dashboard is at `https://optimisarr-sidecar.pownet.uk` once
-the private UniFi DNS and NPM proxy route are configured.
+## Explicit host settings
 
-## Dockhand configuration
+- Repository `Jellman86/docker-configs`, branch `main`, stack `optimisarr-sidecar`, Compose path `stacks/optimisarr-sidecar/compose.yaml`.
+- Set `OPTIMISARR_REPLICAS=1` only on the active host; the default is zero. Retired Quark keeps `0` so a sync/deploy cannot start its copied identity.
+- Boothby: `OPTIMISARR_BIND_IP=192.168.213.103`. Quark rollback requires `.102`. The default binds loopback.
+- For migration, pin `OPTIMISARR_SIDECAR_IMAGE` to the exact source image digest. Upgrade separately after successful cutover and successful image CI/publication.
+- `OPTIMISARR_SERVER` must exactly match the saved pairing server address; the current address is `https://optimisarr.pownet.uk` and is reachable from Boothby.
+- Leave `OPTIMISARR_PAIRING_CODE` unset for migration. First-time pairing is a different operation and must not replace the existing identity.
+- `OPTIMISARR_WORKER_NAME` describes a new pairing only; the existing server worker may retain its original name until renamed through a supported app control.
+- Enable repull images and forced recreation; leave automatic updates disabled during migration/testing. Resolve environment and stack IDs from the Dockhand API before deployment.
 
-- Repository: `Jellman86/docker-configs`, branch `main`.
-- Compose path: `stacks/optimisarr-sidecar/compose.yaml`.
-- Stack name: `optimisarr-sidecar`; environment: Quark.
-- Enable **Repull images**. Keep scheduled updates disabled during testing.
-- First deployment: generate a code in the main Optimisarr server's Workers
-  settings. Store `OPTIMISARR_PAIRING_CODE` as an encrypted stack variable, sync
-  the Git stack, then deploy it through Dockhand. Remove the consumed code from
-  the variable store after pairing. The named config volume retains identity.
-- For later updates, wait for the Optimisarr dev CI/image publication, then sync
-  and deploy through Dockhand. Never deploy a failed or still-building image.
+The external volume is deliberately named `optimisarr_sidecar_sidecar-config`. On Boothby, provision it through Dockhand's volume API using the local driver and bind device `/mnt/services/docker/optimisarr-sidecar/config`, type `none`, option `bind`. This keeps state on the data SSD. Create that directory with UID/GID 1000 and `container_file_t` SELinux context before starting the worker; restore the protected config while the Quark instance is stopped. Never mount the same identity on two running hosts.
 
-The dashboard is read-only. Manage scheduling, draining and pairing on the main
-server. Port 8788 binds only to Quark's private address. NPM should forward the
-private hostname to `192.168.213.102:8788` using the existing wildcard TLS cert.
+The read-only dashboard remains `https://optimisarr-sidecar.pownet.uk`; UniFi resolves it to Quark's NPM and the proxy upstream changes to `.103:8788` at cutover. Manage pairing, scheduling and drain/resume through the main server.
 
-`/work` is a bounded 4 GiB tmpfs, not a media-library mount. The container has a
-6 GiB memory limit and no swap allowance, leaving host RAM for other services.
-There is one job slot. Jobs require space for both source and candidate; larger
-jobs are declined safely. Working files disappear on recreation; the worker
-hands leases back during its 45-second shutdown window. Pairing persists.
+## Resource and recovery limits
 
-No library directories or Docker socket are mounted into this worker.
+There is one job slot, a bounded 4 GiB RAM `/work`, a 256 MiB `/tmp`, and a 6 GiB container memory limit with no swap allowance. RAM scratch counts against that limit. Jobs need room for source plus candidate; overlarge jobs are declined rather than spilling into business storage. No media library or Docker socket is mounted. Pass `/dev/dri` for Intel capability probing and verify actual encoder availability before resuming claims.
+
+The worker retains its 45-second shutdown grace, but drain and wait for zero leases/jobs before stopping it. The old volume remains a protected rollback copy; it does not protect future changes on Boothby. Until Boothby backup automation includes this directory, take and retain a separate protected recovery copy of the pairing/config and document that coverage gap.
