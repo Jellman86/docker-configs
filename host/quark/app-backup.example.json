@@ -53,6 +53,7 @@
     "/mnt/services/docker/pms/Library/Application Support/Plex Media Server/Plug-in Support/Databases/com.plexapp.plugins.library*.db",
     "/var/lib/tailscale/tailscaled.state",
     "/etc/sysctl.d/99-quark-tailscale.conf",
+    "/etc/sysctl.d/99-quark-docker-bind.conf",
     "/etc/systemd/system/tailscaled.service.d/10-quark-gro.conf",
     "/etc/cockpit/cockpit.conf",
     "/etc/systemd/system/quark-media-health.service",

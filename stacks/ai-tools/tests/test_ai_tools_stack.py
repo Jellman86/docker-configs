@@ -63,6 +63,11 @@ class AiToolsPolicyTests(unittest.TestCase):
             self.assertIn("@sha256:", image, name)
             self.assertNotIn(":latest@", image, name)
 
+    def test_openknowledge_clears_a_stale_lock_before_starting(self) -> None:
+        script = (ROOT / "openknowledge" / "entrypoint.sh").read_text()
+        self.assertLess(script.index("rm -f /data/.ok/local/server.lock"),
+                        script.index("exec ok start"))
+
     def test_playwright_browser_stays_isolated(self) -> None:
         service = self.services["playwright-mcp"]
         self.assertEqual(

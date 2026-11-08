@@ -9,4 +9,7 @@ then
   echo "[entrypoint] /data is not initialized. Running ok init --no-mcp --no-skills"
   ok init --no-mcp --no-skills < /dev/null
 fi
+# This container is the only server for /data. A lock left by a stop or reboot
+# can name the PID the new server gets, and the server then refuses to start.
+rm -f /data/.ok/local/server.lock
 exec ok start
