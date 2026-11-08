@@ -1,4 +1,4 @@
-# Quark development worker. Deploy through its Git-backed Dockhand stack.
+# Development worker. One active host per pairing; deploy through Dockhand.
 # Stable deployment identity; Dockhand uses the same stack name.
 name: optimisarr-sidecar
 
@@ -7,6 +7,9 @@ services:
     image: ${OPTIMISARR_SIDECAR_IMAGE:-ghcr.io/jellman86/optimisarr-sidecar:dev}
     container_name: optimisarr-sidecar
     restart: unless-stopped
+    # Explicit activation prevents a retired host from starting the shared identity.
+    deploy:
+      replicas: ${OPTIMISARR_REPLICAS:-0}
     logging:
       driver: json-file
       options:
@@ -19,13 +22,13 @@ services:
       OPTIMISARR_SERVER: ${OPTIMISARR_SERVER:-https://optimisarr.pownet.uk}
       # Store the one-use code as a secret in Dockhand, never in Git.
       OPTIMISARR_PAIRING_CODE: ${OPTIMISARR_PAIRING_CODE:-}
-      OPTIMISARR_WORKER_NAME: Quark Linux dev
+      OPTIMISARR_WORKER_NAME: ${OPTIMISARR_WORKER_NAME:-Linux dev}
       OPTIMISARR_CONCURRENCY: "1"
       PUID: "1000"
       PGID: "1000"
       TZ: Europe/London
     ports:
-      - "192.168.213.102:8788:8788"
+      - "${OPTIMISARR_BIND_IP:-127.0.0.1}:8788:8788"
     devices:
       - /dev/dri:/dev/dri
     # Pairing identity/config must survive recreation; nightly recovery explicitly
