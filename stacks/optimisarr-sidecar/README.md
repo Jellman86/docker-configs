@@ -1,6 +1,6 @@
 # Optimisarr Linux development worker
 
-Git-backed Dockhand entrypoint: [compose.yaml](compose.yaml). The worker is being moved from Quark to Boothby, preserving worker 5's existing pairing. [Migration runbook](migration-boothby.md) records the sequence, rollback and verification. Do not run both hosts with the copied identity.
+Git-backed Dockhand entrypoint: [compose.yaml](compose.yaml). The worker moved from Quark to Boothby on 8 November 2026, preserving worker 5's existing pairing. [Migration runbook](migration-boothby.md) records the sequence, rollback and verification. Do not run both hosts with the copied identity.
 
 ## Explicit host settings
 
@@ -15,7 +15,7 @@ Git-backed Dockhand entrypoint: [compose.yaml](compose.yaml). The worker is bein
 
 The external volume is deliberately named `optimisarr_sidecar_sidecar-config`. On Boothby, provision it through Dockhand's volume API using the local driver and bind device `/mnt/services/docker/optimisarr-sidecar/config`, type `none`, option `bind`. This keeps state on the data SSD. Create that directory with UID/GID 1000 and `container_file_t` SELinux context before starting the worker; restore the protected config while the Quark instance is stopped. Never mount the same identity on two running hosts.
 
-The read-only dashboard remains `https://optimisarr-sidecar.pownet.uk`; UniFi resolves it to Quark's NPM and the proxy upstream changes to `.103:8788` at cutover. Manage pairing, scheduling and drain/resume through the main server.
+The read-only dashboard remains `https://optimisarr-sidecar.pownet.uk`; UniFi resolves it to `.103`; Boothby's own NPMplus forwards HTTPS to `.103:8788`. Quark's old proxy remains a fallback. Manage pairing, scheduling and drain/resume through the main server.
 
 ## Resource and recovery limits
 
