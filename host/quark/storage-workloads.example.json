@@ -13,6 +13,7 @@
     {"name": "stirling-pdf"},
     {"name": "plex"},
     {"name": "jellyfin"},
+    {"name": "tautulli"},
     {"name": "radarr"},
     {"name": "sonarr"},
     {"name": "cleanuparr"},
@@ -25,7 +26,7 @@
   ],
   "stop_order": [
     "gluetun-guard", "stirling-pdf", "cleanuparr", "seerr", "radarr", "sonarr", "prowlarr",
-    "byparr", "qbittorrent", "gluetun", "plex", "jellyfin", "immich-server",
+    "byparr", "qbittorrent", "gluetun", "tautulli", "plex", "jellyfin", "immich-server",
     "immich-database", "immich-redis", "optimisarr"
   ]
 }

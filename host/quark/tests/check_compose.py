@@ -3,11 +3,15 @@ import json
 from pathlib import Path
 import sys
 
+guard = json.loads((Path(__file__).parents[1] / 'storage-workloads.example.json').read_text())
+guard_started = {item['name'] for item in guard['start_order']}
+
 for source in sys.argv[1:]:
     model = json.loads(Path(source).read_text())
     for name, service in model['services'].items():
         assert service['restart'] == 'no', (name, 'unsafe restart policy')
         assert service.get('image'), (name, 'extends lost base service')
+        assert name in guard_started and name in guard['stop_order'], (name, 'no restart policy and not in the storage guard')
     if 'optimisarr' in model['services']:
         app = model['services']['optimisarr']
         assert {'default', 'arr_stack_brg', 'general_brg'} <= set(app['networks'])

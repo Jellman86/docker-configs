@@ -47,7 +47,21 @@ undone by the enabled guard. The guard does not deploy containers, repair disks,
 reset errors or make a failing USB adapter safe. Operator deployments must also
 check storage before they start applications.
 
+Every `restart: "no"` service must appear in both `start_order` and `stop_order`, or it
+stays down after a reboot. CI checks the example file; make the same change in
+`/etc/quark-storage-workloads.json`. The guard reads that file only when it starts,
+and restarting the guard stops the applications, so an edit takes effect at the next boot.
+
 The old Gluetun repair job is profile-gated manual tooling, not a running watchdog.
+
+## Address-bound ports
+
+Forgejo SSH, CrowdSec syslog, Immich machine learning and Gluetun's control port
+publish on `192.168.213.102`. Install `99-quark-docker-bind.conf` in `/etc/sysctl.d/`
+so Docker can bind them before that address exists. Without it, a late link or a
+switch port on the wrong VLAN makes those containers fail at boot, and they can
+return on a later boot with no networks attached. A Dockhand deploy of the stack
+recreates them.
 Only normal Git/CI/Dockhand deployment may perform a required recreation.
 
 ## Routine checks
