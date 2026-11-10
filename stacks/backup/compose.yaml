@@ -80,21 +80,30 @@ services:
           onedrivev2://QuarkBackups/croftview\?*) ;;
           *) fail 'unexpected destination; budget allocation required' ;;
         esac
-        # Croftview's hourly GrowLog dumps, copied from Boothby; Quark's receiver keeps at most 168.
-        # Reserve twice the whole 12 GiB nursery envelope, regardless of the current smaller source.
+        # Croftview's files on Quark's receiver: hourly GrowLog (Quark keeps 168), WordPress and Authentik dumps
+        # (48 each) and nightly Boothby captures (3). Reserve twice the whole 16 GiB nursery envelope.
         source=/source/croftview
-        count=0
         total=0
-        for file in "$$source"/growlog-????????T??????Z.dump; do
-          [ -e "$$file" ] || continue
-          [ -f "$$file" ] && [ ! -L "$$file" ] || fail 'unsafe source artifact'
-          size=$$(stat -c %s "$$file") || fail 'source size unavailable'
-          [ "$$size" -gt 0 ] && [ "$$size" -le 1073741824 ] || fail 'a dump exceeds the 1 GiB envelope'
-          count=$$((count + 1))
-          total=$$((total + size))
-        done
-        [ "$$count" -gt 0 ] && [ "$$count" -le 200 ] || fail 'expected one to 200 completed dumps'
-        [ "$$total" -le 12884901888 ] || fail 'source exceeds the 12 GiB nursery envelope'
+        check() { # pattern, most files, largest file in bytes, description
+          count=0
+          for file in "$$source"/$$1; do
+            [ -e "$$file" ] || continue
+            [ -f "$$file" ] && [ ! -L "$$file" ] || fail 'unsafe source artifact'
+            size=$$(stat -c %s "$$file") || fail 'source size unavailable'
+            [ "$$size" -gt 0 ] && [ "$$size" -le "$$3" ] || fail "a $$4 file is outside its size envelope"
+            count=$$((count + 1))
+            total=$$((total + size))
+          done
+          [ "$$count" -le "$$2" ] || fail "more than $$2 $$4 files"
+          found=$$((found + count))
+        }
+        found=0
+        check 'growlog-????????T??????Z.dump' 200 1073741824 GrowLog
+        check 'wordpress-????????T??????Z.sql.gz' 60 1073741824 WordPress
+        check 'authentik-????????T??????Z.dump' 60 1073741824 Authentik
+        check 'boothby-????????T??????Z.tar.gz' 3 4294967296 'Boothby capture'
+        [ "$$found" -gt 0 ] || fail 'no completed backups to send'
+        [ "$$total" -le 17179869184 ] || fail 'source exceeds the 16 GiB nursery envelope'
         listing=$$(mktemp)
         trap 'rm -f "$$listing"' EXIT HUP INT TERM
         # Capture errors privately: backend errors can contain the authenticated URL.
@@ -122,7 +131,7 @@ services:
         # Compaction can temporarily duplicate old remote blocks. Also reserve twice
         # the maximum new source and 1 GiB for encrypted volume/index/manifest overhead.
         # This intentionally stops well before the nominal allocation becomes full.
-        projected=$$((2 * remote + 2 * 12884901888 + 1073741824))
+        projected=$$((2 * remote + 2 * 17179869184 + 1073741824))
         [ "$$projected" -le 100000000000 ] || fail '100 GB Croftview allocation would be exceeded including headroom; existing backups preserved'
         echo "Storage budget guard passed: conservative remote bytes=$$remote; peak bound=$$projected; allocation=100000000000"
       TZ: Europe/London

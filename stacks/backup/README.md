@@ -40,11 +40,11 @@ Export the job configuration with credentials only as an encrypted recovery arti
 ## Croftview nursery job
 
 - Name: `Croftview nursery offsite`, a separate job with its own passphrase and OneDrive folder `QuarkBackups/croftview`, reusing the same Microsoft authorization.
-- Source: `/source/croftview/`, include only `growlog-????????T??????Z.dump`; everything else is excluded.
+- Source: `/source/croftview/`, include only GrowLog dumps (`growlog-…Z.dump`), WordPress dumps (`wordpress-…Z.sql.gz`), Authentik dumps (`authentik-…Z.dump`) and nightly Boothby captures (`boothby-…Z.tar.gz`); everything else is excluded.
 - Schedule: hourly at 40 minutes past, after Boothby's copy at 20 past. Retention 14 days.
 - Required preflight: `run-script-before-required=/opt/croftview-backup-quota-guard`, `run-script-timeout=5m`, and quota-size 100,000,000,000 bytes for warnings.
-- The guard refuses the Quark destination, more than 200 dumps, any dump over 1 GiB or more than 12 GiB in all, and any write that could take the folder past the 100 GB Croftview allocation including headroom.
-- WordPress and Authentik captures are not yet copied to Quark, so they aren't covered. Add each to the include rules and the guard's envelope when they arrive.
+- The guard refuses the Quark destination, more than 200 GrowLog, 60 WordPress, 60 Authentik or 3 capture files, any dump over 1 GiB or capture over 4 GiB, more than 16 GiB in all, and any write that could take the folder past the 100 GB Croftview allocation including headroom.
+- Boothby's `host/boothby/backups.sh` (croftview-infrastructure) makes the WordPress and Authentik dump folders, the nightly capture and their hourly copy to Quark.
 
 ## References
 
