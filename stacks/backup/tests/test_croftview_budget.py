@@ -48,6 +48,21 @@ class CroftviewBudgetTests(unittest.TestCase):
         self.assertNotEqual(result.returncode,0)
         self.assertNotIn('test-only',result.stdout+result.stderr)
 
+    def test_every_nursery_set_is_allowed(self):
+        for name in ('wordpress-20261110T160000Z.sql.gz', 'authentik-20261110T160000Z.dump', 'boothby-20261110T023000Z.tar.gz'):
+            (self.source/name).write_bytes(b'fixture')
+        self.assertEqual(self.run_guard().returncode,0)
+
+    def test_too_many_captures_refused(self):
+        for day in range(1,5):
+            (self.source/f'boothby-202611{day:02d}T023000Z.tar.gz').write_bytes(b'x')
+        self.assertNotEqual(self.run_guard().returncode,0)
+
+    def test_oversized_capture_refused(self):
+        with (self.source/'boothby-20261110T023000Z.tar.gz').open('wb') as stream:
+            stream.truncate(4294967297)
+        self.assertNotEqual(self.run_guard().returncode,0)
+
     def test_no_dumps_refused(self):
         (self.source/DUMP).unlink()
         self.assertNotEqual(self.run_guard().returncode,0)
