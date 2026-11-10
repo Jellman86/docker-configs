@@ -4,7 +4,7 @@ Duplicati's free open-source client provides a web UI, scheduler, encrypted vers
 
 ## Scope and access
 
-The only backup source mounted is `/mnt/tank/backups/apps`, read-only at `/source/quark-apps`. These are Quark's existing nightly application recovery archives. They exclude media, original photos, VM disks and developer state. This does not mean the whole host is backed up. No Docker socket or live application databases are mounted.
+Two backup sources are mounted, both read-only. `/mnt/tank/backups/apps`, at `/source/quark-apps`, holds Quark's existing nightly application recovery archives. `/mnt/tank/backups/croftview/incoming`, at `/source/croftview`, holds the Croftview nursery's GrowLog database dumps, which Boothby copies to Quark's restricted SFTP receiver every hour. They exclude media, original photos, VM disks and developer state. This does not mean the whole host is backed up. No Docker socket or live application databases are mounted.
 
 The container runs as root to read the root-only archives, without privileged mode. It only writes its own `/data` directory. Mount creation fails if the source is absent; never create an empty replacement. Check the tank mount and current archive before accepting an upload; a mounted path alone does not prove filesystem health or freshness.
 
@@ -37,7 +37,14 @@ Compare a restored archive's SHA-256 against the original and inspect its manife
 
 Export the job configuration with credentials only as an encrypted recovery artifact outside Git. Preserve the settings key and UI password separately if retaining a copy of `/data`; an online filesystem copy of its SQLite files is not a consistent database backup. The remote backup and passphrase must permit a direct restore without `/data`.
 
-Croftview backup capture is a later separate job/repository scope, after ERPNext runs and complete database/files/config sets reach Quark. Do not add a missing/empty placeholder directory now.
+## Croftview nursery job
+
+- Name: `Croftview nursery offsite`, a separate job with its own passphrase and OneDrive folder `QuarkBackups/croftview`, reusing the same Microsoft authorization.
+- Source: `/source/croftview/`, include only `growlog-????????T??????Z.dump`; everything else is excluded.
+- Schedule: hourly at 40 minutes past, after Boothby's copy at 20 past. Retention 14 days.
+- Required preflight: `run-script-before-required=/opt/croftview-backup-quota-guard`, `run-script-timeout=5m`, and quota-size 100,000,000,000 bytes for warnings.
+- The guard refuses the Quark destination, more than 200 dumps, any dump over 1 GiB or more than 12 GiB in all, and any write that could take the folder past the 100 GB Croftview allocation including headroom.
+- WordPress and Authentik captures are not yet copied to Quark, so they aren't covered. Add each to the include rules and the guard's envelope when they arrive.
 
 ## References
 
@@ -51,4 +58,4 @@ The total live off-site backup budget is **200,000,000,000 bytes (200 decimal GB
 
 Duplicati quota-size only warns and does not stop uploads. Set `run-script-before-required=/opt/quark-backup-quota-guard` and `run-script-timeout=5m` on the Quark job; the startup wrapper installs the exact Git-backed preflight from Compose configuration without a host-side script bind (Dockhand runs in a different filesystem namespace). The required preflight inventories the actual destination and fails closed on listing/parse errors, unexpected subfolders or sources exceeding the existing three-by-4-GiB envelope. It conservatively reserves duplicate remote space for compaction, twice the maximum new source and 1 GiB for metadata/encryption overhead. It can stop a job well before 100 GB of retained data. Existing backups are preserved when refused; retention remains 14 days. Read-only restore/list/test operations remain possible.
 
-This is a conservative job preflight, not a Microsoft account/folder quota or an upload-intercepting storage gateway. Its bound assumes Duplicati is the only writer to its dedicated folder, the source producer keeps its existing bounded archives, and job behavior is not changed to add unbounded files/uploads. Microsoft recycle-bin/version-history accounting is outside the live-object budget. New Croftview jobs must receive their own guard within the reserved 100 GB before enabling a schedule. Do not raise allocations beyond the shared total.
+This is a conservative job preflight, not a Microsoft account/folder quota or an upload-intercepting storage gateway. Its bound assumes Duplicati is the only writer to its dedicated folder, the source producer keeps its existing bounded archives, and job behavior is not changed to add unbounded files/uploads. Microsoft recycle-bin/version-history accounting is outside the live-object budget. The Croftview job has its own guard within the reserved 100 GB; any further Croftview job must too, before a schedule is enabled. Do not raise allocations beyond the shared total.

@@ -13,17 +13,22 @@ assert set(service['networks']) == {'npm_proxy_backends', 'egress'}
 assert not model['networks']['egress'].get('internal', False)
 assert service['networks']['egress']['gw_priority'] == 1
 mounts = {v['target']: v for v in service['volumes']}
-assert set(mounts) == {'/data', '/source/quark-apps'}
+assert set(mounts) == {'/data', '/source/quark-apps', '/source/croftview'}
 from pathlib import Path
-expected_script = (Path(__file__).resolve().parents[1] / 'quota-guard.sh').read_text()
+here = Path(__file__).resolve().parents[1]
 # Compose config re-escapes literal dollars when serializing the resolved model.
-assert service['environment']['QUARK_QUOTA_GUARD_SCRIPT'].replace('$$', '$') == expected_script
+assert service['environment']['QUARK_QUOTA_GUARD_SCRIPT'].replace('$$', '$') == (here / 'quota-guard.sh').read_text()
+assert service['environment']['CROFTVIEW_QUOTA_GUARD_SCRIPT'].replace('$$', '$') == (here / 'croftview-guard.sh').read_text()
 assert service['command'][:2] == ['/bin/sh', '-ec']
 assert 'exec duplicati-server' in service['command'][2]
+assert '/opt/croftview-backup-quota-guard' in service['command'][2]
 assert mounts['/source/quark-apps']['source'] == '/mnt/tank/backups/apps'
 assert mounts['/source/quark-apps']['read_only']
 # Compose v2 omits false values from its rendered JSON; v5 preserves them.
 assert not mounts['/source/quark-apps'].get('bind', {}).get('create_host_path', False)
+assert mounts['/source/croftview']['source'] == '/mnt/tank/backups/croftview/incoming'
+assert mounts['/source/croftview']['read_only']
+assert not mounts['/source/croftview'].get('bind', {}).get('create_host_path', False)
 assert mounts['/data']['source'] == '/mnt/services/quark/docker/duplicati'
 assert service['logging']['options'] == {'max-size': '10m', 'max-file': '3'}
 assert service['environment']['SETTINGS_ENCRYPTION_KEY']
