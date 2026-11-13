@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Start existing migrated containers through Dockhand only with verified mounts."""
 import argparse
+import datetime
 import json
 from pathlib import Path
 import signal
@@ -10,8 +11,19 @@ import urllib.parse
 import urllib.request
 
 
-def mounted_storage(config, run=subprocess.check_output):
+def degraded_allowance(storage, today):
+    """A temporary, dated allowance to run a Btrfs mirror on named surviving members only."""
+    allowance = storage.get('degraded')
+    if not allowance:
+        return None
+    if today > datetime.date.fromisoformat(allowance['until']):
+        return None
+    return set(allowance['serials'])
+
+
+def mounted_storage(config, run=subprocess.check_output, today=None):
     """Match actual mount UUIDs and all underlying hardware, not directory existence."""
+    today = today or datetime.date.today()
     tree = json.loads(run(['lsblk', '-J', '-o', 'NAME,TYPE,UUID,SERIAL'], text=True))
     members = {}
 
@@ -33,18 +45,22 @@ def mounted_storage(config, run=subprocess.check_output):
             storage['mount'], storage['fstype'], storage['uuid']
         ):
             return False
-        if members.get(storage['uuid'], set()) != set(storage['serials']):
+        degraded = degraded_allowance(storage, today) if storage['fstype'] == 'btrfs' else None
+        if frozenset(members.get(storage['uuid'], set())) not in ({frozenset(storage['serials'])} | ({frozenset(degraded)} if degraded else set())):
             return False
         if 'rw' not in found.get('options', '').split(','):
             return False
         if storage['fstype'] == 'btrfs':
             layout = run(['btrfs', 'filesystem', 'show', storage['mount']], text=True)
-            if 'missing' in layout.lower():
+            if 'missing' in layout.lower() and not degraded:
                 return False
             usage = run(['btrfs', 'filesystem', 'usage', '-b', storage['mount']], text=True)
             profiles = [line.split(':', 1)[0].strip() for line in usage.splitlines()
                         if line.startswith(('Data,', 'Metadata,', 'System,'))]
-            if sorted(profiles) != ['Data,RAID1', 'Metadata,RAID1', 'System,RAID1']:
+            # Writes made while degraded land in single chunks until the mirror is rebuilt and balanced.
+            allowed = {'RAID1', 'single'} if degraded else {'RAID1'}
+            kinds = {profile.split(',', 1)[0] for profile in profiles}
+            if kinds != {'Data', 'Metadata', 'System'} or any(profile.split(',', 1)[1] not in allowed for profile in profiles):
                 return False
             run(['btrfs', 'device', 'stats', '-c', storage['mount']], text=True)
     return True
