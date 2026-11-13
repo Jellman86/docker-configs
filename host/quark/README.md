@@ -40,6 +40,14 @@ entrypoints use `restart: "no"`; the guard verifies mounts, RAID profiles, membe
 and error counters before starting existing containers through Dockhand. It also
 orders healthy dependencies and handles a lost VPN namespace.
 
+A Btrfs storage entry may carry a temporary `"degraded": {"serials": [...], "until": "YYYY-MM-DD"}`
+allowance while a failed mirror member awaits replacement. Until the end of that day the
+guard accepts a degraded mount whose only members are the named surviving drives, and
+single chunks written meanwhile; UUID, read-write, metadata and error-counter checks still
+apply. Remove the allowance once the mirror is rebuilt (`btrfs replace`, then a soft
+`balance` converting single chunks back to RAID1, then a scrub). Nothing written while
+degraded has a second copy.
+
 Keep `/etc/quark-storage-workloads.enabled` present during normal operation.
 **Stopping the guard or removing that marker stops the guarded applications.**
 Do not use either merely to inspect health. A manual stop in Dockhand can be

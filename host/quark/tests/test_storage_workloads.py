@@ -59,6 +59,46 @@ class StorageTests(unittest.TestCase):
         self.usage = self.usage.replace('Metadata,RAID1', 'Metadata,DUP')
         self.assertFalse(self.ready())
 
+    def degrade(self, until='2026-11-27'):
+        self.config['storage'][0]['degraded'] = {'serials': ['second'], 'until': until}
+        self.tree['blockdevices'].pop(0)
+        self.mount['options'] = 'rw,degraded,relatime'
+        self.layout += '\n devid 1 size 0 used 0 path  MISSING'
+        self.usage += '\nData,single: Size: 1'
+
+    def ready_on(self, day):
+        return MODULE.mounted_storage(self.config, run=self.run_command, today=MODULE.datetime.date.fromisoformat(day))
+
+    def test_degraded_member_allowed_until_expiry(self):
+        self.degrade()
+        self.assertTrue(self.ready_on('2026-11-27'))
+
+    def test_degraded_allowance_expires(self):
+        self.degrade()
+        self.assertFalse(self.ready_on('2026-11-28'))
+
+    def test_degraded_without_allowance(self):
+        self.degrade()
+        del self.config['storage'][0]['degraded']
+        self.assertFalse(self.ready_on('2026-11-20'))
+
+    def test_degraded_allowance_names_the_surviving_drive(self):
+        self.degrade()
+        self.tree['blockdevices'][0]['serial'] = 'first'
+        self.assertFalse(self.ready_on('2026-11-20'))
+
+    def test_degraded_still_refuses_dup_and_errors(self):
+        self.degrade()
+        self.usage = self.usage.replace('Metadata,RAID1', 'Metadata,DUP')
+        self.assertFalse(self.ready_on('2026-11-20'))
+        self.usage = self.usage.replace('Metadata,DUP', 'Metadata,RAID1')
+        self.device_error = True
+        with self.assertRaises(RuntimeError): self.ready_on('2026-11-20')
+
+    def test_full_mirror_still_accepted_with_allowance(self):
+        self.config['storage'][0]['degraded'] = {'serials': ['second'], 'until': '2026-11-27'}
+        self.assertTrue(self.ready_on('2026-11-20'))
+
     def test_device_errors_fail_closed(self):
         self.device_error = True
         with self.assertRaises(RuntimeError): self.ready()
