@@ -7,7 +7,7 @@ belong on the server and in Dockhand's encrypted variable store.
 **Current state, 15 November 2026:** the normalized layout is live and accepted across
 12 Dockhand stacks and 30 running service containers after the owner-authorised
 retirement of Home Assistant and its Matter server. Canonical NPM targets and private
-DNS checks pass. The previous automatic Git schedules are restored. Private Forgejo and native T3 Code have NPM/UniFi routes; T3 also has private tailnet HTTPS. The separate
+DNS checks pass. The previous automatic Git schedules are restored. Private Forgejo and native T3 Code have NPM/UniFi routes; native T3 recovery has a tested Mac SSH tunnel over Tailscale. The separate
 independent USB backup remains incomplete after recurrent transport errors; its
 partial copy is preserved and the spare is unmounted pending investigation.
 
