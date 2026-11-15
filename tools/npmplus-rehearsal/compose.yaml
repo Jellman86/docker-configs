@@ -23,7 +23,7 @@ services:
     security_opt:
     - no-new-privileges:true
     mem_limit: 1536m
-    pids_limit: 1024
+    pids_limit: 4096
     environment:
       TZ: Europe/London
       PUID: '1000'

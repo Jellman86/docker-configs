@@ -43,7 +43,8 @@ def proxy(container, restart, ports, data, extra_env):
         'entrypoint': ['tini', '--', 'sh', '-c', 'node /npmplus-prestart.cjs && exec entrypoint.sh'],
         'cap_drop': ['ALL'],
         'cap_add': ['NET_BIND_SERVICE', 'SETGID', 'SETUID', 'CHOWN', 'FOWNER', 'DAC_OVERRIDE'],
-        'security_opt': ['no-new-privileges:true'], 'mem_limit': '1536m', 'pids_limit': 1024,
+        'security_opt': ['no-new-privileges:true'], # Reloads briefly run old and new workers, each with thread pools; 1024 was exhausted.
+        'mem_limit': '1536m', 'pids_limit': 4096,
         'environment': environment, 'ports': ports,
         'networks': {'general_brg': {'ipv4_address': PROXY_IP}, 'npm_proxy_backends': {}, 'crowdsec_api': {}},
         'volumes': [{'type': 'bind', 'source': data, 'target': '/data', 'bind': {'create_host_path': False}}],
