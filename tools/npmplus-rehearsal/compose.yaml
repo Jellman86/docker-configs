@@ -30,11 +30,6 @@ services:
         target: /data
         bind:
           create_host_path: false
-      - type: bind
-        source: ${NPMPLUS_REHEARSAL_ROOT:?Set to the isolated private copy}/letsencrypt
-        target: /etc/letsencrypt
-        bind:
-          create_host_path: false
     healthcheck:
       test: [CMD, curl, --insecure, --fail, --silent, https://127.0.0.1:81/]
       interval: 15s

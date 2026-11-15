@@ -9,6 +9,12 @@ owner's developer SSD. Use SQLite's backup API for the live database, preserve
 file identities, and verify certificate files do not change during capture. Do
 not bind the original state directories. Do not commit state or credentials.
 
+First deploy `compose.migrate.yaml` to import the copied legacy certificate tree.
+When upstream reports that import complete, switch the same Dockhand Git record
+to `compose.yaml` and sync/deploy again; the old letsencrypt mount must be absent
+before upstream continues its database migration. Never deploy both entrypoints
+as separate workloads against the same copy.
+
 Deploy only through Git, passing CI and Dockhand in Quark environment 1, with
 automatic sync/deploy disabled. Set `NPMPLUS_REHEARSAL_ROOT` to that isolated copy
 and `NPMPLUS_REHEARSAL_COOKIE_SECRET` as an encrypted Dockhand variable. Host port
