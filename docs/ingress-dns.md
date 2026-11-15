@@ -57,7 +57,7 @@ lists, certificate assignments, advanced configuration and application settings.
 | `frigate` | `http://frigate:5000` | Current trusted-network, unauthenticated origin policy |
 | `birdnet` | `http://birdnet-go:8080` | Stable service name |
 | `yawamf` | `http://yawamf:8080` | Canonical target accepted; old bridge alias retained for clients |
-| `homeassistant` | `http://192.168.213.102:8123` | Host endpoint accepted; no bridge IP dependency |
+| `homeassistant` | retired 2026-11-15 | Proxy and UniFi static DNS removed with Home Assistant and its Matter server |
 | `openviking` | retired 2026-10-18 | Proxy host and DNS removed with the service; see ai-tools README |
 | `openknowledge` | `http://openknowledge:8080` | No auth (private network only, owner decision); preserve Host/`X-Forwarded-Proto`, WebSockets, unbuffered `/mcp` |
 | `searxng` | `http://searxng:8080` | No auth (private network only); JSON format enabled for agents |

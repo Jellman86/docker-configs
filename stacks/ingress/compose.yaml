@@ -1,5 +1,5 @@
-# Active Quark ingress. NPM reaches bridge apps by service name; Plex/Jellyfin,
-# Cockpit and Home Assistant use their documented host endpoints instead.
+# Active Quark ingress. NPM reaches bridge apps by service name; Plex/Jellyfin
+# and Cockpit use their documented host endpoints instead.
 # Remotely managed Tunnel ingress lives in Cloudflare, not this Compose file.
 # TLS origin validation stays enabled; token is an encrypted Dockhand variable.
 # https://nginxproxymanager.com/setup/

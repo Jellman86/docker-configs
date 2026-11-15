@@ -4,8 +4,9 @@ Docker Compose applications and native host configuration for Quark, the Fedora
 server. This repository describes deployment; live application data and secrets
 belong on the server and in Dockhand's encrypted variable store.
 
-**Current state, 18 October:** the normalized layout is live and accepted across
-12 Dockhand stacks and 32 running containers. Canonical NPM targets and private
+**Current state, 15 November 2026:** the normalized layout is live and accepted across
+12 Dockhand stacks and 30 running service containers after the owner-authorised
+retirement of Home Assistant and its Matter server. Canonical NPM targets and private
 DNS checks pass. The previous automatic Git schedules are restored. Private Forgejo and native T3 Code have NPM/UniFi routes; T3 also has private tailnet HTTPS. The separate
 independent USB backup remains incomplete after recurrent transport errors; its
 partial copy is preserved and the spare is unmounted pending investigation.
@@ -46,7 +47,7 @@ combine entrypoints with `-f` overlays. The separate photo worker uses
 | [management](stacks/management/README.md) | Dockhand control plane |
 | [ingress](stacks/ingress/README.md) | Nginx Proxy Manager and Cloudflare Tunnel |
 | [crowdsec](stacks/crowdsec/README.md) | CrowdSec detection on NPM, media-app and UniFi logs (CrowdSec Console) |
-| [home-automation](stacks/home-automation/README.md) | Cameras, bird detection, MQTT and Home Assistant |
+| [home-automation](stacks/home-automation/README.md) | Cameras, bird detection and MQTT |
 | [ai-tools](stacks/ai-tools/README.md) | OpenKnowledge, Playwright browser MCP and SearXNG |
 | [arr](stacks/arr/README.md) | VPN, downloads, indexers and media requests |
 | [media](stacks/media/README.md) | Plex, Jellyfin and Optimisarr |

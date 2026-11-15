@@ -1,8 +1,8 @@
-# Home automation
+# Cameras and bird inference
 
 Deployment entrypoint: [`compose.yaml`](compose.yaml). See the [deployment map](../../docs/compose-layout.md) and [cutover sequence](../../docs/cutover-plan.md) before changing a live project.
 
-Git-backed Dockhand stack for local video security, audio classification, MQTT, inference aggregation, and Home Assistant on Quark.
+Git-backed Dockhand stack for local video security, audio classification, MQTT and inference aggregation on Quark.
 
 Shared AI support services are deployed as a separate stack; see [`ai-tools/README.md`](../ai-tools/README.md).
 
@@ -12,9 +12,8 @@ Shared AI support services are deployed as a separate stack; see [`ai-tools/READ
 |---|---|---|
 | `frigate` | Camera NVR, object detection, RTSP restream, and WebRTC | `8971`, `8554`, `8555/tcp`, `8555/udp` |
 | `birdnet-go` | Bird-audio classification | `${BN_WEBPORT:-8080}` |
-| `mosquitto` | Authenticated MQTT broker for stack-local messaging | `127.0.0.1:1883` (host loopback only, for Home Assistant) |
+| `mosquitto` | Authenticated MQTT broker for stack-local messaging | `127.0.0.1:1883` (private host diagnostics) |
 | `yawamf` | Frigate/BirdNET event aggregation and Intel inference | `9852` → container `8080` |
-| `homeassistant` | Home automation and discovery | Host network; normally `8123` |
 
 ## Host and hardware requirements
 
@@ -23,7 +22,6 @@ Shared AI support services are deployed as a separate stack; see [`ai-tools/READ
 - External network: `general_brg`.
 - Intel GPU: `/dev/dri`, with `${RENDER_GID:-105}`.
 - Intel NPU: `/dev/accel/accel0` for Frigate and YA-WAMF.
-- Home Assistant uses host networking, privileged mode, and read-only D-Bus access for discovery/integrations.
 - Frigate receives a 1 GiB shared-memory allocation and a 1 GB tmpfs cache.
 
 Verify device nodes, ownership, and inference-provider compatibility before changing hardware mappings or runtime images.
@@ -40,7 +38,6 @@ Verify device nodes, ownership, and inference-provider compatibility before chan
 | `${DOCKERCONFIGPATH}/mosquitto/{config,data,log}` | MQTT configuration, persistence, and logs |
 | `${DOCKERCONFIGPATH}/yawamf/{config,data}` | YA-WAMF configuration and state |
 | `${SECURITY_EXPORT_PATH}/YA-WAMF/captures` | YA-WAMF retained captures |
-| `${DOCKERCONFIGPATH}/homeassistant/config` | Home Assistant configuration/database |
 
 Defaults are rooted at `/mnt/apps/docker` and `/mnt/apps/security_inference_stack`. Keep SQLite-heavy configuration local to Quark; use NAS-backed storage only for exports/backups where appropriate.
 
@@ -62,10 +59,9 @@ Store credentials in Dockhand's encrypted variables. Never commit camera, MQTT, 
 
 ## Service relationships
 
-- Mosquitto creates an authenticated listener on `general_brg` but publishes port 1883 only on host loopback for Home Assistant.
+- Mosquitto creates an authenticated listener on `general_brg`; host port 1883 stays loopback-only for diagnostics.
 - Frigate and BirdNET publish observations that YA-WAMF correlates.
 - YA-WAMF defaults to the `intel_npu` provider on Quark but keeps the setting overridable for validated comparisons.
-- Home Assistant is lifecycle-independent from the shared AI tools stack.
 
 ## Deployment and updates
 
@@ -77,8 +73,7 @@ After deployment, verify:
 2. BirdNET health, audio inputs, MQTT publication, and plausible classification rate.
 3. Mosquitto authentication and persistence without exposing credentials in logs.
 4. YA-WAMF `/health`, provider activation, Frigate connectivity, and capture paths.
-5. Home Assistant availability, configuration validity, discovery, and integration health.
-6. Export paths have adequate space and expected retention.
+5. Export paths have adequate space and expected retention.
 
 ## Rollback and recovery
 
@@ -87,13 +82,22 @@ Revert the relevant Git/image/configuration change, push, and redeploy through D
 ## Security and safety notes
 
 - Frigate uses elevated capabilities and hardware access; do not broaden them without a specific requirement.
-- Home Assistant is privileged and host-networked. Treat its token, configuration, and integrations as sensitive.
 - Keep MQTT authenticated and private.
 - Camera streams and exported clips are sensitive data; protect host paths and backups.
 - Validate NPU/GPU support before making the selected provider authoritative.
 
 Deploy as `home-automation`. Frigate, BirdNET-Go and YA-WAMF share the MQTT broker
-and application integrations; Home Assistant uses the same broker over loopback.
+and application integrations.
 AI support tools have their own independent `ai-tools` stack. Existing bind
 paths remain unchanged. The YA-WAMF container is `yawamf`; its old bridge alias
 `yawamf-monalithic` is retained for existing proxy/client configuration.
+
+
+## Home Assistant retirement, 15 November 2026
+
+The owner retired Home Assistant on Quark and requested no configuration backup.
+Its dedicated Matter server was also removed; Frigate, BirdNET-Go, Mosquitto and
+YA-WAMF remain active under the existing stack identity. The Home Assistant NPM
+proxy and UniFi static DNS entry are removed, and its configuration is excluded
+from future app captures. The retired application state is deleted without a new
+backup. Existing historical backup generations retain their normal retention.

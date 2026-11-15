@@ -17,7 +17,6 @@
     "/mnt/services/docker/jellyfin",
     "/mnt/services/quark/docker/dockhand",
     "/mnt/services/quark/docker/nginx-proxy-manager",
-    "/mnt/services/quark/docker/homeassistant/config",
     "/mnt/services/quark/docker/frigate/config",
     "/mnt/services/quark/docker/yawamf/config",
     "/mnt/services/quark/docker/yawamf/data",

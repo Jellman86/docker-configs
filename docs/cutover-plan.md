@@ -17,7 +17,8 @@ claimed verified and will not be retried automatically.
   synchronization was verified to preserve container IDs/start times.
 - The original sidecar pairing volume and Immich ML cache are retained, and all
   five application aliases resolve to the added SSD. No application data was removed.
-- NPM targets `yawamf:8080` and Quark `.102:8123` for Home Assistant. Nginx validation
+- NPM targets `yawamf:8080`. Home Assistant and its dedicated Matter server were
+  retired on 15 November 2026, with the Home Assistant proxy/DNS removed. Nginx validation
   passes. All 24 private service records resolve to Quark and return valid TLS/HTTP
   responses, including expected authentication responses.
 - The stale `devenv` record is removed. Riker's inactive reservation/local DNS are
