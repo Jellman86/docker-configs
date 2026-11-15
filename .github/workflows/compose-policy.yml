@@ -1,9 +1,9 @@
 name: All Compose contracts
 on:
   push:
-    paths: ['**/*.yml', '**/*.yaml', '**/*.yaml.local', 'scripts/**', '**/tests/**']
+    paths: ['**/*.yml', '**/*.yaml', '**/*.yaml.local', '**/*.cjs', 'scripts/**', '**/tests/**']
   pull_request:
-    paths: ['**/*.yml', '**/*.yaml', '**/*.yaml.local', 'scripts/**', '**/tests/**']
+    paths: ['**/*.yml', '**/*.yaml', '**/*.yaml.local', '**/*.cjs', 'scripts/**', '**/tests/**']
 permissions:
   contents: read
 jobs:
@@ -17,6 +17,8 @@ jobs:
       - run: pip install PyYAML==6.0.2
       - name: Render all manifests and check log retention and one-shot jobs
         run: python scripts/validate-compose.py
+      - run: python scripts/build-npmplus.py --check
+      - run: python -m unittest discover -s stacks/ingress/tests -v
       - run: python -m unittest discover -s stacks/media/tests -v
       - run: python -m unittest discover -s stacks/autofpl/tests -v
       - run: python -m unittest discover -s stacks/forgejo/tests -v

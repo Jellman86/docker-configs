@@ -1,4 +1,5 @@
-# CrowdSec security engine (observation only). It reads NPM and media-app
+# CrowdSec security engine and private API for the NPMplus HTTP bouncer. It reads
+# both proxy formats during cutover, alongside media-app
 # logs read-only, so ingress is never recreated by a CrowdSec update, and
 # receives UniFi syslog on the LAN. The dashboard is the hosted CrowdSec
 # Console (app.crowdsec.net); there is no self-hosted UI.
@@ -9,7 +10,7 @@ name: crowdsec
 services:
   crowdsec:
     # Agent + Local API. Hub collections are installed/upgraded at start.
-    image: crowdsecurity/crowdsec:latest
+    image: crowdsecurity/crowdsec:v1.8.2@sha256:65b74942f7e7ed5c60fde4ac15fc4ba715904c398c8b16dd451f4907d90347d4
     container_name: crowdsec
     restart: unless-stopped
     environment:
@@ -19,9 +20,11 @@ services:
       ENROLL_KEY: ${CROWDSEC_ENROLL_KEY:-}
       ENROLL_INSTANCE_NAME: quark
       ENROLL_TAGS: quark homelab
+      BOUNCER_KEY_quark_npmplus: ${CROWDSEC_BOUNCER_KEY:?Set as a Dockhand secret}
       # Observation of private media apps' sign-in failures; see README.
       COLLECTIONS: >-
         crowdsecurity/nginx-proxy-manager
+        ZoeyVid/npmplus
         crowdsecurity/whitelist-good-actors
         LePresidente/jellyfin
         LePresidente/overseerr
@@ -46,6 +49,12 @@ services:
       - type: bind
         source: /mnt/services/quark/docker/nginx-proxy-manager/data/logs
         target: /var/log/npm
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${NPMPLUS_LOG_PATH:-/mnt/services/quark/docker/npmplus/nginx/logs}
+        target: /var/log/npmplus
         read_only: true
         bind:
           create_host_path: false
@@ -94,7 +103,10 @@ services:
       - ./config.yaml.local:/etc/crowdsec/config.yaml.local:ro
     ports:
       # UniFi remote syslog from the UCG-Max. LAN address only, never WAN/tailnet.
-      - "192.168.213.102:5514:5514/udp"
+      - "${QUARK_LAN_IP:-192.168.213.102}:5514:5514/udp"
+    networks:
+      - default
+      - api
     security_opt:
       - no-new-privileges:true
     pids_limit: 256
@@ -111,3 +123,9 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+networks:
+  default: {}
+  api:
+    name: quark-crowdsec-api
+    internal: true

@@ -30,8 +30,11 @@ jobs:
           FRIGATE_RTSP_PASSWORD: ci-placeholder
           BN_LAT: "0"
           BN_LONG: "0"
+          NPMPLUS_COOKIE_SECRET: ci-placeholder
+          CROWDSEC_BOUNCER_KEY: ci-placeholder
+          NPMPLUS_ACME_EMAIL: ci-placeholder
         run: |
-          for source in stacks/management/compose.yaml tools/dockhand-maintenance/compose.yaml stacks/ingress/compose.yaml stacks/home-automation/compose.yaml stacks/optimisarr-sidecar/compose.yaml stacks/media/compose.yaml; do
+          for source in stacks/management/compose.yaml stacks/ingress/compose.rollback.yaml tools/dockhand-maintenance/compose.yaml stacks/ingress/compose.yaml stacks/home-automation/compose.yaml stacks/optimisarr-sidecar/compose.yaml stacks/media/compose.yaml; do
             docker compose -f "$source" config --format json > /tmp/logging-model.json
             python - "$source" <<'PY'
           import json, re, sys

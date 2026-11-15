@@ -14,11 +14,12 @@ class CrowdSecContract(unittest.TestCase):
         self.engine = self.services['crowdsec']
         self.binds = {m.split(':')[0]: m.split(':')[1] for m in self.engine['volumes'] if isinstance(m, str)}
 
-    def test_engine_only_with_lan_syslog_port(self):
+    def test_api_stays_private_with_only_lan_syslog_published(self):
         self.assertEqual(set(self.services), {'crowdsec'})
-        self.assertEqual(self.engine['ports'], ['192.168.213.102:5514:5514/udp'])
-        self.assertNotIn('networks', self.engine)
-        self.assertNotIn('networks', self.compose)
+        self.assertEqual(self.engine['ports'], ['${QUARK_LAN_IP:-192.168.213.102}:5514:5514/udp'])
+        self.assertEqual(self.engine['networks'], ['default', 'api'])
+        self.assertTrue(self.compose['networks']['api']['internal'])
+        self.assertEqual(self.compose['networks']['api']['name'], 'quark-crowdsec-api')
 
     def test_npm_logs_are_read_only(self):
         mounts = {v['target']: v for v in self.engine['volumes'] if isinstance(v, dict)}
@@ -29,6 +30,19 @@ class CrowdSecContract(unittest.TestCase):
         acquis = yaml.safe_load((STACK / 'acquis.d/npm.yaml').read_text())
         self.assertEqual(acquis['labels']['type'], 'nginx-proxy-manager')
         self.assertTrue(all(f.startswith('/var/log/npm/') for f in acquis['filenames']))
+
+    def test_npmplus_detection_and_bouncer_use_supported_private_contracts(self):
+        mounts = {v['target']: v for v in self.engine['volumes'] if isinstance(v, dict)}
+        logs = mounts['/var/log/npmplus']
+        self.assertTrue(logs['read_only'])
+        self.assertFalse(logs['bind']['create_host_path'])
+        acquis = yaml.safe_load((STACK / 'acquis.d/npmplus.yaml').read_text())
+        self.assertEqual(acquis['labels']['type'], 'npmplus')
+        self.assertTrue(acquis['force_inotify'])
+        self.assertEqual(acquis['filenames'], ['/var/log/npmplus/access.log', '/var/log/npmplus/error.log'])
+        self.assertIn('ZoeyVid/npmplus', self.engine['environment']['COLLECTIONS'])
+        self.assertEqual(self.engine['environment']['BOUNCER_KEY_quark_npmplus'],
+                         '${CROWDSEC_BOUNCER_KEY:?Set as a Dockhand secret}')
 
     def test_app_logs_are_read_only_log_directories(self):
         mounts = [v for v in self.engine['volumes']
