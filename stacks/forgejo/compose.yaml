@@ -57,7 +57,7 @@ services:
     ports:
       # LAN endpoint is also reachable through Quark's approved tailnet subnet route.
       # Port 22 remains the host SSH server. No router/public Tunnel rule is added.
-      - "192.168.213.102:2222:2222"
+      - "192.168.110.102:2222:2222"
     networks:
       - general_brg
     security_opt:

@@ -13,7 +13,7 @@ Keep `quark.pownet.uk` for SSH, SMB and host administration. Avoid new
 until they can be deliberately retired.
 
 ```text
-Private client -> UniFi DNS -> Quark 192.168.213.102:443 -> NPM -> application
+Private client -> UniFi DNS -> Quark 192.168.110.102:443 -> NPM -> application
 Public client  -> Cloudflare Access/Tunnel -> existing NPM origin -> application
 Tailscale      -> native host/subnet routing -> the same private service endpoints
 ```
@@ -27,7 +27,7 @@ and application-specific proxy settings when changing a backend.
 ## UniFi findings and intended records
 
 After retiring the stale development entry, 24 enabled static A records point
-to `192.168.213.102`. Quark has an active fixed-IP reservation for that address.
+to `192.168.110.102`. Quark has an active fixed-IP reservation for that address.
 Existing A records are adequate for this home lab; converting them all to CNAMEs
 would add cutover work without fixing the naming issue.
 
@@ -63,15 +63,15 @@ lists, certificate assignments, advanced configuration and application settings.
 | `searxng` | `http://searxng:8080` | No auth (private network only); JSON format enabled for agents |
 | `hermes` | retired 2026-10-18 | Proxy host and DNS removed with the service; see ai-tools README |
 | `playwright-mcp` | `http://playwright-mcp:8931` | Preserve NPM access list and application allow-list |
-| `optimisarr-sidecar` | `http://192.168.213.102:8788` | Existing host-bound endpoint |
-| `cockpit` | `https://192.168.213.102:9090` | Native host service; preserve TLS/origin settings |
+| `optimisarr-sidecar` | `http://192.168.110.102:8788` | Existing host-bound endpoint |
+| `cockpit` | `https://192.168.110.102:9090` | Native host service; preserve TLS/origin settings |
 | `sonarr` | `http://sonarr:8989` | Preserve allowed hosts and app authentication |
 | `radarr` | `http://radarr:7878` | Preserve allowed hosts and app authentication |
 | `prowlarr` | `http://prowlarr:9696` | Preserve allowed hosts and app authentication |
 | `seerr` | `http://seerr:5055` | Includes existing public and Overseerr aliases |
 | `torrents` | `http://gluetun:8081` | qBittorrent shares the VPN namespace |
-| `plex` | `http://192.168.213.102:32400` | Host networking |
-| `jellyfin` | `http://192.168.213.102:8096` | Host networking |
+| `plex` | `http://192.168.110.102:32400` | Host networking |
+| `jellyfin` | `http://192.168.110.102:8096` | Host networking |
 | `cleanuparr` | `http://cleanuparr:11011` | Stable service name |
 | `optimisarr` | `http://optimisarr:8787` | Stable service name |
 | `stirling` | `http://stirling-pdf:8080` | Stable service name |
@@ -121,7 +121,7 @@ the self-hosted `crowdsec.pownet.uk` route was retired on 24 October 2026.
 
 ## Private Git hosting
 
-`git.pownet.uk` resolves privately to `192.168.213.102`. NPM forwards HTTPS to `forgejo:3000` on `general_brg`; Forgejo SSH uses `.102:2222`. Tailnet clients use the existing approved LAN subnet route. No public Cloudflare Tunnel or WAN port forward is added. See the [Forgejo stack](../stacks/forgejo/README.md).
+`git.pownet.uk` resolves privately to `192.168.110.102`. NPM forwards HTTPS to `forgejo:3000` on `general_brg`; Forgejo SSH uses `.102:2222`. Tailnet clients use the existing approved LAN subnet route. No public Cloudflare Tunnel or WAN port forward is added. See the [Forgejo stack](../stacks/forgejo/README.md).
 
 ## Native T3 Code
 

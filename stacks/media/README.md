@@ -6,7 +6,7 @@ Git-backed Dockhand stack for Plex and Jellyfin playback plus Optimisarr media o
 
 ## Current Quark deployment
 
-This stack runs on Quark (`192.168.213.102`).
+This stack runs on Quark (`192.168.110.102`).
 Use `stacks/media/compose.yaml`; Plex and Jellyfin proxy
 backends are Quark host ports 32400 and 8096.
 Configs use `/mnt/services/docker`; photos/media remain on `/mnt/tank`.
@@ -41,9 +41,9 @@ Confirm the iGPU device and host render-group ID before deployment to a new host
 
 Jellyfin is available to trusted-network clients at
 `https://jellyfin.pownet.uk`. UniFi provides a private A record to Quark
-(`192.168.213.102`), where Nginx Proxy Manager terminates the managed
+(`192.168.110.102`), where Nginx Proxy Manager terminates the managed
 `*.pownet.uk` certificate and proxies HTTP/WebSocket traffic to
-`192.168.213.102:8096`.
+`192.168.110.102:8096`.
 
 This hostname is intentionally private-LAN ingress. Do not add a public DNS
 record or Cloudflare Tunnel route without a separate exposure and

@@ -93,7 +93,7 @@ https://openknowledge.pownet.uk/        (editor)
 https://openknowledge.pownet.uk/mcp     (agents)
 ```
 
-Its private URL host resolves via UniFi to Quark at `192.168.213.102`. Do not
+Its private URL host resolves via UniFi to Quark at `192.168.110.102`. Do not
 add a public DNS record or Cloudflare Tunnel route. The application has no
 login of its own; reachability on the private LAN/Tailscale is the boundary,
 accepted for this home lab service. NPM must preserve the client `Host`, set
