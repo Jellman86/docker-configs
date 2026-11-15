@@ -1,5 +1,5 @@
 # One-time offline compatibility test. Never point these binds at production.
-name: quark-npmplus-rehearsal
+name: npmplus-rehearsal
 
 services:
   npmplus:
