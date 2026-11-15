@@ -6,29 +6,6 @@
 name: home-automation
 
 services:
-  matter-server:
-    image: ghcr.io/matter-js/python-matter-server:stable
-    container_name: matter-server
-    restart: unless-stopped
-    network_mode: host
-    volumes:
-      - type: bind
-        source: ${MATTER_DATA_PATH:-/mnt/services/docker/matter-server}
-        target: /data
-        bind:
-          create_host_path: true
-      - type: bind
-        source: /run/dbus
-        target: /run/dbus
-        read_only: true
-        bind:
-          create_host_path: false
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-#-----------------------------------------------
   frigate:
     container_name: frigate
     restart: unless-stopped
@@ -198,9 +175,8 @@ services:
       - MQTT_PASSWORD=${MQTT_PASSWORD:?MQTT_PASSWORD is required}
     networks:
       - general_brg
-    # Home Assistant runs with network_mode: host, so it cannot use the
-    # container name and the bridge IP changes on every recreate. Publish the
-    # broker on the host loopback only; nothing on the LAN can reach it.
+    # Keep host diagnostics private; application clients use general_brg.
+    # No MQTT listener is published to the LAN.
     ports:
       - "127.0.0.1:1883:1883"
     volumes:
@@ -290,41 +266,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-#-----------------------------------------------
-  # Upstream Container setup uses host networking and D-Bus for discovery.
-  # Privileged mode is deliberate here; this is not a confined untrusted workload.
-  # https://www.home-assistant.io/installation/linux#install-home-assistant-container
-  homeassistant:
-    image: ghcr.io/home-assistant/home-assistant:stable
-    container_name: homeassistant
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    privileged: true
-    network_mode: host
-    environment:
-      - TZ=${TZ:-Europe/London}
-    volumes:
-      - type: bind
-        source: ${DOCKERCONFIGPATH:-/mnt/apps/docker}/homeassistant/config
-        target: /config
-        bind:
-          create_host_path: true
-      - type: bind
-        source: /etc/localtime
-        target: /etc/localtime
-        read_only: true
-        bind:
-          create_host_path: false
-      - type: bind
-        source: /run/dbus
-        target: /run/dbus
-        read_only: true
-        bind:
-          create_host_path: false
 #-----------------------------------------------
 networks:
     general_brg:
