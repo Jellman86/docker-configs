@@ -38,6 +38,7 @@ class CrowdSecContract(unittest.TestCase):
         self.assertFalse(logs['bind']['create_host_path'])
         acquis = yaml.safe_load((STACK / 'acquis.d/npmplus.yaml').read_text())
         self.assertEqual(acquis['labels']['type'], 'npmplus')
+        self.assertTrue(acquis['force_inotify'])
         self.assertEqual(acquis['filenames'], ['/var/log/npmplus/access.log', '/var/log/npmplus/error.log'])
         self.assertIn('ZoeyVid/npmplus', self.engine['environment']['COLLECTIONS'])
         self.assertEqual(self.engine['environment']['BOUNCER_KEY_quark_npmplus'],

@@ -17,6 +17,6 @@ after acceptance. Lifecycle uses Git, passing CI and Dockhand only.
 
 Prerequisites: fresh protected state, CrowdSec private API network and bouncer
 registration, and encrypted Dockhand administrator/cookie/bouncer variables.
-Issue one classic-profile certificate for *.pownet.uk plus quark.pownet.uk and
+Issue one classic-profile certificate for *.pownet.uk plus pownet.uk and
 carry that same state into production. Preserve the original proxy/state for
 independently tested rollback. No application secrets belong in Git.

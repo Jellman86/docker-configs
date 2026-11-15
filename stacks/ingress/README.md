@@ -26,7 +26,9 @@ for rollback.
   certificate validation. Only the two tunnel hosts (YA-WAMF, Seerr) trust
   `CF-Connecting-IP`, and only from `172.18.254.11`. `TRUST_CLOUDFLARE=false`.
 - Certificate: one Let's Encrypt classic-profile certificate for
-  `*.pownet.uk` and `quark.pownet.uk` via Cloudflare DNS, renewed by NPMplus.
+  `*.pownet.uk` and `pownet.uk` (Let's Encrypt rejects a name already covered by
+  the wildcard; the apex keeps the set distinct from Boothby's `*.pownet.uk`), via
+  Cloudflare DNS, renewed by NPMplus.
 - Dockhand variables: `NPMPLUS_COOKIE_SECRET`, `CROWDSEC_BOUNCER_KEY` (both
   secret, the bouncer key also in the `crowdsec` project), `NPMPLUS_ACME_EMAIL`,
   plus the existing `TUNNEL_TOKEN`, `PUID`, `PGID`, `TZ`, `DOCKERCONFIGPATH`.

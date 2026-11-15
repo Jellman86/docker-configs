@@ -1,5 +1,7 @@
 # NPMplus's supported shared log format. Keep the old NPM source for rollback.
 source: file
+# NPMplus creates these after CrowdSec may have started; keep watching the directory.
+force_inotify: true
 filenames:
   - /var/log/npmplus/access.log
   - /var/log/npmplus/error.log
