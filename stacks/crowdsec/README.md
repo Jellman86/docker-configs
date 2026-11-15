@@ -129,3 +129,17 @@ but community UniFi bouncers are unverified on Network 10.
 Revert the Git change and redeploy, or stop the stack through Dockhand; NPM is unaffected.
 To undo the UniFi side, delete the custom policy and restore `rsyslogd` from the saved JSON.
 Removing the real-IP block from an NPM proxy host only returns its logs to the gateway address.
+
+## NPMplus bouncer (15 November 2026)
+
+The engine now also serves the Local API to the NPMplus Lua bouncer over the
+internal network `quark-crowdsec-api` (no published port; 8080 and AppSec 7422
+are never exposed). `BOUNCER_KEY_quark_npmplus` registers the bouncer from the
+encrypted Dockhand variable `CROWDSEC_BOUNCER_KEY`, shared with project
+`ingress`. NPMplus logs (`/data/nginx/logs`, collection `ZoeyVid/npmplus`) are
+read from `NPMPLUS_LOG_PATH`; the directory must exist before deploying. The
+original NPM acquisition stays for rollback. Syslog binds `QUARK_LAN_IP`
+(default `192.168.213.102`); set it to `192.168.110.102` after the farm move.
+There is no host firewall bouncer: Plex WAN 6001 and Forgejo SSH 2222 are not
+covered by enforcement. Seerr/Jellyfin login parsers see proxy addresses for
+LAN clients (trustProxy off / no known proxies), a known detection limit.

@@ -1,0 +1,8 @@
+# NPMplus's supported shared log format. Keep the old NPM source for rollback.
+source: file
+filenames:
+  - /var/log/npmplus/access.log
+  - /var/log/npmplus/error.log
+labels:
+  type: npmplus
+transform: "(!(evt.Line.Raw contains 'buffered to a temporary file')) ? [evt.Line.Raw] : []"
