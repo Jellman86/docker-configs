@@ -3,7 +3,7 @@ name: npmplus-rehearsal
 
 services:
   npmplus:
-    image: ghcr.io/zoeyvid/npmplus:2026-10-22-r1@sha256:244fbf14f0c8bfb969434bfacba14ba71f8eee9911a2466035e640d64e594178
+    image: ghcr.io/zoeyvid/npmplus:develop@sha256:3c64dab8089f66dac4a1b66787fb9f3d0e74384a8c867e2c21a6a9522f5cc36e
     container_name: quark-npmplus-rehearsal
     restart: "no"
     # No egress: copied DNS credentials cannot issue or renew real certificates.

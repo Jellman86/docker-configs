@@ -1,8 +1,12 @@
 # Offline NPMplus migration rehearsal
 
 One-time compatibility test of a consistent copy of Quark's original NPM state.
-The source NPM is 2.17.0; the pinned stable fork is based on 2.15.1. Migration must
-succeed without editing migration history or touching the original database.
+The source NPM is 2.17.0. Stable NPMplus 2026-10-22-r1 was tested and rejects
+its `20260906220000_user_permission_meta.js` migration. The next candidate is the
+official upstream `develop` image pinned by digest, whose source includes that
+migration. This is a development build, not a newly released stable version.
+Migration and application tests must succeed without editing migration history
+or touching the original database.
 
 Prepare an independent, private copy of both NPM data and letsencrypt under the
 owner's developer SSD. Use SQLite's backup API for the live database, preserve
