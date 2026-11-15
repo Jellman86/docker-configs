@@ -7,7 +7,7 @@ and OCR. Runs on Quark and needs no GPU or NPU access.
 
 ## Current Quark deployment
 
-This stack runs on Quark (`192.168.213.102`).
+This stack runs on Quark (`192.168.110.102`).
 Use `stacks/stirling-pdf/compose.yaml`.
 Configs use `/mnt/services/docker`; photos/media remain on `/mnt/tank`.
 The native storage guard owns startup through Dockhand. See

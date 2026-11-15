@@ -11,7 +11,7 @@ class ForgejoContract(unittest.TestCase):
         service = compose['services']['forgejo']
         env = service['environment']
         self.assertEqual(service['user'], '1000:1000')
-        self.assertEqual(service['ports'], ['192.168.213.102:2222:2222'])
+        self.assertEqual(service['ports'], ['192.168.110.102:2222:2222'])
         self.assertEqual(env['FORGEJO__server__ROOT_URL'], 'https://git.pownet.uk/')
         for key in ['FORGEJO__service__DISABLE_REGISTRATION',
                     'FORGEJO__service__REQUIRE_SIGNIN_VIEW',

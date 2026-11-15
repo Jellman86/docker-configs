@@ -3,7 +3,7 @@
 Deployment entrypoint: [`compose.yaml`](compose.yaml). See the [deployment map](../../docs/compose-layout.md) and [cutover sequence](../../docs/cutover-plan.md) before changing a live project.
 
 Photo/video library, PostgreSQL and the separate OpenVINO worker all run on Quark
-(`192.168.213.102`). Riker is retired. Deploy through Git, successful CI and Dockhand.
+(`192.168.110.102`). Riker is retired. Deploy through Git, successful CI and Dockhand.
 
 ## Deployed topology
 
@@ -20,7 +20,7 @@ machine-learning profile is a fallback, not another worker to enable alongside i
 The server joins `general_brg` for NPM and `immich_backend` for database/cache.
 Database/cache have no published ports. This bridge is host-local, not cross-host.
 The independently deployed ML worker retains the tested LAN endpoint
-`http://192.168.213.102:3003`. Its API is unauthenticated and must not be exposed
+`http://192.168.110.102:3003`. Its API is unauthenticated and must not be exposed
 through NPM or Cloudflare. Keep it LAN-bound until both stacks deliberately move
 to a shared network and the saved ML URL is updated together.
 

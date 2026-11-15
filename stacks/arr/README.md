@@ -26,7 +26,7 @@ Port variables in `compose.base.yaml` can override most published defaults.
 - Intended host: Quark / Fedora Server.
 - External network: `${NETWORK:-arr_stack_brg}`.
 - Gluetun's unauthenticated control API is bound by default to Quark's LAN
-  address at `http://192.168.213.102:8000`. Override
+  address at `http://192.168.110.102:8000`. Override
   `GLUETUN_CONTROL_BIND_ADDRESS` or `GLUETUN_CONTROL_PORT` only when the trusted
   management network changes; never bind it to a public interface.
 - qBittorrent uses `network_mode: service:gluetun`; it has no independent network path or host ports.
@@ -208,7 +208,7 @@ Secrets that belong in Dockhand's encrypted variables:
 
 `gluetun-guard` settings, all optional and defaulted in Compose:
 
-- `DOCKHAND_URL` (default `http://192.168.213.102:3000`), `DOCKHAND_ENV_ID`,
+- `DOCKHAND_URL` (default `http://192.168.110.102:3000`), `DOCKHAND_ENV_ID`,
   and `DOCKHAND_TOKEN` — the token is only needed if Dockhand authentication is
   enabled; keep it in Dockhand's encrypted variables if it is set.
 - `GLUETUN_GUARD_ANCHOR`, `GLUETUN_GUARD_NAMESPACE_DEPENDENTS`, and
@@ -233,10 +233,10 @@ After deployment, verify:
 1. Gluetun is healthy and reports the intended VPN exit before trusting qBittorrent.
 2. qBittorrent is healthy and still shares Gluetun's network namespace.
 3. Radarr, Sonarr, Prowlarr, Cleanuparr, and Seerr are healthy and retain their state.
-4. Byparr is reachable from Quark at `http://192.168.213.102:8191` and uses
+4. Byparr is reachable from Quark at `http://192.168.110.102:8191` and uses
    Gluetun's proxy.
 5. Gluetun's control API responds from the trusted LAN at
-   `http://192.168.213.102:8000/v1/version` and is unreachable from untrusted
+   `http://192.168.110.102:8000/v1/version` and is unreachable from untrusted
    networks.
 6. The `/data` mount points at the expected storage tree.
 7. `gluetun-guard` is healthy and its log reports `watching gluetun id=...`. An
@@ -252,7 +252,7 @@ Revert the relevant Git commit or restore a previously reviewed image reference,
 - VPN credentials are secrets; do not place them in Git, logs, or documentation.
 - Gluetun is deliberately privileged only with the network capability and TUN device needed for VPN routing.
 - Gluetun's control API is intentionally unauthenticated for Auspex on the
-  trusted `192.168.213.0/24` management network. It can stop the VPN, DNS, or
+  trusted Quark LAN (`192.168.110.0/24` at The Farm). It can stop the VPN, DNS, or
   updater, so port `8000` must never be forwarded by the router, published by a
   reverse proxy, or bound to a public interface.
 - Do not expose Gluetun's proxy beyond trusted container/LAN boundaries.

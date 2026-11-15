@@ -1,6 +1,6 @@
 # Quark host
 
-Fedora Server on Quark (`192.168.213.102`, `quark.pownet.uk`). Riker is retired.
+Fedora Server on Quark (`192.168.110.102`, `quark.pownet.uk`). Riker is retired.
 Application storage has been consolidated on the added SSD. The initial media
 mirror scrub passed; the independent USB backup failed again during catch-up after successful
 filesystem recovery. The spare is normally unmounted pending investigation of
@@ -65,7 +65,7 @@ The old Gluetun repair job is profile-gated manual tooling, not a running watchd
 ## Address-bound ports
 
 Forgejo SSH, CrowdSec syslog, Immich machine learning and Gluetun's control port
-publish on `192.168.213.102`. Install `99-quark-docker-bind.conf` in `/etc/sysctl.d/`
+publish on `192.168.110.102`. Install `99-quark-docker-bind.conf` in `/etc/sysctl.d/`
 so Docker can bind them before that address exists. Without it, a late link or a
 switch port on the wrong VLAN makes those containers fail at boot, and they can
 return on a later boot with no networks attached. A Dockhand deploy of the stack

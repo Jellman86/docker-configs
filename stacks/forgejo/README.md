@@ -1,6 +1,6 @@
 # Forgejo
 
-Private Git hosting for Pownet, using the upstream LTS rootless container and SQLite. The stack is named `forgejo`, with one container also named `forgejo`. NPM routes `https://git.pownet.uk` to `forgejo:3000`; only SSH is published at `192.168.213.102:2222`.
+Private Git hosting for Pownet, using the upstream LTS rootless container and SQLite. The stack is named `forgejo`, with one container also named `forgejo`. NPM routes `https://git.pownet.uk` to `forgejo:3000`; only SSH is published at `192.168.110.102:2222`.
 
 Private UniFi DNS and Quark's approved Tailscale subnet route provide access at home and over the tailnet. No public Tunnel, WAN forward or new Tailscale identity is required. T3 Code is a separate native service and is not part of this stack.
 

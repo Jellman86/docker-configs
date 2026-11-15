@@ -1,6 +1,6 @@
 ---
 # Independent Immich ML stack on Quark, alongside the migrated server stack.
-# The server's IMMICH_ML_URL remains http://192.168.213.102:3003. Retain that
+# The server's IMMICH_ML_URL remains http://192.168.110.102:3003. Retain that
 # LAN-only endpoint until both stacks are deliberately moved to a shared network.
 # This API has no authentication; never publish it through NPM or a tunnel.
 # Upstream: https://docs.immich.app/features/ml-hardware-acceleration/
@@ -32,7 +32,7 @@ services:
     # Same-host server uses this retained LAN endpoint. Binding the published
     # port to Quark's LAN IP is narrower than publishing on every host interface.
     ports:
-      - "${IMMICH_ML_BIND_ADDR:-192.168.213.102}:${IMMICH_ML_PORT:-3003}:3003"
+      - "${IMMICH_ML_BIND_ADDR:-192.168.110.102}:${IMMICH_ML_PORT:-3003}:3003"
     security_opt:
       - no-new-privileges:true
     # 8g, not 6g: CLIP (ViT-B-16-SigLIP-512), buffalo_l faces and PP-OCRv5
