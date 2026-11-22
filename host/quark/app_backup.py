@@ -164,23 +164,11 @@ def backup(config):
                 raise RuntimeError('Required recovery file is missing')
             for path in matches:
                 copy(Path(path))
-        # Logical PostgreSQL dump is consistent while Immich remains online.
-        c = json.loads(subprocess.check_output(['docker', 'inspect', 'immich-database'], text=True))[0]
-        env = dict(v.split('=', 1) for v in c['Config']['Env'])
-        resource.setrlimit(resource.RLIMIT_FSIZE, (max(1, MAX_GENERATION-used), MAX_GENERATION))
-        try:
-            with (stage/'immich.dump').open('wb') as output:
-                subprocess.run(['docker', 'exec', 'immich-database', 'pg_dump', '-U', env['POSTGRES_USER'],
-                                '-Fc', '--no-owner', '--no-privileges', env['POSTGRES_DB']], stdout=output,
-                               stderr=subprocess.DEVNULL, timeout=300, check=True)
-        finally:
-            resource.setrlimit(resource.RLIMIT_FSIZE, (MAX_GENERATION, MAX_GENERATION))
-        used += (stage/'immich.dump').stat().st_size
         with (stage/'smbpasswd-private.txt').open('wb') as output:
             subprocess.run(['pdbedit', '-L', '-w'], stdout=output, stderr=subprocess.DEVNULL, check=True)
         manifest = {'created_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
                     'online_sqlite_backups_checked': databases, 'settings_files': len(copied),
-                    'staged_data_bytes': used, 'postgresql': 'consistent logical pg_dump',
+                    'staged_data_bytes': used,
                     'coverage': 'Application settings/databases and selected host files. Other live files are best-effort copies.',
                     'excluded': 'Media/photos/VMs, recordings, models, caches and old backups. Not an independent backup.'}
         (stage/'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')

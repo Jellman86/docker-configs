@@ -27,7 +27,7 @@ stacks were reviewed/rendered, not silently deployed.
 
 - Deploy only through Git, passing CI and Dockhand. Comments/source-only changes
   do not require image pulls or forced recreation of healthy applications.
-- Use the four guarded server variants for media, Arr, Immich and Stirling.
+- Use the guarded server variants for media, Arr and Stirling.
   `restart: "no"` is deliberate: the native storage guard verifies both UUIDs
   and mirror serials before starting/recovering them through Dockhand. SSD-only
   infrastructure uses `unless-stopped` and engine mount dependencies.

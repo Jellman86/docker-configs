@@ -64,7 +64,7 @@ The old Gluetun repair job is profile-gated manual tooling, not a running watchd
 
 ## Address-bound ports
 
-Forgejo SSH, CrowdSec syslog, Immich machine learning and Gluetun's control port
+Forgejo SSH, CrowdSec syslog and Gluetun's control port
 publish on `192.168.110.102`. Install `99-quark-docker-bind.conf` in `/etc/sysctl.d/`
 so Docker can bind them before that address exists. Without it, a late link or a
 switch port on the wrong VLAN makes those containers fail at boot, and they can
@@ -105,11 +105,8 @@ and check the status JSON, archive manifest and recovery checks. These array
 archives protect against an application SSD failure, but are not an off-site or
 independent host backup. Media, photos, VM disks and developer work are excluded.
 
-SQLite uses consistent online recovery copies. Immich uses a logical PostgreSQL
-dump; its restored database properties, including `vchordrq.probes`, also matter.
-Keep PostgreSQL 18 at `/mnt/services/docker/immich/postgres18`, mounted at
-`/var/lib/postgresql`. The stopped old PG14 cluster has already been removed.
-Never recreate it or run the upgrade rehearsal against production storage.
+SQLite uses consistent online recovery copies. Restores of pre-retirement
+archives should leave the historical Immich database dump unextracted.
 
 The independent USB tool is `/usr/local/sbin/quark-external-backup`, configured by
 `/etc/quark-external-backup.json`. Its installed guide is

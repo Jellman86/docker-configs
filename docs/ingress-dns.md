@@ -75,7 +75,6 @@ lists, certificate assignments, advanced configuration and application settings.
 | `cleanuparr` | `http://cleanuparr:11011` | Stable service name |
 | `optimisarr` | `http://optimisarr:8787` | Stable service name |
 | `stirling` | `http://stirling-pdf:8080` | Stable service name |
-| `immich` | `http://immich-server:2283` | Preserve upload limits, timeouts and WebSockets |
 
 NPM uses the shared `general_brg` and `npm_proxy_backends` networks. Keep both
 external during a project rename. Do not point a bridge service at a container IP
@@ -91,8 +90,7 @@ That avoids a simultaneous proxy/DNS/container rename. The upstream image name
 Gluetun's control port 8000 is bound to Quark's **LAN** address, not its Tailscale
 address. This is separate from private HTTPS routing; do not expose it through
 NPM or Cloudflare merely to make an application discover it. qBittorrent's UI is
-served through Gluetun. Immich's unauthenticated ML port stays LAN-bound and has
-no NPM/public route. Database, cache and internal tool ports stay private.
+served through Gluetun. Database, cache and internal tool ports stay private.
 
 Most NPM routes currently have no NPM access list and rely on trusted-network
 placement plus application authentication. Dockhand login and Frigate browser
