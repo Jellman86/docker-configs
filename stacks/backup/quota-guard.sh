@@ -44,7 +44,8 @@ NR==1 { if ($1!="Name" || $2!="Dir/File" || $4!="Size") bad=1; else header=1; ne
  if (unit=="MiB") factor=1048576
  if (unit=="GiB") factor=1073741824
  if (unit=="TiB") factor=1099511627776
- if (n!=2 || p[1]!~/^[0-9]+([.][0-9]+)?$/ || factor==0) {bad=1; next}
+ if (n!=2 || p[1]!~/^([0-9]+|[0-9]{1,3}(,[0-9]{3})+)([.][0-9]+)?$/ || factor==0) {bad=1; next}
+ gsub(/,/, "", p[1])
  total+=(p[1]+1)*factor
 }
 END { if (bad || !header) exit 1; printf "%.0f\n",total }

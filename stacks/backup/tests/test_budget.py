@@ -34,6 +34,18 @@ class BudgetTests(unittest.TestCase):
     def test_current_usage_allowed(self):
         self.assertEqual(self.run_guard().returncode,0)
 
+    def test_grouped_size_is_counted_conservatively(self):
+        self.env['TEST_LISTING']='Name\tDir/File\tLastChange\tSize\nduplicati-test\tFile\ttoday\t1,021.87 KiB'
+        result=self.run_guard()
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('remote bytes=1047419;',result.stdout)
+
+    def test_malformed_grouped_size_is_rejected(self):
+        self.env['TEST_LISTING']='Name\tDir/File\tLastChange\tSize\nduplicati-test\tFile\ttoday\t10,21.87 KiB'
+        result=self.run_guard()
+        self.assertEqual(result.returncode,2)
+        self.assertIn('remote inventory could not be bounded',result.stderr)
+
     def test_compaction_headroom_enforced(self):
         self.env['TEST_LISTING']='Name\tDir/File\tLastChange\tSize\nduplicati-test\tFile\ttoday\t40.00 GiB'
         result=self.run_guard()
