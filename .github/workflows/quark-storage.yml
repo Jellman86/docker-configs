@@ -6,7 +6,6 @@ on:
       - host/quark/**
       - stacks/arr/**
       - stacks/media/**
-      - stacks/immich/**
       - stacks/stirling-pdf/**
       - stacks/management/**
       - stacks/ingress/**
@@ -57,7 +56,7 @@ jobs:
           python-version: '3.11'
       - run: python -m unittest discover -s host/quark/tests -v
       - run: pip install pyyaml
-      - run: python -m unittest discover -s stacks/immich/tests -v
+      - run: python -m unittest discover -s stacks/media/tests -v
       - name: Validate native file-server configuration
         run: |
           sudo apt-get update -qq
@@ -68,15 +67,9 @@ jobs:
         env:
           DOCKERCONFIGPATH: /mnt/services/docker
           CONFIG_PATH: /mnt/services/docker/pms
-          IMMICH_DB_PATH: /mnt/services/docker/immich/postgres18
-          IMMICH_DB_PASSWORD: ci-placeholder-only
-          IMMICH_PG18_PATH: /tmp/immich-pg18-rehearsal
-          IMMICH_PG_UPGRADE_DIR: /tmp/immich-pg18-dump
           TZ: Europe/London
         run: |
           docker compose -f stacks/media/compose.yaml config --format json > /tmp/quark-media.json
           docker compose -f stacks/arr/compose.yaml config --format json > /tmp/quark-arr.json
-          docker compose -f stacks/immich/compose.yaml config --format json > /tmp/quark-immich.json
-          docker compose -f tools/immich-postgres-upgrade/compose.yaml config --quiet
           docker compose -f stacks/stirling-pdf/compose.yaml config --format json > /tmp/quark-stirling.json
-          python host/quark/tests/check_compose.py /tmp/quark-media.json /tmp/quark-arr.json /tmp/quark-immich.json /tmp/quark-stirling.json
+          python host/quark/tests/check_compose.py /tmp/quark-media.json /tmp/quark-arr.json /tmp/quark-stirling.json

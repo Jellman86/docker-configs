@@ -7,8 +7,6 @@
     {"mount": "/mnt/services", "fstype": "xfs", "uuid": "REPLACE_WITH_APPS_UUID", "serials": ["QGS084B002570P1129"]}
   ],
   "start_order": [
-    {"name": "immich-database"},
-    {"name": "immich-redis"},
     {"name": "gluetun", "stop_before_start": ["qbittorrent", "prowlarr"]},
     {"name": "stirling-pdf"},
     {"name": "plex"},
@@ -21,12 +19,10 @@
     {"name": "qbittorrent", "healthy_dependencies": ["gluetun"]},
     {"name": "prowlarr", "healthy_dependencies": ["gluetun"]},
     {"name": "byparr", "healthy_dependencies": ["gluetun"]},
-    {"name": "immich-server", "healthy_dependencies": ["immich-database", "immich-redis"]},
     {"name": "optimisarr", "healthy_dependencies": ["plex", "jellyfin", "radarr", "sonarr"]}
   ],
   "stop_order": [
     "gluetun-guard", "stirling-pdf", "cleanuparr", "seerr", "radarr", "sonarr", "prowlarr",
-    "byparr", "qbittorrent", "gluetun", "tautulli", "plex", "jellyfin", "immich-server",
-    "immich-database", "immich-redis", "optimisarr"
+    "byparr", "qbittorrent", "gluetun", "tautulli", "plex", "jellyfin", "optimisarr"
   ]
 }

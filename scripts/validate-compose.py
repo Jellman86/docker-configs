@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = {
     'CONFIG_PATH': '/mnt/services/docker/validation',
     'BN_LAT': '0', 'BN_LONG': '0', 'PUID': '1000', 'PGID': '1000',
-    'TZ': 'Europe/London', 'IMMICH_DB_PASSWORD': 'ci-placeholder',
+    'TZ': 'Europe/London',
 }
 
 
@@ -40,12 +40,11 @@ def validate(root=ROOT):
             raise RuntimeError(f'{source.relative_to(root)} failed to render:\n{result.stderr}')
         model = json.loads(result.stdout)
         project = model['name']
-        expected_project = 'immich-ml' if source.name == 'compose.ml.yaml' else source.parent.name
+        expected_project = source.parent.name
         assert project == expected_project, (source, 'project differs from documented stack', project)
         assert re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', project), (source, 'use lowercase kebab-case')
         pinned_volumes = {
             ('optimisarr-sidecar', 'sidecar-config'): 'optimisarr_sidecar_sidecar-config',
-            ('immich-ml', 'model-cache'): 'immich_ml_model-cache',
         }
         for (owner, key), identity in pinned_volumes.items():
             if project == owner:

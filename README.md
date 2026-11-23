@@ -37,8 +37,7 @@ docs/                   operations, routing and the staged cutover
 
 Each complete entrypoint can be selected directly in Dockhand. Its `extends`
 references load the base definitions automatically. Do not deploy base files or
-combine entrypoints with `-f` overlays. The separate photo worker uses
-`stacks/immich/compose.ml.yaml` and project `immich-ml`.
+combine entrypoints with `-f` overlays.
 
 ## Applications
 
@@ -51,7 +50,6 @@ combine entrypoints with `-f` overlays. The separate photo worker uses
 | [ai-tools](stacks/ai-tools/README.md) | OpenKnowledge, Playwright browser MCP and SearXNG |
 | [arr](stacks/arr/README.md) | VPN, downloads, indexers and media requests |
 | [media](stacks/media/README.md) | Plex, Jellyfin and Optimisarr |
-| [immich / immich-ml](stacks/immich/README.md) | Photos, database/cache and Intel inference worker |
 | [optimisarr-sidecar](stacks/optimisarr-sidecar/README.md) | Separate development worker |
 | [stirling-pdf](stacks/stirling-pdf/README.md) | PDF and OCR toolkit |
 | [forgejo](stacks/forgejo/README.md) | Private Git repositories, SQLite and SSH |
